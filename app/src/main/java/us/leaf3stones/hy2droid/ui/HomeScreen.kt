@@ -54,7 +54,6 @@ fun HomeScreen(
     val stats by viewModel.stats.collectAsState()
     var shareProfile by remember { mutableStateOf<Profile?>(null) }
 
-    val context = LocalContext.current
     // The first profile is treated as selected when nothing explicit is stored.
     val selectedProfile = profiles.firstOrNull { it.id == selectedId } ?: profiles.firstOrNull()
     val active = tunnelState is TunnelState.Connected ||
