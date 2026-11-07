@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,7 +30,6 @@ import us.leaf3stones.hy2droid.proxy.TunnelStats
 fun ConnectionCard(
     state: TunnelState,
     stats: TunnelStats,
-    onDisconnect: () -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp)) {
@@ -62,20 +60,6 @@ fun ConnectionCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
-            }
-
-            val active = state is TunnelState.Connected ||
-                state is TunnelState.Connecting ||
-                state is TunnelState.Disconnecting
-            if (active) {
-                Spacer(Modifier.height(16.dp))
-                OutlinedButton(
-                    onClick = onDisconnect,
-                    enabled = state !is TunnelState.Disconnecting,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.action_disconnect))
-                }
             }
         }
     }

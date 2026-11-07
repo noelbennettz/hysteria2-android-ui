@@ -10,6 +10,10 @@
     <string name="action_share">Share</string>
     <string name="action_delete">Delete</string>
     <string name="action_disconnect">Disconnect</string>
+    <string name="action_connect">Connect</string>
+    <string name="action_scan_import">Scan</string>
+    <string name="import_success">Profile imported</string>
+    <string name="import_invalid">Not a valid hysteria2 link</string>
 
     <!-- Connection status -->
     <string name="status_idle">Disconnected</string>

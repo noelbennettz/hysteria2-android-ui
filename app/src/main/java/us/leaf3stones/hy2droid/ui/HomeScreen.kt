@@ -1,7 +1,10 @@
 package us.leaf3stones.hy2droid.ui
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -11,11 +14,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,13 +28,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.HysteriaUri
 import us.leaf3stones.hy2droid.data.Profile
+import us.leaf3stones.hy2droid.proxy.TunnelState
 
-/** The main screen: connection status card, profile list, add/edit/share/delete entry points. */
+/** The main screen: status card, profile list and the single connect/disconnect + add controls. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -37,6 +48,7 @@ fun HomeScreen(
     onAdd: () -> Unit,
     onEdit: (Profile) -> Unit,
     onConnect: (Profile) -> Unit,
+    onDisconnect: () -> Unit,
 ) {
     val profiles by viewModel.profiles.collectAsState()
     val selectedId by viewModel.selectedId.collectAsState()
@@ -44,14 +56,67 @@ fun HomeScreen(
     val stats by viewModel.stats.collectAsState()
     var shareProfile by remember { mutableStateOf<Profile?>(null) }
 
+    val context = LocalContext.current
+    // The first profile is treated as selected when nothing explicit is stored.
+    val selectedProfile = profiles.firstOrNull { it.id == selectedId } ?: profiles.firstOrNull()
+    val active = tunnelState is TunnelState.Connected ||
+        tunnelState is TunnelState.Connecting ||
+        tunnelState is TunnelState.Disconnecting
+
+    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val contents = result.contents
+        if (contents != null) {
+            val profile = HysteriaUri.parse(contents)
+            if (profile != null) {
+                viewModel.save(profile)
+                Toast.makeText(context, R.string.import_success, Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, R.string.import_invalid, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                actions = {
+                    TextButton(onClick = { scanLauncher.launch(ScanOptions()) }) {
+                        Text(stringResource(R.string.action_scan_import))
+                    }
+                },
+            )
+        },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAdd) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.action_add_profile),
-                )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (selectedProfile != null) {
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            if (active) onDisconnect() else onConnect(selectedProfile)
+                        },
+                        containerColor = if (active) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer
+                        },
+                        content = {
+                            Text(
+                                stringResource(
+                                    if (active) R.string.action_disconnect else R.string.action_connect,
+                                ),
+                            )
+                        },
+                    )
+                }
+                FloatingActionButton(onClick = onAdd) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.action_add_profile),
+                    )
+                }
             }
         },
     ) { padding ->
@@ -62,11 +127,7 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
         ) {
             Spacer(Modifier.height(8.dp))
-            ConnectionCard(
-                state = tunnelState,
-                stats = stats,
-                onDisconnect = viewModel::disconnect,
-            )
+            ConnectionCard(state = tunnelState, stats = stats)
             Spacer(Modifier.height(20.dp))
             Text(
                 text = stringResource(R.string.profiles_title),
@@ -83,14 +144,14 @@ fun HomeScreen(
                     items(profiles, key = { it.id }) { profile ->
                         ProfileRow(
                             profile = profile,
-                            selected = profile.id == selectedId,
-                            onClick = { onConnect(profile) },
+                            selected = profile.id == selectedProfile?.id,
+                            onClick = { viewModel.select(profile.id) },
                             onEdit = { onEdit(profile) },
                             onShare = { shareProfile = profile },
                             onDelete = { viewModel.delete(profile.id) },
                         )
                     }
-                    item { Spacer(Modifier.height(80.dp)) }
+                    item { Spacer(Modifier.height(96.dp)) }
                 }
             }
         }

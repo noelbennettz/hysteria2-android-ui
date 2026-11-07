@@ -82,6 +82,7 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
                 editorOpen = true
             },
             onConnect = ::requestConnect,
+            onDisconnect = vm::disconnect,
         )
     }
 }
