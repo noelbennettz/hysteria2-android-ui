@@ -99,12 +99,17 @@ class Hysteria2VpnService : VpnService() {
         }
         val dnsServers = try {
             if (settings.customDnsEnabled.first()) {
-                listOf(settings.customDnsServer.first(), settings.customDnsServer2.first())
+                listOfNotNull(
+                    settings.customDnsServer.first().takeIf { it.isNotBlank() },
+                    settings.customDnsServer2.first().takeIf { it.isNotBlank() },
+                )
             } else {
-                listOf(SettingsStore.DEFAULT_DNS)
+                // No custom DNS: don't inject a resolver, let DNS use the upstream
+                // (hysteria server egress) instead of a hardcoded public resolver.
+                emptyList()
             }
         } catch (_: Exception) {
-            listOf(SettingsStore.DEFAULT_DNS)
+            emptyList()
         }
 
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
