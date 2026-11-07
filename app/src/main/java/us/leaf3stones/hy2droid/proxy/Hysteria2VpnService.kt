@@ -12,187 +12,303 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import us.leaf3stones.hy2droid.R
-import us.leaf3stones.hy2droid.data.KEY_IS_VPN_CONFIG_READY
-import us.leaf3stones.hy2droid.data.KEY_VPN_CONFIG_PATH
-import us.leaf3stones.hy2droid.data.TUN2SOCKS_CONFIG_FILE_NAME
-import us.leaf3stones.hy2droid.data.vpnPrefDataStore
 import java.io.File
 import java.util.Scanner
-import kotlin.concurrent.thread
 
+/**
+ * The [VpnService] that owns the TUN interface and the Hysteria 2 core process.
+ *
+ * The native `libtun2socks.so` binds its JNI symbols to this exact class name and
+ * to the three `external` methods below, so neither the fully-qualified name nor
+ * the native method signatures may change without rebuilding the .so.
+ *
+ * Threading: `onStartCommand` only starts the foreground notification (which must
+ * be immediate) and hands the rest to an IO coroutine, so no blocking work ever
+ * runs on the main thread.
+ */
 class Hysteria2VpnService : VpnService() {
+
+    // --- JNI surface (do NOT rename/relocate: symbols are bound to this FQCN) ---
     private external fun startTun2socks(configPath: String, fd: Int)
     private external fun stopTun2socks()
     private external fun getTun2socksStats(): LongArray
 
-    private var netFileDescriptor: ParcelFileDescriptor? = null
-    private var hysteriaProcess: Process? = null
-    private var hysteriaLoggingThread: Thread? = null
+    private var tunInterface: ParcelFileDescriptor? = null
+    private var coreProcess: Process? = null
+    private var logDrainThread: Thread? = null
+    private var statsJob: Job? = null
+    private var monitorJob: Job? = null
 
-    private val job = SupervisorJob()
-    private val scope = CoroutineScope(Dispatchers.Main + job)
+    @Volatile
+    private var shuttingDown = false
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val isStart = intent?.action == ACTION_START_VPN
-        val isStop = intent?.action == ACTION_STOP_VPN
-
-        if (isStart && netFileDescriptor != null) {
-            // do not respond when vpn is already started
-            return START_STICKY
-        } else if (!isStart && !isStop) {
-            Log.w(TAG, "can't recognize the intent $intent")
-            return START_NOT_STICKY
-        }
-
-        if (isStart) {
-            startForeground()
-            scope.launch {
-                val pref = vpnPrefDataStore.data.first()
-                val isReady = pref[KEY_IS_VPN_CONFIG_READY] ?: false
-                val configPath = pref[KEY_VPN_CONFIG_PATH] ?: ""
-                startVpnChecked(isReady, configPath)
+        when (intent?.action) {
+            ACTION_STOP_VPN -> {
+                stopTunnel()
+                return START_NOT_STICKY
             }
-            return START_STICKY;
-        } else {
-            cleanup()
-            stopSelf()
-            return START_NOT_STICKY
+
+            ACTION_START_VPN, null -> {
+                // A null intent means the system restarted us after the process was
+                // killed while connected: resume from the persisted config files.
+                startForegroundSafely()
+                serviceScope.launch { startTunnel() }
+                return START_STICKY
+            }
+
+            else -> {
+                Log.w(TAG, "Unrecognized intent action: ${intent.action}")
+                return START_NOT_STICKY
+            }
         }
     }
 
-    private fun startForeground() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Create the NotificationChannel.
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val mChannel = NotificationChannel("CHANNEL_ID", "name", importance)
-            mChannel.description = "description"
-            // Register the channel with the system. You can't change the importance
-            // or other notification behaviors after this.
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(mChannel)
-        }
-        val notification = NotificationCompat.Builder(this, "CHANNEL_ID")
-            .setContentTitle("Hy2droid running")
-            .setContentText("It's time to explore the uncensored Internet!")
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setSmallIcon(R.drawable.ic_vpn_connection)
-            .setOngoing(true)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .build()
-        ServiceCompat.startForeground(
-            /* service = */ this,
-            /* id = */ 100,
-            /* notification = */ notification,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-            } else {
-                0
-            },
-        )
-    }
-
-    private fun startVpnChecked(isConfigReady: Boolean, configPath: String) {
-        if (!isConfigReady || configPath.isBlank()) {
-            Log.w(TAG, "---BUG--- vpn config not ready but start is called ---BUG---")
+    /** Establish the tunnel, launch the core and start tun2socks. Runs on IO. */
+    private fun startTunnel() {
+        if (tunInterface != null) {
+            Log.d(TAG, "Tunnel already running; ignoring duplicate start")
             return
         }
-        Log.d(TAG, "starting hysteria, config located at $configPath")
-        startHysteriaInternal(configPath)
-        val fd = establishSystemVpnTunnel()
-        startTun2socks(File(filesDir, TUN2SOCKS_CONFIG_FILE_NAME).absolutePath, fd)
-        Log.d(TAG, getTun2socksStats().contentToString())
+        shuttingDown = false
+        TunnelStatus.setState(TunnelState.Connecting)
 
-        observers.forEach {
-            it.onVpnStarted()
+        val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
+        if (!configFile.exists()) {
+            fail(getString(R.string.error_no_config))
+            return
         }
+
+        val tun2socksFile = File(filesDir, Tun2socksConfig.FILE_NAME)
+        try {
+            tun2socksFile.writeText(Tun2socksConfig.CONTENT)
+        } catch (e: Exception) {
+            fail(getString(R.string.error_tun2socks_config, e.message ?: ""))
+            return
+        }
+
+        val pfd = establishTunnel()
+        if (pfd == null) {
+            fail(getString(R.string.error_establish))
+            return
+        }
+        tunInterface = pfd
+
+        val process = launchCore(configFile)
+        if (process == null) {
+            teardown()
+            fail(getString(R.string.error_core_launch))
+            return
+        }
+        coreProcess = process
+        monitorJob = serviceScope.launch { monitorCore(process) }
+
+        try {
+            startTun2socks(tun2socksFile.absolutePath, pfd.fd)
+        } catch (e: Throwable) {
+            teardown()
+            fail(getString(R.string.error_tun2socks_start, e.message ?: ""))
+            return
+        }
+
+        TunnelStatus.setState(TunnelState.Connected)
+        startStatsPolling()
+        Log.d(TAG, "Tunnel established")
     }
 
-    private fun startHysteriaInternal(hysteriaConfig: String) {
-        val commands = Array(3) { "" }
-        commands[0] = File(applicationInfo.nativeLibraryDir, "libhysteria.so").absolutePath
-        commands[1] = "-c"
-        commands[2] = hysteriaConfig
-        hysteriaProcess = Runtime.getRuntime().exec(commands)
-        hysteriaLoggingThread = thread {
-            hysteriaProcess!!.errorStream.use {
-                val hysteriaOutput = Scanner(it)
-                while (hysteriaOutput.hasNextLine()) {
-                    val nextLog = hysteriaOutput.nextLine()
-                    Log.v(HYSTERIA_TAG, nextLog)
-                    if (Thread.interrupted()) {
-                        break
+    private fun establishTunnel(): ParcelFileDescriptor? = try {
+        Builder()
+            .setMtu(MTU)
+            .addAddress(TUN_IPV4, TUN_PREFIX)
+            .addDnsServer(DNS_SERVER)
+            .addRoute("0.0.0.0", 0)
+            .addDisallowedApplication(packageName)
+            .establish()
+    } catch (e: Exception) {
+        Log.e(TAG, "establish() failed", e)
+        null
+    }
+
+    private fun launchCore(configFile: File): Process? = try {
+        val binary = File(applicationInfo.nativeLibraryDir, CORE_BINARY)
+        val process = ProcessBuilder(binary.absolutePath, "-c", configFile.absolutePath)
+            .redirectErrorStream(true)
+            .start()
+        logDrainThread = Thread {
+            try {
+                process.inputStream.use { input ->
+                    val scanner = Scanner(input)
+                    while (!shuttingDown && scanner.hasNextLine()) {
+                        Log.v(CORE_TAG, scanner.nextLine())
                     }
                 }
+            } catch (_: Exception) {
+                // Reading from a closed pipe during shutdown is expected.
+            }
+        }.apply {
+            isDaemon = true
+            start()
+        }
+        process
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to exec the Hysteria core", e)
+        null
+    }
+
+    private suspend fun monitorCore(process: Process) {
+        val exit = try {
+            process.waitFor()
+        } catch (_: InterruptedException) {
+            return
+        }
+        if (shuttingDown) return
+        Log.w(TAG, "Core exited unexpectedly with code $exit")
+        serviceScope.launch {
+            teardown()
+            TunnelStatus.setState(TunnelState.Error(getString(R.string.error_core_exited, exit)))
+            stopForegroundSafely()
+            stopSelf()
+        }
+    }
+
+    private fun startStatsPolling() {
+        statsJob?.cancel()
+        statsJob = serviceScope.launch {
+            while (isActive) {
+                val values = try {
+                    getTun2socksStats()
+                } catch (_: Throwable) {
+                    null
+                }
+                if (values != null && values.size >= 2) {
+                    TunnelStatus.setStats(values[0], values[1])
+                }
+                delay(STATS_INTERVAL_MS)
             }
         }
     }
 
-    private fun establishSystemVpnTunnel(): Int {
-        netFileDescriptor = Builder().setMtu(1500).addAddress("10.0.88.88", 16)
-            .addDnsServer("1.0.0.1").addDisallowedApplication(packageName)
-            .addRoute("0.0.0.0", 0).establish()
-        return netFileDescriptor!!.fd
+    private fun stopTunnel() {
+        shuttingDown = true
+        TunnelStatus.setState(TunnelState.Disconnecting)
+        teardown()
+        TunnelStatus.setState(TunnelState.Idle)
+        stopForegroundSafely()
+        stopSelf()
     }
 
-    private fun cleanup() {
+    private fun fail(message: String) {
+        Log.e(TAG, message)
+        teardown()
+        TunnelStatus.setState(TunnelState.Error(message))
+        stopForegroundSafely()
+        stopSelf()
+    }
+
+    /** Release every native/OS resource. Idempotent. */
+    private fun teardown() {
+        statsJob?.cancel()
+        statsJob = null
+        monitorJob?.cancel()
+        monitorJob = null
         try {
-            observers.forEach {
-                it.onVpnStopped()
-            }
-            observers.clear()
             stopTun2socks()
-            netFileDescriptor?.close()
-            netFileDescriptor = null
-            hysteriaProcess?.destroy()
-            hysteriaProcess = null
-            hysteriaLoggingThread?.interrupt()
-            hysteriaLoggingThread = null
-        } catch (ignored: Exception) {
-
+        } catch (_: Throwable) {
+            // Native may not have been started yet.
         }
+        try {
+            tunInterface?.close()
+        } catch (_: Throwable) {
+            // Already closed.
+        }
+        tunInterface = null
+        try {
+            coreProcess?.destroy()
+        } catch (_: Throwable) {
+            // Already dead.
+        }
+        coreProcess = null
+        logDrainThread?.interrupt()
+        logDrainThread = null
+        TunnelStatus.resetStats()
+    }
+
+    override fun onRevoke() {
+        shuttingDown = true
+        stopTunnel()
+        super.onRevoke()
     }
 
     override fun onDestroy() {
+        shuttingDown = true
+        teardown()
+        serviceScope.cancel()
         super.onDestroy()
-        Log.d(TAG, "onDestroy")
-        cleanup()
+    }
+
+    private fun startForegroundSafely() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.notification_channel_name),
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply {
+                description = getString(R.string.notification_channel_description)
+            }
+            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+                .createNotificationChannel(channel)
+        }
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.notification_title))
+            .setContentText(getString(R.string.notification_text))
+            .setSmallIcon(R.drawable.ic_vpn_connection)
+            .setOngoing(true)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .build()
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        } else {
+            0
+        }
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
+    }
+
+    private fun stopForegroundSafely() {
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
     }
 
     companion object {
         init {
-            try {
-                System.loadLibrary("tun2socks")
-            } catch (unsatisfied: UnsatisfiedLinkError) {
-                throw RuntimeException(unsatisfied)
-            }
+            System.loadLibrary("tun2socks")
         }
 
-        const val ACTION_START_VPN =
-            "us.leaf3stones.hy2droid.proxy.Hysteria2VpnService.ACTION_START_VPN"
-        const val ACTION_STOP_VPN =
-            "us.leaf3stones.hy2droid.proxy.Hysteria2VpnService.ACTION_STOP_VPN"
+        const val ACTION_START_VPN = "us.leaf3stones.hy2droid.proxy.ACTION_START_VPN"
+        const val ACTION_STOP_VPN = "us.leaf3stones.hy2droid.proxy.ACTION_STOP_VPN"
 
-        interface VpnStatusObserver {
-            fun onVpnStarted()
-            fun onVpnStopped()
-        }
+        /** The active Hysteria config file name under `filesDir`. */
+        const val HYSTERIA_CONFIG_FILE = "hysteria.yaml"
 
-        fun addObserver(observer: VpnStatusObserver) {
-            observers.add(observer)
-        }
-
-        fun removeObserver(observer: VpnStatusObserver) {
-            if (!observers.remove(observer)) {
-                Log.w(TAG, "trying to remove a non-exist observer $observer")
-            }
-        }
-
-        private val TAG = Hysteria2VpnService::class.java.simpleName.toString()
-        private const val HYSTERIA_TAG = "hysteria"
-        private val observers: MutableSet<VpnStatusObserver> = mutableSetOf()
+        private const val CORE_BINARY = "libhysteria.so"
+        private const val MTU = 1500
+        private const val TUN_IPV4 = "10.0.88.88"
+        private const val TUN_PREFIX = 16
+        private const val DNS_SERVER = "1.0.0.1"
+        private const val STATS_INTERVAL_MS = 1000L
+        private const val CHANNEL_ID = "hy2droid_vpn"
+        private const val NOTIFICATION_ID = 100
+        private const val TAG = "Hysteria2VpnService"
+        private const val CORE_TAG = "hysteria"
     }
 }
+
+

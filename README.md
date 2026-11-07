@@ -1,56 +1,80 @@
-# Android-Hysteria-2-client
+# Hysteria 2 · Android
 
-## 介绍
+A native Android client for the [Hysteria 2](https://v2.hysteria.network/) proxy
+protocol, built on top of the official Go core (bundled as the prebuilt
+`libhysteria.so`) and [go-tun2socks](https://github.com/eycorsican/go-tun2socks)
+for the TUN ↔ SOCKS5 bridge.
 
-自用 android hysteria 2 客户端，基于[hysteria 2.4.0](https://github.com/apernet/hysteria/commit/f91efbeded80d5d1f43ba574e707326074fc754e)构建. 支持 64位arm架构，在 android 14上测试可用. [新版本](https://github.com/lry127/Android-Hysteria-2-client?tab=readme-ov-file#%E6%96%B0%E7%89%88%E6%9C%AC)支持更多abi.
+The app is a thin, Material 3 UI plus an Android `VpnService`; all protocol logic
+runs inside the bundled native core. Supports the four common ABIs
+(`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`).
 
-## 下载
-- [2.4.0](https://github.com/lry127/Android-Hysteria-2-client/releases/tag/v2.4.0r-2)
+## Features
 
+- System-wide VPN (full-tunnel `VpnService`) backed by Hysteria 2
+- Local SOCKS5 and HTTP proxy listeners exposed by the core
+- Multiple saved profiles, each represented by its `hysteria2://` share link
+- Import a profile by pasting a `hysteria2://` link, or add fields manually
+- Custom SNI (defaults to the server host when left blank)
+- Salamander obfuscation (leave the obfuscation password blank to disable)
+- Optional "allow insecure certificate"
+- Optional bandwidth hint (Mbps) to enable Hysteria's Brutal congestion control;
+  leave it at 0 to use BBR
+- QUIC fast open enabled by default for lower latency
+- Live upload/download counters while connected
 
-## 支持功能
+## How it works
 
-- 基本hysteria 2客户端，支持暴露 socks5和http端口，支持全局代理
+```
+UI (Compose / Material 3)
+  └─ MainViewModel ── writes hysteria.yaml ──┐
+                                             ▼
+                              Hysteria2VpnService (VpnService)
+                                 ├─ VpnService.Builder → TUN fd
+                                 ├─ exec libhysteria.so -c hysteria.yaml → :1080 socks5 / :1081 http
+                                 └─ libtun2socks.so (JNI)  TUN fd → 127.0.0.1:1080
+```
 
-- 自定义sni
+The Hysteria core runs as a child process exposing a local SOCKS5 listener;
+`tun2socks` bridges the Android TUN device to it. The native `libtun2socks.so`
+binds its JNI symbols to `us.leaf3stones.hy2droid.proxy.Hysteria2VpnService`, so
+that class name and the `startTun2socks`/`stopTun2socks`/`getTun2socksStats`
+signatures must be preserved.
 
-- 支持[混淆](https://v2.hysteria.network/zh/docs/advanced/Full-Client-Config/#_4)
+## Usage
 
-- 支持 insecure
+- **Server**: the server domain or IP (optionally with `:port`, default `443`)
+- **Auth**: the Hysteria 2 password
+- **SNI**: TLS SNI; optional, defaults to the server host. May differ from the
+  server address when the server is addressed by IP but the certificate is
+  issued for a hostname
+- **Obfuscation password**: the Salamander password; leave blank if the server
+  does not use obfuscation
+- **Upload / Download Mbps**: set your real line speeds to enable Brutal; both 0
+  disables Brutal and uses BBR (see the
+  [official docs](https://v2.hysteria.network/docs/advanced/Full-Server-Config/))
+- **Allow insecure certificate**: skips TLS verification; should normally stay
+  off (enables man-in-the-middle attacks)
 
-- 默认开启 fastopen以降低rrt
+## Building
 
-- 针对移动设备优化电量消耗
+```bash
+./gradlew assembleDebug      # APK at app/build/outputs/apk/debug/
+```
 
-## 截图
+Release builds require a keystore at `signing/production.jks` plus the
+`HY2_KEYSTORE_PASSWORD` / `HY2_KEY_PASSWORD` / `HY2_KEY_ALIAS` Gradle properties
+or environment variables (never committed).
 
-![screenshot 1](./screenshots/s1.png)
+Continuous integration builds a debug APK on every push to `main` and uploads it
+as a workflow artifact.
 
-## 使用介绍
+## Credits
 
-- server address: 服务器域名或者ip
+- [hysteria](https://github.com/apernet/hysteria) — protocol and reference
+  implementation. [LICENSE](https://github.com/apernet/hysteria/blob/master/LICENSE.md)
+- [go-tun2socks](https://github.com/eycorsican/go-tun2socks) — TUN ↔ SOCKS5
+  bridge. [LICENSE](https://github.com/eycorsican/go-tun2socks/blob/master/LICENSE)
 
-- auth: 密码
-
-- sni: tls 的sni部分，可以不填，默认从server address中提取. 也可以与server address不同，此时server address仅作为报文对端发送地址，实际tls握手的sni由这个字段指定
-
-- obfuscation password: 混淆密码，如服务器未启用混淆，将其留白即可
-
-- tx 上传速率，以mbps为单位
-
-- rx 下载速率，以mbps为单位
-
-- 注意：tx和rx必须按真实值填写否则会带来性能损失，若都填0则会关闭hysteria的Brutal拥堵控制协议，转用BBR，参考[官方文档](https://v2.hysteria.network/zh/docs/advanced/Full-Client-Config/#_5)
-
-- allow insecure: 允许不安全证书，通常不应开启，否则可能导致中间人攻击
-
-## 新版本
-Github上传的源码使用最新hysteria 2.5.1版本. UI基于Jetpack Compose实现但并不完备，不过基础功能已经实现，若需使用请使用下载[pre-release](https://github.com/lry127/Android-Hysteria-2-client/releases/tag/v2.5.1.2). 详见此[issue](https://github.com/lry127/Android-Hysteria-2-client/issues/2). ![新版截图](./screenshots/s2.png)
-
-## 关于
-
-- 感谢 [hysteria](https://github.com/apernet/hysteria) 提供协议与底层实现. [LICENSE](https://github.com/apernet/hysteria/blob/master/LICENSE.md)
-
-- 感谢 [eycorsican/go-tun2socks](https://github.com/eycorsican/go-tun2socks) 提供代理实现. [LICENSE](https://github.com/eycorsican/go-tun2socks/blob/master/LICENSE)
-
-本应用仅限学习交流使用，使用请遵守当地法规。
+This application is provided for learning and personal use. Follow the laws of
+your jurisdiction.

@@ -1,3 +1,58 @@
 <resources>
     <string name="app_name">Hy2droid</string>
+
+    <!-- Home -->
+    <string name="profiles_title">Profiles</string>
+    <string name="empty_profiles">No profiles yet. Tap + to add one.</string>
+    <string name="action_add_profile">Add profile</string>
+    <string name="action_more">More options</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_share">Share</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_disconnect">Disconnect</string>
+
+    <!-- Connection status -->
+    <string name="status_idle">Disconnected</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_disconnecting">Disconnecting…</string>
+    <string name="status_error">Connection error</string>
+
+    <!-- Share -->
+    <string name="share_title">Share profile</string>
+    <string name="link_copied">Link copied</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_close">Close</string>
+
+    <!-- Editor -->
+    <string name="edit_title_add">New profile</string>
+    <string name="edit_title_edit">Edit profile</string>
+    <string name="action_save">Save</string>
+    <string name="action_back">Back</string>
+    <string name="action_import">Import</string>
+    <string name="field_import_link">Paste hysteria2:// link</string>
+    <string name="field_name">Name</string>
+    <string name="field_server">Server (host:port)</string>
+    <string name="field_auth">Auth / password</string>
+    <string name="field_sni">SNI (optional)</string>
+    <string name="field_obfs">Obfuscation password (optional)</string>
+    <string name="field_tx">Upload Mbps</string>
+    <string name="field_rx">Download Mbps</string>
+    <string name="field_insecure">Allow insecure certificate</string>
+    <string name="field_fast_open">QUIC fast open</string>
+    <string name="bandwidth_hint">Leave bandwidth at 0 to use BBR; set your real Mbps to enable Brutal congestion control.</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">VPN</string>
+    <string name="notification_channel_description">Hysteria 2 tunnel status</string>
+    <string name="notification_title">Hy2droid running</string>
+    <string name="notification_text">Your connection is protected.</string>
+
+    <!-- Errors -->
+    <string name="error_no_config">No configuration found. Open the app and connect again.</string>
+    <string name="error_tun2socks_config">Failed to write tun2socks config: %1$s</string>
+    <string name="error_establish">Could not establish the VPN interface. Permission may have been revoked.</string>
+    <string name="error_core_launch">Failed to launch the Hysteria core.</string>
+    <string name="error_tun2socks_start">Failed to start tun2socks: %1$s</string>
+    <string name="error_core_exited">The Hysteria core stopped unexpectedly (code %1$d).</string>
 </resources>
