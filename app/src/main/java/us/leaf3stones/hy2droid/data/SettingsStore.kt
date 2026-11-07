@@ -22,6 +22,7 @@ class SettingsStore(private val context: Context) {
     private val keyDynamic = booleanPreferencesKey("dynamic_color")
     private val keyDnsEnabled = booleanPreferencesKey("custom_dns_enabled")
     private val keyDnsServer = stringPreferencesKey("custom_dns_server")
+    private val keyDnsServer2 = stringPreferencesKey("custom_dns_server2")
     private val keyDesired = booleanPreferencesKey("desired_connected")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
@@ -39,6 +40,10 @@ class SettingsStore(private val context: Context) {
     /** The custom DNS server address. */
     val customDnsServer: Flow<String> = context.settingsDataStore.data
         .map { it[keyDnsServer] ?: DEFAULT_DNS }
+
+    /** The optional secondary DNS server address ("" when unset). */
+    val customDnsServer2: Flow<String> = context.settingsDataStore.data
+        .map { it[keyDnsServer2] ?: "" }
 
     /** Whether the tunnel should be up (drives always-on / process-death resume). */
     val desiredConnected: Flow<Boolean> = context.settingsDataStore.data
@@ -58,6 +63,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setCustomDnsServer(server: String) {
         context.settingsDataStore.edit { it[keyDnsServer] = server }
+    }
+
+    suspend fun setCustomDnsServer2(server: String) {
+        context.settingsDataStore.edit { it[keyDnsServer2] = server }
     }
 
     suspend fun setDesiredConnected(desired: Boolean) {

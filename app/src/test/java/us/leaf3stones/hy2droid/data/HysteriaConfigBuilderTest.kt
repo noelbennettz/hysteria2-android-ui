@@ -46,7 +46,7 @@ class HysteriaConfigBuilderTest {
         assertFalse(yaml.contains("bandwidth:"))
         assertFalse(yaml.contains("obfs:"))
         assertFalse(yaml.contains("tls:"))
-        assertTrue(yaml.contains("fastOpen: true"))
+        assertTrue(yaml.contains("fastOpen: false"))
         assertTrue(yaml.contains("socks5:"))
         assertTrue(yaml.contains("http:"))
     }

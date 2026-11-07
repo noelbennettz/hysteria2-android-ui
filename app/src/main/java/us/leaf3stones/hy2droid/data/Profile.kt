@@ -26,7 +26,7 @@ data class Profile(
     val insecure: Boolean = false,
     val txMbps: Int = 0,
     val rxMbps: Int = 0,
-    val fastOpen: Boolean = true,
+    val fastOpen: Boolean = false,
     val port: Int = 443,
 ) {
     /** True when Salamander obfuscation is configured. */

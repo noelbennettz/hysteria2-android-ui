@@ -58,9 +58,6 @@ class Hysteria2VpnService : VpnService() {
     @Volatile
     private var shuttingDown = false
 
-    @Volatile
-    private var latestSpeedText = ""
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -70,7 +67,7 @@ class Hysteria2VpnService : VpnService() {
                 return START_NOT_STICKY
             }
 
-            ACTION_START_VPN, null -> {
+            ACTION_START_VPN, SYS_SYSTEM_VPN, null -> {
                 // System-initiated start (always-on VPN or process-death restart): auto
                 // connect the last selected profile, rebuilding the config if needed.
                 startForegroundSafely()
@@ -100,10 +97,14 @@ class Hysteria2VpnService : VpnService() {
         } catch (_: Exception) {
             emptySet()
         }
-        val dnsServer = try {
-            if (settings.customDnsEnabled.first()) settings.customDnsServer.first() else SettingsStore.DEFAULT_DNS
+        val dnsServers = try {
+            if (settings.customDnsEnabled.first()) {
+                listOf(settings.customDnsServer.first(), settings.customDnsServer2.first())
+            } else {
+                listOf(SettingsStore.DEFAULT_DNS)
+            }
         } catch (_: Exception) {
-            SettingsStore.DEFAULT_DNS
+            listOf(SettingsStore.DEFAULT_DNS)
         }
 
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
@@ -120,7 +121,7 @@ class Hysteria2VpnService : VpnService() {
             return
         }
 
-        val pfd = establishTunnel(excluded, dnsServer)
+        val pfd = establishTunnel(excluded, dnsServers)
         if (pfd == null) {
             fail(getString(R.string.error_establish))
             return
@@ -150,13 +151,22 @@ class Hysteria2VpnService : VpnService() {
         Log.d(TAG, "Tunnel established")
     }
 
-    private fun establishTunnel(excluded: Set<String>, dnsServer: String): ParcelFileDescriptor? = try {
+    private fun establishTunnel(excluded: Set<String>, dnsServers: List<String>): ParcelFileDescriptor? = try {
         val builder = Builder()
             .setMtu(MTU)
             .addAddress(TUN_IPV4, TUN_PREFIX)
-            .addDnsServer(dnsServer)
-            .addRoute("0.0.0.0", 0)
-            .addDisallowedApplication(packageName)
+            .addAddress(TUN_IPV6, TUN_PREFIX6)
+        for (dns in dnsServers) {
+            if (dns.isBlank()) continue
+            try {
+                builder.addDnsServer(dns)
+            } catch (_: Exception) {
+                // Not a numeric address; skip.
+            }
+        }
+        builder.addRoute("0.0.0.0", 0)
+        builder.addRoute("::", 0)
+        builder.addDisallowedApplication(packageName)
         for (pkg in excluded) {
             try {
                 builder.addDisallowedApplication(pkg)
@@ -247,9 +257,6 @@ class Hysteria2VpnService : VpnService() {
     private fun startStatsPolling() {
         statsJob?.cancel()
         statsJob = serviceScope.launch {
-            var prevTx = 0L
-            var prevRx = 0L
-            var tick = 0
             while (isActive) {
                 val values = try {
                     getTun2socksStats()
@@ -257,17 +264,7 @@ class Hysteria2VpnService : VpnService() {
                     null
                 }
                 if (values != null && values.size >= 2) {
-                    val tx = values[0]
-                    val rx = values[1]
-                    TunnelStatus.setStats(tx, rx)
-                    val dTx = (tx - prevTx).coerceAtLeast(0L)
-                    val dRx = (rx - prevRx).coerceAtLeast(0L)
-                    prevTx = tx
-                    prevRx = rx
-                    latestSpeedText = "\u2191 " +
-                        Formatter.formatFileSize(this@Hysteria2VpnService, dTx) + "/s   \u2193 " +
-                        Formatter.formatFileSize(this@Hysteria2VpnService, dRx) + "/s"
-                    if (tick++ % 2 == 0) refreshNotification()
+                    TunnelStatus.setStats(values[0], values[1])
                 }
                 delay(STATS_INTERVAL_MS)
             }
@@ -390,12 +387,7 @@ class Hysteria2VpnService : VpnService() {
     private fun refreshNotification() {
         if (shuttingDown) return
         val text = when (TunnelStatus.state.value) {
-            TunnelState.Connected ->
-                if (latestSpeedText.isBlank()) {
-                    getString(R.string.status_connected)
-                } else {
-                    getString(R.string.status_connected) + "  \u00b7  " + latestSpeedText
-                }
+            TunnelState.Connected -> getString(R.string.status_connected)
             TunnelState.Connecting -> getString(R.string.status_connecting)
             TunnelState.Disconnecting -> getString(R.string.status_disconnecting)
             else -> return
@@ -411,6 +403,9 @@ class Hysteria2VpnService : VpnService() {
         const val ACTION_START_VPN = "us.leaf3stones.hy2droid.proxy.ACTION_START_VPN"
         const val ACTION_STOP_VPN = "us.leaf3stones.hy2droid.proxy.ACTION_STOP_VPN"
 
+        /** The action Android sends when starting the service for always-on VPN. */
+        private const val SYS_SYSTEM_VPN = "android.net.VpnService"
+
         /** The active Hysteria config file name under `filesDir`. */
         const val HYSTERIA_CONFIG_FILE = "hysteria.yaml"
 
@@ -418,6 +413,8 @@ class Hysteria2VpnService : VpnService() {
         private const val MTU = 1500
         private const val TUN_IPV4 = "10.0.88.88"
         private const val TUN_PREFIX = 16
+        private const val TUN_IPV6 = "fc00::1"
+        private const val TUN_PREFIX6 = 64
         private const val DNS_SERVER = "1.0.0.1"
         private const val STATS_INTERVAL_MS = 1000L
         private const val CHANNEL_ID = "hy2droid_vpn"

@@ -1,18 +1,24 @@
 package us.leaf3stones.hy2droid.ui
 
+import android.net.InetAddresses
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -25,6 +31,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,8 +42,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import us.leaf3stones.hy2droid.R
+
+/** Returns true when [value] is a numeric IPv4 or IPv6 address. */
+private fun isValidIp(value: String): Boolean {
+    val trimmed = value.trim()
+    if (trimmed.isEmpty()) return false
+    return try {
+        InetAddresses.isNumericAddress(trimmed)
+    } catch (_: Exception) {
+        false
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,11 +66,28 @@ fun SettingsScreen(
 ) {
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val dnsEnabled by viewModel.customDnsEnabled.collectAsState()
-    val dnsServer by viewModel.customDnsServer.collectAsState()
-    var dnsText by remember { mutableStateOf("") }
-    LaunchedEffect(dnsServer) {
-        if (dnsText.isBlank()) dnsText = dnsServer
+    val dns1 by viewModel.customDnsServer.collectAsState()
+    val dns2 by viewModel.customDnsServer2.collectAsState()
+
+    var dns1Text by remember { mutableStateOf("") }
+    var dns2Text by remember { mutableStateOf("") }
+    var dnsInitialized by remember { mutableStateOf(false) }
+    LaunchedEffect(dns1, dns2) {
+        if (!dnsInitialized) {
+            dns1Text = dns1
+            dns2Text = dns2
+            dnsInitialized = true
+        }
     }
+
+    // Requirement: leaving the Settings screen turns the custom-DNS switch off.
+    DisposableEffect(Unit) {
+        onDispose { viewModel.setCustomDnsEnabled(false) }
+    }
+
+    val dns1Valid = isValidIp(dns1Text)
+    val dns2Valid = dns2Text.isBlank() || isValidIp(dns2Text)
+    val dnsSavable = dns1Valid && dns2Valid
 
     Scaffold(
         topBar = {
@@ -71,90 +107,155 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            SwitchSetting(
+            SectionHeader(stringResource(R.string.settings_section_appearance))
+            SwitchRow(
+                icon = Icons.Filled.Palette,
                 title = stringResource(R.string.settings_dynamic_color),
+                subtitle = null,
                 checked = dynamicColor,
                 onCheckedChange = viewModel::setDynamicColor,
             )
             HorizontalDivider()
-            ClickSetting(
-                title = stringResource(R.string.split_tunnel_title),
+            SectionHeader(stringResource(R.string.settings_section_network))
+            ClickRow(
                 icon = Icons.Filled.Apps,
+                title = stringResource(R.string.split_tunnel_title),
+                subtitle = stringResource(R.string.split_tunnel_summary),
                 onClick = onOpenSplitTunnel,
             )
             HorizontalDivider()
-            SwitchSetting(
+            SwitchRow(
+                icon = Icons.Filled.Dns,
                 title = stringResource(R.string.settings_custom_dns),
+                subtitle = stringResource(R.string.settings_custom_dns_summary),
                 checked = dnsEnabled,
                 onCheckedChange = viewModel::setCustomDnsEnabled,
             )
             if (dnsEnabled) {
-                OutlinedTextField(
-                    value = dnsText,
-                    onValueChange = { dnsText = it.trim() },
-                    label = { Text(stringResource(R.string.settings_dns_server)) },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-                Text(
-                    text = stringResource(R.string.settings_dns_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-                Button(
-                    onClick = { viewModel.setCustomDnsServer(dnsText.ifBlank { "1.0.0.1" }) },
-                    modifier = Modifier.padding(16.dp),
-                ) {
-                    Text(stringResource(R.string.action_save))
+                Column(Modifier.padding(horizontal = 16.dp)) {
+                    OutlinedTextField(
+                        value = dns1Text,
+                        onValueChange = { dns1Text = it.trim() },
+                        label = { Text(stringResource(R.string.settings_dns_primary)) },
+                        singleLine = true,
+                        isError = !dns1Valid,
+                        supportingText = {
+                            if (!dns1Valid) {
+                                Text(stringResource(R.string.settings_dns_invalid))
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = dns2Text,
+                        onValueChange = { dns2Text = it.trim() },
+                        label = { Text(stringResource(R.string.settings_dns_secondary)) },
+                        singleLine = true,
+                        isError = !dns2Valid,
+                        supportingText = {
+                            if (!dns2Valid) {
+                                Text(stringResource(R.string.settings_dns_invalid))
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            viewModel.setCustomDnsServer(dns1Text)
+                            viewModel.setCustomDnsServer2(dns2Text)
+                            viewModel.setCustomDnsEnabled(true)
+                        },
+                        enabled = dnsSavable,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.action_save))
+                    }
+                    Spacer(Modifier.height(8.dp))
                 }
             }
+            HorizontalDivider()
         }
     }
 }
 
 @Composable
-private fun SwitchSetting(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+    )
+}
+
+@Composable
+private fun SwitchRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .heightIn(min = 72.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(
+            Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
+        ) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
 @Composable
-private fun ClickSetting(title: String, icon: ImageVector, onClick: () -> Unit) {
+private fun ClickRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String?,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 72.dp)
             .clickable(onClick = onClick)
-            .heightIn(min = 56.dp)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(
+            Modifier
                 .weight(1f)
                 .padding(start = 16.dp),
-        )
+        ) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         Icon(
             imageVector = Icons.Filled.ChevronRight,
             contentDescription = null,

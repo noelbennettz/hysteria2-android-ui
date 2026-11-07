@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -55,7 +57,7 @@ fun EditProfileScreen(
     var tx by remember { mutableStateOf(initial?.txMbps?.takeIf { it > 0 }?.toString().orEmpty()) }
     var rx by remember { mutableStateOf(initial?.rxMbps?.takeIf { it > 0 }?.toString().orEmpty()) }
     var insecure by remember { mutableStateOf(initial?.insecure ?: false) }
-    var fastOpen by remember { mutableStateOf(initial?.fastOpen ?: true) }
+    var fastOpen by remember { mutableStateOf(initial?.fastOpen ?: false) }
     var importLink by remember { mutableStateOf("") }
 
     val valid = server.isNotBlank() && auth.isNotBlank()
@@ -102,7 +104,10 @@ fun EditProfileScreen(
                             insecure = p.insecure
                         }
                     },
-                    modifier = Modifier.padding(start = 8.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .height(56.dp),
                 ) {
                     Text(stringResource(R.string.action_import))
                 }
