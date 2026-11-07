@@ -1,5 +1,7 @@
 package us.leaf3stones.hy2droid.ui
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -38,7 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.google.zxing.BarcodeFormat
-import com.journeyapps.barcodescanner.BarcodeEncoder
+import com.google.zxing.qrcode.QRCodeWriter
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.HysteriaUri
 import us.leaf3stones.hy2droid.data.Profile
@@ -132,7 +134,15 @@ fun ShareDialog(profile: Profile, onDismiss: () -> Unit) {
     val link = remember(profile) { HysteriaUri.build(profile) }
     val qrBitmap = remember(link) {
         runCatching {
-            BarcodeEncoder().encodeBitmap(link, BarcodeFormat.QR_CODE, 512, 512)
+            val size = 512
+            val matrix = QRCodeWriter().encode(link, BarcodeFormat.QR_CODE, size, size)
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            for (x in 0 until size) {
+                for (y in 0 until size) {
+                    bitmap.setPixel(x, y, if (matrix[x, y]) Color.BLACK else Color.WHITE)
+                }
+            }
+            bitmap
         }.getOrNull()
     }
     AlertDialog(

@@ -60,6 +60,7 @@ object HysteriaConfigBuilder {
         sb.append("http:\n")
         sb.append("  listen: 127.0.0.1:").append(httpPort).append('\n')
         sb.append("fastOpen: ").append(profile.fastOpen).append('\n')
+        sb.append("lazy: true\n")
         sb.append("quic:\n")
         sb.append("  maxIdleTimeout: 30s\n")
         sb.append("  keepAlivePeriod: 20s\n")

@@ -1,7 +1,6 @@
 package us.leaf3stones.hy2droid.ui
 
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,14 +12,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,8 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.HysteriaUri
 import us.leaf3stones.hy2droid.data.Profile
@@ -63,17 +62,22 @@ fun HomeScreen(
         tunnelState is TunnelState.Connecting ||
         tunnelState is TunnelState.Disconnecting
 
-    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
-        val contents = result.contents
-        if (contents != null) {
-            val profile = HysteriaUri.parse(contents)
-            if (profile != null) {
-                viewModel.save(profile)
-                Toast.makeText(context, R.string.import_success, Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, R.string.import_invalid, Toast.LENGTH_SHORT).show()
-            }
+    fun handleScanResult(contents: String?) {
+        if (contents.isNullOrBlank()) return
+        val profile = HysteriaUri.parse(contents)
+        if (profile != null) {
+            viewModel.save(profile)
+            Toast.makeText(context, R.string.import_success, Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, R.string.import_invalid, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun startScan() {
+        GmsBarcodeScanning.getClient(context)
+            .startScan()
+            .addOnSuccessListener { barcode -> handleScanResult(barcode.rawValue) }
+            .addOnFailureListener { /* cancelled or failed; ignore */ }
     }
 
     Scaffold(
@@ -81,8 +85,11 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
-                    TextButton(onClick = { scanLauncher.launch(ScanOptions()) }) {
-                        Text(stringResource(R.string.action_scan_import))
+                    IconButton(onClick = { startScan() }) {
+                        Icon(
+                            imageVector = Icons.Filled.QrCodeScanner,
+                            contentDescription = stringResource(R.string.action_scan_import),
+                        )
                     }
                 },
             )
@@ -93,23 +100,28 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (selectedProfile != null) {
-                    ExtendedFloatingActionButton(
+                    FloatingActionButton(
                         onClick = {
                             if (active) onDisconnect() else onConnect(selectedProfile)
                         },
                         containerColor = if (active) {
-                            MaterialTheme.colorScheme.errorContainer
-                        } else {
                             MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
                         },
-                        content = {
-                            Text(
-                                stringResource(
-                                    if (active) R.string.action_disconnect else R.string.action_connect,
-                                ),
-                            )
-                        },
-                    )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PowerSettingsNew,
+                            contentDescription = stringResource(
+                                if (active) R.string.action_disconnect else R.string.action_connect,
+                            ),
+                            tint = if (active) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
                 }
                 FloatingActionButton(onClick = onAdd) {
                     Icon(
