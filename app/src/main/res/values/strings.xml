@@ -63,7 +63,7 @@
     <string name="settings_dynamic_color">Dynamic color (Material You)</string>
     <string name="settings_custom_dns">Custom DNS server</string>
     <string name="settings_dns_server">DNS server IP</string>
-    <string name="settings_dns_note">Used as the VPN DNS server. DoH/DoT are not supported yet (requires a built-in resolver).</string>
+    <string name="settings_dns_note">Used as the VPN DNS server (plain DNS through the tunnel).</string>
 
     <!-- Errors -->
     <string name="error_no_config">No configuration found. Open the app and connect again.</string>

@@ -1,6 +1,7 @@
 package us.leaf3stones.hy2droid.proxy
 
 import android.app.NotificationChannel
+import android.app.PendingIntent
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -23,7 +24,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
+import us.leaf3stones.hy2droid.data.ProfileStore
 import us.leaf3stones.hy2droid.data.SettingsStore
+import us.leaf3stones.hy2droid.ui.MainActivity
 import java.io.File
 import java.util.Scanner
 
@@ -67,23 +71,10 @@ class Hysteria2VpnService : VpnService() {
             }
 
             ACTION_START_VPN, null -> {
-                // A null intent means the system restarted us after the process was
-                // killed while connected: resume only if the user wanted it connected.
+                // System-initiated start (always-on VPN or process-death restart): auto
+                // connect the last selected profile, rebuilding the config if needed.
                 startForegroundSafely()
-                serviceScope.launch {
-                    val shouldRun = intent != null ||
-                        (try {
-                            SettingsStore(applicationContext).desiredConnected.first()
-                        } catch (_: Exception) {
-                            false
-                        })
-                    if (shouldRun) {
-                        startTunnel()
-                    } else {
-                        stopForegroundSafely()
-                        stopSelf()
-                    }
-                }
+                serviceScope.launch { startTunnel() }
                 return START_STICKY
             }
 
@@ -116,7 +107,7 @@ class Hysteria2VpnService : VpnService() {
         }
 
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
-        if (!configFile.exists()) {
+        if (!ensureConfigFile(configFile)) {
             fail(getString(R.string.error_no_config))
             return
         }
@@ -177,6 +168,30 @@ class Hysteria2VpnService : VpnService() {
     } catch (e: Exception) {
         Log.e(TAG, "establish() failed", e)
         null
+    }
+
+    /** Ensure `hysteria.yaml` exists, rebuilding it from the selected profile if missing. */
+    private suspend fun ensureConfigFile(configFile: File): Boolean {
+        if (configFile.exists()) return true
+        val store = ProfileStore(applicationContext)
+        val profiles = try {
+            store.profiles.first()
+        } catch (_: Exception) {
+            emptyList()
+        }
+        if (profiles.isEmpty()) return false
+        val selectedId = try {
+            store.selectedId.first()
+        } catch (_: Exception) {
+            null
+        }
+        val profile = profiles.firstOrNull { it.id == selectedId } ?: profiles.last()
+        return try {
+            configFile.writeText(HysteriaConfigBuilder.build(profile))
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun launchCore(configFile: File): Process? = try {
@@ -346,15 +361,30 @@ class Hysteria2VpnService : VpnService() {
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
     }
 
-    private fun buildNotification(text: String): Notification =
-        NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun buildNotification(text: String): Notification {
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+        val stopIntent = PendingIntent.getService(
+            this,
+            1,
+            Intent(this, Hysteria2VpnService::class.java).setAction(ACTION_STOP_VPN),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.notification_title))
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_vpn_connection)
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setContentIntent(contentIntent)
+            .addAction(R.drawable.ic_vpn_connection, getString(R.string.action_disconnect), stopIntent)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
+    }
 
     /** Update the ongoing notification with the current state / speed (no-op when idle). */
     private fun refreshNotification() {

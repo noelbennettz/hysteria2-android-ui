@@ -13,13 +13,18 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -77,23 +82,41 @@ fun QrScannerScreen(onResult: (String) -> Unit, onCancel: () -> Unit) {
                 modifier = Modifier.align(Alignment.Center).padding(24.dp),
             )
         }
-        Text(
-            text = stringResource(R.string.scan_hint),
-            color = Color.White,
-            style = MaterialTheme.typography.bodyLarge,
+        // Top bar with hint + close, kept inside the status bar safe area.
+        Row(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 48.dp, start = 24.dp, end = 24.dp),
-        )
-        IconButton(
-            onClick = onCancel,
-            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = stringResource(R.string.action_close),
-                tint = Color.White,
+            Text(
+                text = stringResource(R.string.scan_hint),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp),
             )
+            IconButton(onClick = onCancel) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.action_close),
+                    tint = Color.White,
+                )
+            }
+        }
+
+        // A clearly reachable Cancel button above the navigation bar.
+        OutlinedButton(
+            onClick = onCancel,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 32.dp),
+        ) {
+            Text(stringResource(R.string.action_close), color = Color.White)
         }
     }
 }
