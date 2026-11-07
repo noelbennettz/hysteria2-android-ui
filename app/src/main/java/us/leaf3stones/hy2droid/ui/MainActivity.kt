@@ -3,6 +3,7 @@ package us.leaf3stones.hy2droid.ui
 import android.app.Activity
 import android.net.VpnService
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -16,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.HysteriaUri
 import us.leaf3stones.hy2droid.data.Profile
 import us.leaf3stones.hy2droid.ui.theme.Hy2droidTheme
 
@@ -40,6 +43,7 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
         var pendingProfile by remember { mutableStateOf<Profile?>(null) }
         var splitTunnelOpen by remember { mutableStateOf(false) }
         var settingsOpen by remember { mutableStateOf(false) }
+        var scannerOpen by remember { mutableStateOf(false) }
 
         val vpnPermissionLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.StartActivityForResult(),
@@ -61,6 +65,19 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
         }
 
         when {
+            scannerOpen -> QrScannerScreen(
+                onResult = { text ->
+                    scannerOpen = false
+                    val profile = HysteriaUri.parse(text)
+                    if (profile != null) {
+                        vm.save(profile)
+                        Toast.makeText(context, R.string.import_success, Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, R.string.import_invalid, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onCancel = { scannerOpen = false },
+            )
             editorOpen -> EditProfileScreen(
                 initial = editing,
                 onSave = { profile ->
@@ -95,6 +112,7 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
                 onConnect = ::requestConnect,
                 onDisconnect = vm::disconnect,
                 onOpenSettings = { settingsOpen = true },
+                onScan = { scannerOpen = true },
             )
         }
     }

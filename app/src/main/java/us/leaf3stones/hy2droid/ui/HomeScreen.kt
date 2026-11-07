@@ -1,6 +1,5 @@
 package us.leaf3stones.hy2droid.ui
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,12 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import us.leaf3stones.hy2droid.R
-import us.leaf3stones.hy2droid.data.HysteriaUri
 import us.leaf3stones.hy2droid.data.Profile
 import us.leaf3stones.hy2droid.proxy.TunnelState
 
@@ -50,6 +46,7 @@ fun HomeScreen(
     onConnect: (Profile) -> Unit,
     onDisconnect: () -> Unit,
     onOpenSettings: () -> Unit,
+    onScan: () -> Unit,
 ) {
     val profiles by viewModel.profiles.collectAsState()
     val selectedId by viewModel.selectedId.collectAsState()
@@ -64,24 +61,6 @@ fun HomeScreen(
         tunnelState is TunnelState.Connecting ||
         tunnelState is TunnelState.Disconnecting
 
-    fun handleScanResult(contents: String?) {
-        if (contents.isNullOrBlank()) return
-        val profile = HysteriaUri.parse(contents)
-        if (profile != null) {
-            viewModel.save(profile)
-            Toast.makeText(context, R.string.import_success, Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, R.string.import_invalid, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun startScan() {
-        GmsBarcodeScanning.getClient(context)
-            .startScan()
-            .addOnSuccessListener { barcode -> handleScanResult(barcode.rawValue) }
-            .addOnFailureListener { /* cancelled or failed; ignore */ }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -93,7 +72,7 @@ fun HomeScreen(
                             contentDescription = stringResource(R.string.settings_title),
                         )
                     }
-                    IconButton(onClick = { startScan() }) {
+                    IconButton(onClick = onScan) {
                         Icon(
                             imageVector = Icons.Filled.QrCodeScanner,
                             contentDescription = stringResource(R.string.action_scan_import),
