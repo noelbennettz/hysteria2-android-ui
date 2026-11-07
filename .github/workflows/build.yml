@@ -19,7 +19,17 @@ jobs:
           java-version: '17'
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          set +e
+          ./gradlew assembleDebug --no-daemon --stacktrace --console=plain 2>&1 | tee /tmp/build.log
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Gradle build failed (exit $rc); surfacing compiler errors:"
+            grep -E '^e: |error:|What went wrong|Caused by|> Task .* FAILED' /tmp/build.log | tail -n 40 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit "$rc"
+          fi
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -27,3 +37,4 @@ jobs:
           name: hy2droid-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
