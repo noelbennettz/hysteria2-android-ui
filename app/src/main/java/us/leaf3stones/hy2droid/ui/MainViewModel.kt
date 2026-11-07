@@ -42,6 +42,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { store.delete(id) }
     }
 
+    fun select(id: String) {
+        viewModelScope.launch { store.select(id) }
+    }
+
     /** Persist [profile] as the selected profile and bring the tunnel up for it. */
     fun connect(profile: Profile) {
         viewModelScope.launch {
