@@ -3,11 +3,13 @@ package us.leaf3stones.hy2droid.proxy
 import android.app.NotificationChannel
 import android.app.PendingIntent
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import android.app.Notification
@@ -89,7 +91,7 @@ class Hysteria2VpnService : VpnService() {
             return
         }
         shuttingDown = false
-        TunnelStatus.setState(TunnelState.Connecting)
+        updateState(TunnelState.Connecting)
 
         val settings = SettingsStore(applicationContext)
         val excluded = try {
@@ -150,10 +152,27 @@ class Hysteria2VpnService : VpnService() {
             return
         }
 
-        TunnelStatus.setState(TunnelState.Connected)
+        updateState(TunnelState.Connected)
         startStatsPolling()
         refreshNotification()
         Log.d(TAG, "Tunnel established")
+    }
+
+    /** Set the tunnel state and ask the Quick Settings tile to refresh its appearance. */
+    private fun updateState(state: TunnelState) {
+        TunnelStatus.setState(state)
+        requestTileRefresh()
+    }
+
+    private fun requestTileRefresh() {
+        try {
+            TileService.requestListeningState(
+                applicationContext,
+                ComponentName(applicationContext, VpnTileService::class.java),
+            )
+        } catch (_: Throwable) {
+            // Tile not added / not listening; nothing to do.
+        }
     }
 
     private fun establishTunnel(excluded: Set<String>, dnsServers: List<String>): ParcelFileDescriptor? = try {
@@ -253,7 +272,7 @@ class Hysteria2VpnService : VpnService() {
         Log.w(TAG, "Core exited unexpectedly with code $exit")
         serviceScope.launch {
             teardown()
-            TunnelStatus.setState(TunnelState.Error(getString(R.string.error_core_exited, exit)))
+            updateState(TunnelState.Error(getString(R.string.error_core_exited, exit)))
             stopForegroundSafely()
             stopSelf()
         }
@@ -278,9 +297,9 @@ class Hysteria2VpnService : VpnService() {
 
     private fun stopTunnel() {
         shuttingDown = true
-        TunnelStatus.setState(TunnelState.Disconnecting)
+        updateState(TunnelState.Disconnecting)
         teardown()
-        TunnelStatus.setState(TunnelState.Idle)
+        updateState(TunnelState.Idle)
         stopForegroundSafely()
         stopSelf()
     }
@@ -288,7 +307,7 @@ class Hysteria2VpnService : VpnService() {
     private fun fail(message: String) {
         Log.e(TAG, message)
         teardown()
-        TunnelStatus.setState(TunnelState.Error(message))
+        updateState(TunnelState.Error(message))
         stopForegroundSafely()
         stopSelf()
     }

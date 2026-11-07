@@ -37,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,9 +81,21 @@ fun SettingsScreen(
         }
     }
 
-    // Requirement: leaving the Settings screen turns the custom-DNS switch off.
+    // Option A: only turn the custom-DNS switch off when leaving with an
+    // invalid / unsaved configuration; a valid saved config persists.
+    val enabledState = rememberUpdatedState(dnsEnabled)
+    val dns1State = rememberUpdatedState(dns1Text)
+    val dns2State = rememberUpdatedState(dns2Text)
     DisposableEffect(Unit) {
-        onDispose { viewModel.setCustomDnsEnabled(false) }
+        onDispose {
+            if (enabledState.value) {
+                val ok1 = isValidIp(dns1State.value)
+                val ok2 = dns2State.value.isBlank() || isValidIp(dns2State.value)
+                if (!(ok1 && ok2)) {
+                    viewModel.setCustomDnsEnabled(false)
+                }
+            }
+        }
     }
 
     val dns1Valid = isValidIp(dns1Text)
