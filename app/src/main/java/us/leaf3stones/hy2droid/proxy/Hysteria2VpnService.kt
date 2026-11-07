@@ -68,9 +68,22 @@ class Hysteria2VpnService : VpnService() {
 
             ACTION_START_VPN, null -> {
                 // A null intent means the system restarted us after the process was
-                // killed while connected: resume from the persisted config files.
+                // killed while connected: resume only if the user wanted it connected.
                 startForegroundSafely()
-                serviceScope.launch { startTunnel() }
+                serviceScope.launch {
+                    val shouldRun = intent != null ||
+                        (try {
+                            SettingsStore(applicationContext).desiredConnected.first()
+                        } catch (_: Exception) {
+                            false
+                        })
+                    if (shouldRun) {
+                        startTunnel()
+                    } else {
+                        stopForegroundSafely()
+                        stopSelf()
+                    }
+                }
                 return START_STICKY
             }
 
@@ -90,10 +103,16 @@ class Hysteria2VpnService : VpnService() {
         shuttingDown = false
         TunnelStatus.setState(TunnelState.Connecting)
 
+        val settings = SettingsStore(applicationContext)
         val excluded = try {
-            SettingsStore(applicationContext).excluded.first()
+            settings.excluded.first()
         } catch (_: Exception) {
             emptySet()
+        }
+        val dnsServer = try {
+            if (settings.customDnsEnabled.first()) settings.customDnsServer.first() else SettingsStore.DEFAULT_DNS
+        } catch (_: Exception) {
+            SettingsStore.DEFAULT_DNS
         }
 
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
@@ -110,7 +129,7 @@ class Hysteria2VpnService : VpnService() {
             return
         }
 
-        val pfd = establishTunnel(excluded)
+        val pfd = establishTunnel(excluded, dnsServer)
         if (pfd == null) {
             fail(getString(R.string.error_establish))
             return
@@ -140,11 +159,11 @@ class Hysteria2VpnService : VpnService() {
         Log.d(TAG, "Tunnel established")
     }
 
-    private fun establishTunnel(excluded: Set<String>): ParcelFileDescriptor? = try {
+    private fun establishTunnel(excluded: Set<String>, dnsServer: String): ParcelFileDescriptor? = try {
         val builder = Builder()
             .setMtu(MTU)
             .addAddress(TUN_IPV4, TUN_PREFIX)
-            .addDnsServer(DNS_SERVER)
+            .addDnsServer(dnsServer)
             .addRoute("0.0.0.0", 0)
             .addDisallowedApplication(packageName)
         for (pkg in excluded) {

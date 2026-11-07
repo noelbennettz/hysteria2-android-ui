@@ -28,13 +28,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val configFile = File(app.filesDir, Hysteria2VpnService.HYSTERIA_CONFIG_FILE)
 
     val profiles: StateFlow<List<Profile>> = store.profiles
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val selectedId: StateFlow<String?> = store.selectedId
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val excludedPackages: StateFlow<Set<String>> = settings.excluded
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    val dynamicColor: StateFlow<Boolean> = settings.dynamicColor
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val customDnsEnabled: StateFlow<Boolean> = settings.customDnsEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val customDnsServer: StateFlow<String> = settings.customDnsServer
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsStore.DEFAULT_DNS)
 
     val tunnelState: StateFlow<TunnelState> = TunnelStatus.state
     val stats: StateFlow<TunnelStats> = TunnelStatus.stats
@@ -55,10 +64,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setExcluded(packages) }
     }
 
+    fun setDynamicColor(enabled: Boolean) {
+        viewModelScope.launch { settings.setDynamicColor(enabled) }
+    }
+
+    fun setCustomDnsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settings.setCustomDnsEnabled(enabled) }
+    }
+
+    fun setCustomDnsServer(server: String) {
+        viewModelScope.launch { settings.setCustomDnsServer(server) }
+    }
+
     /** Persist [profile] as the selected profile and bring the tunnel up for it. */
     fun connect(profile: Profile) {
         viewModelScope.launch {
             store.select(profile.id)
+            settings.setDesiredConnected(true)
             val yaml = HysteriaConfigBuilder.build(profile)
             withContext(Dispatchers.IO) { configFile.writeText(yaml) }
             val intent = Intent(getApplication<Application>(), Hysteria2VpnService::class.java)
@@ -69,6 +91,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Ask the running service to tear the tunnel down. */
     fun disconnect() {
+        viewModelScope.launch { settings.setDesiredConnected(false) }
         val intent = Intent(getApplication<Application>(), Hysteria2VpnService::class.java)
             .setAction(Hysteria2VpnService.ACTION_STOP_VPN)
         getApplication<Application>().startService(intent)

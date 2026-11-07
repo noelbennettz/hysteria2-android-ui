@@ -56,6 +56,13 @@
     <string name="split_tunnel_title">Split tunneling</string>
     <string name="split_tunnel_hint">Turn on an app to route it OUTSIDE the VPN (bypass).</string>
 
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_dynamic_color">Dynamic color (Material You)</string>
+    <string name="settings_custom_dns">Custom DNS server</string>
+    <string name="settings_dns_server">DNS server IP</string>
+    <string name="settings_dns_note">Used as the VPN DNS server. DoH/DoT are not supported yet (requires a built-in resolver).</string>
+
     <!-- Errors -->
     <string name="error_no_config">No configuration found. Open the app and connect again.</string>
     <string name="error_tun2socks_config">Failed to write tun2socks config: %1$s</string>
