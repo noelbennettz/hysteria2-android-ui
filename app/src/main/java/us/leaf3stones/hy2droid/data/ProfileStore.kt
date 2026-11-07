@@ -47,7 +47,10 @@ class ProfileStore(private val context: Context) {
         context.profileDataStore.edit { prefs ->
             val list = decodeList(prefs[keyProfiles]).filterNot { it.id == id }
             prefs[keyProfiles] = encodeList(list)
-            if (prefs[keySelected] == id) prefs[keySelected] = list.firstOrNull()?.id
+            if (prefs[keySelected] == id) {
+                val next = list.firstOrNull()?.id
+                if (next == null) prefs.remove(keySelected) else prefs[keySelected] = next
+            }
         }
     }
 
