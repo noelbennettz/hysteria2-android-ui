@@ -21,7 +21,7 @@ jobs:
       - name: Build debug APK
         run: |
           set +e
-          ./gradlew assembleDebug --no-daemon --stacktrace --console=plain 2>&1 | tee /tmp/build.log
+          ./gradlew testDebugUnitTest assembleDebug --no-daemon --stacktrace --console=plain 2>&1 | tee /tmp/build.log
           rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
             echo "::error::Gradle build failed (exit $rc); surfacing compiler errors:"
