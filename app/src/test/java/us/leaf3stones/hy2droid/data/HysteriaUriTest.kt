@@ -14,7 +14,8 @@ class HysteriaUriTest {
         )
 
         requireNotNull(profile)
-        assertEquals("example.com:8443", profile.server)
+        assertEquals("example.com", profile.server)
+        assertEquals(8443, profile.port)
         assertEquals("mypass", profile.auth)
         assertEquals("sni.example.com", profile.sni)
         assertEquals("ob", profile.obfsPassword)
@@ -27,7 +28,8 @@ class HysteriaUriTest {
         val profile = HysteriaUri.parse("hysteria2://pass@host.example:443")
 
         requireNotNull(profile)
-        assertEquals("host.example:443", profile.server)
+        assertEquals("host.example", profile.server)
+        assertEquals(443, profile.port)
         assertEquals("pass", profile.auth)
         assertEquals("", profile.sni)
         assertEquals("", profile.obfsPassword)
@@ -45,7 +47,7 @@ class HysteriaUriTest {
         val profile = Profile(
             id = "1",
             name = "Node",
-            server = "example.com:443",
+            server = "example.com",
             auth = "pass word",
             sni = "s",
             obfsPassword = "o",

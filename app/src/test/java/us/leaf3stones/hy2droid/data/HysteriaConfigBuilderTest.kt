@@ -12,7 +12,8 @@ class HysteriaConfigBuilderTest {
         val profile = Profile(
             id = "1",
             name = "Home",
-            server = "example.com:443",
+            server = "example.com",
+            port = 8443,
             auth = "secret",
             sni = "sni.example.com",
             obfsPassword = "obfspass",
@@ -24,7 +25,7 @@ class HysteriaConfigBuilderTest {
 
         val yaml = HysteriaConfigBuilder.build(profile)
 
-        assertTrue(yaml.contains("server: \"example.com:443\""))
+        assertTrue(yaml.contains("server: \"example.com:8443\""))
         assertTrue(yaml.contains("auth: \"secret\""))
         assertTrue(yaml.contains("type: salamander"))
         assertTrue(yaml.contains("password: \"obfspass\""))

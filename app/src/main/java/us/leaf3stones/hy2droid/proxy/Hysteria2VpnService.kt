@@ -148,7 +148,15 @@ class Hysteria2VpnService : VpnService() {
                 process.inputStream.use { input ->
                     val scanner = Scanner(input)
                     while (!shuttingDown && scanner.hasNextLine()) {
-                        Log.v(CORE_TAG, scanner.nextLine())
+                        val line = scanner.nextLine()
+                        // The core prints a share URI containing the auth + obfs
+                        // password; never let that reach logcat.
+                        val safe = if (line.contains("hysteria2://") || line.contains("obfs-password")) {
+                            "[core log line redacted: contains credentials]"
+                        } else {
+                            line
+                        }
+                        Log.v(CORE_TAG, safe)
                     }
                 }
             } catch (_: Exception) {

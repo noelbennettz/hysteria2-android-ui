@@ -65,7 +65,7 @@ fun ProfileRow(
             Column(Modifier.weight(1f)) {
                 Text(text = profile.name, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = profile.server,
+                    text = profile.authority,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

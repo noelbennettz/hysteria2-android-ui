@@ -86,6 +86,7 @@ class ProfileStore(private val context: Context) {
         put("txMbps", p.txMbps)
         put("rxMbps", p.rxMbps)
         put("fastOpen", p.fastOpen)
+        put("port", p.port)
     }
 
     private fun decode(o: JSONObject): Profile = Profile(
@@ -99,5 +100,6 @@ class ProfileStore(private val context: Context) {
         txMbps = o.optInt("txMbps", 0),
         rxMbps = o.optInt("rxMbps", 0),
         fastOpen = o.optBoolean("fastOpen", true),
+        port = o.optInt("port", 443),
     )
 }

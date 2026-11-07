@@ -50,6 +50,7 @@ fun EditProfileScreen(
     val profileId = remember { initial?.id ?: UUID.randomUUID().toString() }
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
     var server by remember { mutableStateOf(initial?.server.orEmpty()) }
+    var port by remember { mutableStateOf((initial?.port ?: 443).toString()) }
     var auth by remember { mutableStateOf(initial?.auth.orEmpty()) }
     var sni by remember { mutableStateOf(initial?.sni.orEmpty()) }
     var obfs by remember { mutableStateOf(initial?.obfsPassword.orEmpty()) }
@@ -96,6 +97,7 @@ fun EditProfileScreen(
                         HysteriaUri.parse(importLink)?.let { p ->
                             name = p.name
                             server = p.server
+                            port = p.port.toString()
                             auth = p.auth
                             sni = p.sni
                             obfs = p.obfsPassword
@@ -120,6 +122,14 @@ fun EditProfileScreen(
                 onValueChange = { server = it },
                 label = { Text(stringResource(R.string.field_server)) },
                 singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = port,
+                onValueChange = { port = it.filter(Char::isDigit) },
+                label = { Text(stringResource(R.string.field_port)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
@@ -183,6 +193,7 @@ fun EditProfileScreen(
                             id = profileId,
                             name = name.ifBlank { server },
                             server = server.trim(),
+                            port = port.toIntOrNull() ?: 443,
                             auth = auth,
                             sni = sni.trim(),
                             obfsPassword = obfs.trim(),

@@ -38,7 +38,8 @@ object HysteriaUri {
         return Profile(
             id = UUID.randomUUID().toString(),
             name = name,
-            server = "$host:$port",
+            server = host,
+            port = port,
             auth = auth,
             sni = sni,
             obfsPassword = obfsPassword,
@@ -53,7 +54,7 @@ object HysteriaUri {
         if (profile.auth.isNotBlank()) {
             sb.append(encode(profile.auth)).append('@')
         }
-        sb.append(profile.server).append('/')
+        sb.append(profile.authority).append('/')
 
         val query = buildList {
             if (profile.sni.isNotBlank()) add("sni=" + encode(profile.sni))

@@ -25,7 +25,7 @@ object HysteriaConfigBuilder {
         httpPort: Int = DEFAULT_HTTP_PORT,
     ): String {
         val sb = StringBuilder()
-        sb.append("server: ").append(quote(profile.server)).append('\n')
+        sb.append("server: ").append(quote(profile.authority)).append('\n')
         sb.append("auth: ").append(quote(profile.auth)).append('\n')
 
         if (profile.hasObfs) {

@@ -27,10 +27,14 @@ data class Profile(
     val txMbps: Int = 0,
     val rxMbps: Int = 0,
     val fastOpen: Boolean = true,
+    val port: Int = 443,
 ) {
     /** True when Salamander obfuscation is configured. */
     val hasObfs: Boolean get() = obfsPassword.isNotBlank()
 
     /** True when a Brutal bandwidth hint is present (otherwise BBR is used). */
     val hasBandwidth: Boolean get() = txMbps > 0 || rxMbps > 0
+
+    /** `host:port` authority, tolerant of a [server] that already embeds a port. */
+    val authority: String get() = if (server.contains(':')) server else "$server:$port"
 }

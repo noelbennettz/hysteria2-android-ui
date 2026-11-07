@@ -32,7 +32,8 @@
     <string name="action_import">Import</string>
     <string name="field_import_link">Paste hysteria2:// link</string>
     <string name="field_name">Name</string>
-    <string name="field_server">Server (host:port)</string>
+    <string name="field_server">Server (host)</string>
+    <string name="field_port">Port</string>
     <string name="field_auth">Auth / password</string>
     <string name="field_sni">SNI (optional)</string>
     <string name="field_obfs">Obfuscation password (optional)</string>
