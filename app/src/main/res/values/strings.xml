@@ -53,6 +53,9 @@
     <string name="notification_title">Hy2droid running</string>
     <string name="notification_text">Your connection is protected.</string>
 
+    <string name="split_tunnel_title">Split tunneling</string>
+    <string name="split_tunnel_hint">Turn on an app to route it OUTSIDE the VPN (bypass).</string>
+
     <!-- Errors -->
     <string name="error_no_config">No configuration found. Open the app and connect again.</string>
     <string name="error_tun2socks_config">Failed to write tun2socks config: %1$s</string>

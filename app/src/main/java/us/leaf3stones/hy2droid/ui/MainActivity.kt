@@ -37,6 +37,7 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
     var editing by remember { mutableStateOf<Profile?>(null) }
     var editorOpen by remember { mutableStateOf(false) }
     var pendingProfile by remember { mutableStateOf<Profile?>(null) }
+    var splitTunnelOpen by remember { mutableStateOf(false) }
 
     val vpnPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
@@ -70,6 +71,8 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
                 editing = null
             },
         )
+    } else if (splitTunnelOpen) {
+        SplitTunnelScreen(viewModel = vm, onBack = { splitTunnelOpen = false })
     } else {
         HomeScreen(
             viewModel = vm,
@@ -83,6 +86,7 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
             },
             onConnect = ::requestConnect,
             onDisconnect = vm::disconnect,
+            onOpenSplitTunnel = { splitTunnelOpen = true },
         )
     }
 }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
 import us.leaf3stones.hy2droid.data.Profile
 import us.leaf3stones.hy2droid.data.ProfileStore
+import us.leaf3stones.hy2droid.data.SettingsStore
 import us.leaf3stones.hy2droid.proxy.Hysteria2VpnService
 import us.leaf3stones.hy2droid.proxy.TunnelState
 import us.leaf3stones.hy2droid.proxy.TunnelStats
@@ -23,6 +24,7 @@ import java.io.File
 /** Owns the profile list and bridges UI intents to the tunnel service. */
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val store = ProfileStore(app)
+    private val settings = SettingsStore(app)
     private val configFile = File(app.filesDir, Hysteria2VpnService.HYSTERIA_CONFIG_FILE)
 
     val profiles: StateFlow<List<Profile>> = store.profiles
@@ -30,6 +32,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     val selectedId: StateFlow<String?> = store.selectedId
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val excludedPackages: StateFlow<Set<String>> = settings.excluded
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     val tunnelState: StateFlow<TunnelState> = TunnelStatus.state
     val stats: StateFlow<TunnelStats> = TunnelStatus.stats
@@ -44,6 +49,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun select(id: String) {
         viewModelScope.launch { store.select(id) }
+    }
+
+    fun setExcluded(packages: Set<String>) {
+        viewModelScope.launch { settings.setExcluded(packages) }
     }
 
     /** Persist [profile] as the selected profile and bring the tunnel up for it. */

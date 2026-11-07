@@ -9,6 +9,9 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import android.app.Notification
+import android.text.format.Formatter
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,9 +19,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.SettingsStore
 import java.io.File
 import java.util.Scanner
 
@@ -49,6 +54,9 @@ class Hysteria2VpnService : VpnService() {
     @Volatile
     private var shuttingDown = false
 
+    @Volatile
+    private var latestSpeedText = ""
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -74,13 +82,19 @@ class Hysteria2VpnService : VpnService() {
     }
 
     /** Establish the tunnel, launch the core and start tun2socks. Runs on IO. */
-    private fun startTunnel() {
+    private suspend fun startTunnel() {
         if (tunInterface != null) {
             Log.d(TAG, "Tunnel already running; ignoring duplicate start")
             return
         }
         shuttingDown = false
         TunnelStatus.setState(TunnelState.Connecting)
+
+        val excluded = try {
+            SettingsStore(applicationContext).excluded.first()
+        } catch (_: Exception) {
+            emptySet()
+        }
 
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
         if (!configFile.exists()) {
@@ -96,7 +110,7 @@ class Hysteria2VpnService : VpnService() {
             return
         }
 
-        val pfd = establishTunnel()
+        val pfd = establishTunnel(excluded)
         if (pfd == null) {
             fail(getString(R.string.error_establish))
             return
@@ -122,17 +136,25 @@ class Hysteria2VpnService : VpnService() {
 
         TunnelStatus.setState(TunnelState.Connected)
         startStatsPolling()
+        refreshNotification()
         Log.d(TAG, "Tunnel established")
     }
 
-    private fun establishTunnel(): ParcelFileDescriptor? = try {
-        Builder()
+    private fun establishTunnel(excluded: Set<String>): ParcelFileDescriptor? = try {
+        val builder = Builder()
             .setMtu(MTU)
             .addAddress(TUN_IPV4, TUN_PREFIX)
             .addDnsServer(DNS_SERVER)
             .addRoute("0.0.0.0", 0)
             .addDisallowedApplication(packageName)
-            .establish()
+        for (pkg in excluded) {
+            try {
+                builder.addDisallowedApplication(pkg)
+            } catch (_: Exception) {
+                // Package may have been uninstalled between selection and connect.
+            }
+        }
+        builder.establish()
     } catch (e: Exception) {
         Log.e(TAG, "establish() failed", e)
         null
@@ -191,6 +213,9 @@ class Hysteria2VpnService : VpnService() {
     private fun startStatsPolling() {
         statsJob?.cancel()
         statsJob = serviceScope.launch {
+            var prevTx = 0L
+            var prevRx = 0L
+            var tick = 0
             while (isActive) {
                 val values = try {
                     getTun2socksStats()
@@ -198,7 +223,17 @@ class Hysteria2VpnService : VpnService() {
                     null
                 }
                 if (values != null && values.size >= 2) {
-                    TunnelStatus.setStats(values[0], values[1])
+                    val tx = values[0]
+                    val rx = values[1]
+                    TunnelStatus.setStats(tx, rx)
+                    val dTx = (tx - prevTx).coerceAtLeast(0L)
+                    val dRx = (rx - prevRx).coerceAtLeast(0L)
+                    prevTx = tx
+                    prevRx = rx
+                    latestSpeedText = "\u2191 " +
+                        Formatter.formatFileSize(this@Hysteria2VpnService, dTx) + "/s   \u2193 " +
+                        Formatter.formatFileSize(this@Hysteria2VpnService, dRx) + "/s"
+                    if (tick++ % 2 == 0) refreshNotification()
                 }
                 delay(STATS_INTERVAL_MS)
             }
@@ -275,24 +310,48 @@ class Hysteria2VpnService : VpnService() {
             (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
                 .createNotificationChannel(channel)
         }
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.notification_title))
-            .setContentText(getString(R.string.notification_text))
-            .setSmallIcon(R.drawable.ic_vpn_connection)
-            .setOngoing(true)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .build()
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         } else {
             0
         }
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
+        ServiceCompat.startForeground(
+            this,
+            NOTIFICATION_ID,
+            buildNotification(getString(R.string.status_connecting)),
+            type,
+        )
     }
 
     private fun stopForegroundSafely() {
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+    }
+
+    private fun buildNotification(text: String): Notification =
+        NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.notification_title))
+            .setContentText(text)
+            .setSmallIcon(R.drawable.ic_vpn_connection)
+            .setOngoing(true)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .build()
+
+    /** Update the ongoing notification with the current state / speed (no-op when idle). */
+    private fun refreshNotification() {
+        if (shuttingDown) return
+        val text = when (TunnelStatus.state.value) {
+            TunnelState.Connected ->
+                if (latestSpeedText.isBlank()) {
+                    getString(R.string.status_connected)
+                } else {
+                    getString(R.string.status_connected) + "  \u00b7  " + latestSpeedText
+                }
+            TunnelState.Connecting -> getString(R.string.status_connecting)
+            TunnelState.Disconnecting -> getString(R.string.status_disconnecting)
+            else -> return
+        }
+        NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, buildNotification(text))
     }
 
     companion object {
