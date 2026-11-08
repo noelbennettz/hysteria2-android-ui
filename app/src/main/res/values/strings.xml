@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Hy2droid</string>
+    <string name="app_name" translatable="false">Hy2droid</string>
 
     <!-- Home -->
     <string name="profiles_title">Profiles</string>

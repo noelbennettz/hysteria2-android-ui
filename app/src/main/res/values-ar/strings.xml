@@ -1,0 +1,80 @@
+<resources>
+    <!-- Main -->
+    <string name="profiles_title">الملفات الشخصية</string>
+    <string name="empty_profiles">لا توجد ملفات بعد. اضغط + لإضافة واحد.</string>
+    <string name="action_add_profile">إضافة ملف</string>
+    <string name="action_more">مزيد من الخيارات</string>
+    <string name="action_edit">تعديل</string>
+    <string name="action_share">مشاركة</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_disconnect">قطع الاتصال</string>
+    <string name="action_connect">اتصال</string>
+    <string name="action_scan_import">مسح</string>
+    <string name="import_success">تم استيراد الملف</string>
+    <string name="import_invalid">رابط hysteria2 غير صالح</string>
+    <string name="scan_hint">وجّه الكاميرا نحو رمز QR الخاص بمشاركة Hysteria</string>
+    <string name="scan_permission_needed">يلزم إذن الكاميرا لمسح رمز QR.</string>
+
+    <!-- Connection status -->
+    <string name="status_idle">غير متصل</string>
+    <string name="status_connecting">جارٍ الاتصال…</string>
+    <string name="status_connected">متصل</string>
+    <string name="status_disconnecting">جارٍ قطع الاتصال…</string>
+    <string name="status_error">خطأ في الاتصال</string>
+
+    <!-- Share -->
+    <string name="share_title">مشاركة الملف</string>
+    <string name="link_copied">تم نسخ الرابط</string>
+    <string name="action_copy">نسخ</string>
+    <string name="action_close">إغلاق</string>
+
+    <!-- Editor -->
+    <string name="edit_title_add">ملف جديد</string>
+    <string name="edit_title_edit">تعديل الملف</string>
+    <string name="action_save">حفظ</string>
+    <string name="action_back">رجوع</string>
+    <string name="action_import">استيراد</string>
+    <string name="field_import_link">الصق رابط hysteria2://</string>
+    <string name="field_name">الاسم</string>
+    <string name="field_server">الخادم (المضيف)</string>
+    <string name="field_port">المنفذ</string>
+    <string name="field_auth">المصادقة / كلمة المرور</string>
+    <string name="field_sni">SNI (اختياري)</string>
+    <string name="field_obfs">كلمة مرور التمويه (اختياري)</string>
+    <string name="field_tx">الرفع (ميغابت/ث)</string>
+    <string name="field_rx">التنزيل (ميغابت/ث)</string>
+    <string name="field_insecure">السماح بشهادة غير آمنة</string>
+    <string name="field_fast_open">QUIC fast open</string>
+    <string name="bandwidth_hint">اترك عرض النطاق 0 لاستخدام BBR؛ أدخل سرعتك الحقيقية بالميغابت لتفعيل التحكم بالازدحام Brutal.</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">VPN</string>
+    <string name="notification_channel_description">حالة نفق Hysteria 2</string>
+    <string name="notification_title">Hy2droid يعمل</string>
+    <string name="notification_text">اتصالك محمي.</string>
+
+    <string name="split_tunnel_title">النفق المنفصل</string>
+    <string name="split_tunnel_hint">فعّل تطبيقًا ليمر خارج VPN (تجاوز).</string>
+
+    <!-- Settings -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_dynamic_color">ألوان ديناميكية (Material You)</string>
+    <string name="settings_custom_dns">خادم DNS مخصص</string>
+    <string name="settings_dns_server">عنوان IP لخادم DNS</string>
+    <string name="settings_dns_note">يُستخدم كخادم DNS للـ VPN (DNS عادي عبر النفق).</string>
+    <string name="settings_section_appearance">المظهر</string>
+    <string name="settings_section_network">الشبكة</string>
+    <string name="split_tunnel_summary">اختر التطبيقات التي تتجاوز VPN</string>
+    <string name="settings_custom_dns_summary">DNS أساسي وثانوي اختياري</string>
+    <string name="settings_dns_primary">DNS الأساسي</string>
+    <string name="settings_dns_secondary">DNS الثانوي (اختياري)</string>
+    <string name="settings_dns_invalid">أدخل عنوان IPv4 أو IPv6 صالحًا</string>
+
+    <!-- Errors -->
+    <string name="error_no_config">لم يتم العثور على أي إعداد. افتح التطبيق واتصل مرة أخرى.</string>
+    <string name="error_tun2socks_config">تعذّر كتابة إعداد tun2socks: %1$s</string>
+    <string name="error_establish">تعذّر إنشاء واجهة VPN. ربما تم سحب الإذن.</string>
+    <string name="error_core_launch">تعذّر تشغيل نواة Hysteria.</string>
+    <string name="error_tun2socks_start">تعذّر بدء tun2socks: %1$s</string>
+    <string name="error_core_exited">توقفت نواة Hysteria بشكل غير متوقع (الرمز %1$d).</string>
+</resources>

@@ -1,0 +1,80 @@
+<resources>
+    <!-- Main -->
+    <string name="profiles_title">Профили</string>
+    <string name="empty_profiles">Профилей пока нет. Нажмите +, чтобы добавить.</string>
+    <string name="action_add_profile">Добавить профиль</string>
+    <string name="action_more">Ещё</string>
+    <string name="action_edit">Изменить</string>
+    <string name="action_share">Поделиться</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_disconnect">Отключить</string>
+    <string name="action_connect">Подключить</string>
+    <string name="action_scan_import">Сканировать</string>
+    <string name="import_success">Профиль импортирован</string>
+    <string name="import_invalid">Недопустимая ссылка hysteria2</string>
+    <string name="scan_hint">Наведите камеру на QR-код Hysteria</string>
+    <string name="scan_permission_needed">Для сканирования QR-кода нужен доступ к камере.</string>
+
+    <!-- Connection status -->
+    <string name="status_idle">Отключено</string>
+    <string name="status_connecting">Подключение…</string>
+    <string name="status_connected">Подключено</string>
+    <string name="status_disconnecting">Отключение…</string>
+    <string name="status_error">Ошибка подключения</string>
+
+    <!-- Share -->
+    <string name="share_title">Поделиться профилем</string>
+    <string name="link_copied">Ссылка скопирована</string>
+    <string name="action_copy">Копировать</string>
+    <string name="action_close">Закрыть</string>
+
+    <!-- Editor -->
+    <string name="edit_title_add">Новый профиль</string>
+    <string name="edit_title_edit">Изменение профиля</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_back">Назад</string>
+    <string name="action_import">Импорт</string>
+    <string name="field_import_link">Вставьте ссылку hysteria2://</string>
+    <string name="field_name">Название</string>
+    <string name="field_server">Сервер (хост)</string>
+    <string name="field_port">Порт</string>
+    <string name="field_auth">Аутентификация / пароль</string>
+    <string name="field_sni">SNI (необязательно)</string>
+    <string name="field_obfs">Пароль обфускации (необязательно)</string>
+    <string name="field_tx">Исходящая (Мбит/с)</string>
+    <string name="field_rx">Входящая (Мбит/с)</string>
+    <string name="field_insecure">Разрешить небезопасный сертификат</string>
+    <string name="field_fast_open">QUIC fast open</string>
+    <string name="bandwidth_hint">Оставьте 0, чтобы использовать BBR; укажите реальные Мбит/с, чтобы включить управление перегрузкой Brutal.</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">VPN</string>
+    <string name="notification_channel_description">Состояние туннеля Hysteria 2</string>
+    <string name="notification_title">Hy2droid работает</string>
+    <string name="notification_text">Ваше соединение защищено.</string>
+
+    <string name="split_tunnel_title">Раздельное туннелирование</string>
+    <string name="split_tunnel_hint">Включите приложение, чтобы оно работало ВНЕ VPN (в обход).</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_dynamic_color">Динамические цвета (Material You)</string>
+    <string name="settings_custom_dns">Свой DNS-сервер</string>
+    <string name="settings_dns_server">IP-адрес DNS-сервера</string>
+    <string name="settings_dns_note">Используется как DNS-сервер VPN (обычный DNS через туннель).</string>
+    <string name="settings_section_appearance">Оформление</string>
+    <string name="settings_section_network">Сеть</string>
+    <string name="split_tunnel_summary">Выберите приложения в обход VPN</string>
+    <string name="settings_custom_dns_summary">Основной и дополнительный DNS</string>
+    <string name="settings_dns_primary">Основной DNS</string>
+    <string name="settings_dns_secondary">Дополнительный DNS (необязательно)</string>
+    <string name="settings_dns_invalid">Введите корректный адрес IPv4 или IPv6</string>
+
+    <!-- Errors -->
+    <string name="error_no_config">Конфигурация не найдена. Откройте приложение и подключитесь снова.</string>
+    <string name="error_tun2socks_config">Не удалось записать конфигурацию tun2socks: %1$s</string>
+    <string name="error_establish">Не удалось создать интерфейс VPN. Возможно, разрешение отозвано.</string>
+    <string name="error_core_launch">Не удалось запустить ядро Hysteria.</string>
+    <string name="error_tun2socks_start">Не удалось запустить tun2socks: %1$s</string>
+    <string name="error_core_exited">Ядро Hysteria неожиданно остановилось (код %1$d).</string>
+</resources>

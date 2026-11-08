@@ -1,0 +1,80 @@
+<resources>
+    <!-- Main -->
+    <string name="profiles_title">Profils</string>
+    <string name="empty_profiles">Aucun profil pour l\'instant. Touchez + pour en ajouter un.</string>
+    <string name="action_add_profile">Ajouter un profil</string>
+    <string name="action_more">Plus d\'options</string>
+    <string name="action_edit">Modifier</string>
+    <string name="action_share">Partager</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="action_disconnect">Déconnecter</string>
+    <string name="action_connect">Connecter</string>
+    <string name="action_scan_import">Scanner</string>
+    <string name="import_success">Profil importé</string>
+    <string name="import_invalid">Lien hysteria2 non valide</string>
+    <string name="scan_hint">Pointez la caméra vers un QR code de partage Hysteria</string>
+    <string name="scan_permission_needed">L\'autorisation caméra est nécessaire pour scanner un QR code.</string>
+
+    <!-- Connection status -->
+    <string name="status_idle">Déconnecté</string>
+    <string name="status_connecting">Connexion…</string>
+    <string name="status_connected">Connecté</string>
+    <string name="status_disconnecting">Déconnexion…</string>
+    <string name="status_error">Erreur de connexion</string>
+
+    <!-- Share -->
+    <string name="share_title">Partager le profil</string>
+    <string name="link_copied">Lien copié</string>
+    <string name="action_copy">Copier</string>
+    <string name="action_close">Fermer</string>
+
+    <!-- Editor -->
+    <string name="edit_title_add">Nouveau profil</string>
+    <string name="edit_title_edit">Modifier le profil</string>
+    <string name="action_save">Enregistrer</string>
+    <string name="action_back">Retour</string>
+    <string name="action_import">Importer</string>
+    <string name="field_import_link">Collez un lien hysteria2://</string>
+    <string name="field_name">Nom</string>
+    <string name="field_server">Serveur (hôte)</string>
+    <string name="field_port">Port</string>
+    <string name="field_auth">Authentification / mot de passe</string>
+    <string name="field_sni">SNI (facultatif)</string>
+    <string name="field_obfs">Mot de passe d\'obfuscation (facultatif)</string>
+    <string name="field_tx">Débit montant (Mbps)</string>
+    <string name="field_rx">Débit descendant (Mbps)</string>
+    <string name="field_insecure">Autoriser un certificat non sécurisé</string>
+    <string name="field_fast_open">QUIC fast open</string>
+    <string name="bandwidth_hint">Laissez la bande passante à 0 pour utiliser BBR ; indiquez vos Mbps réels pour activer le contrôle de congestion Brutal.</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">VPN</string>
+    <string name="notification_channel_description">État du tunnel Hysteria 2</string>
+    <string name="notification_title">Hy2droid actif</string>
+    <string name="notification_text">Votre connexion est protégée.</string>
+
+    <string name="split_tunnel_title">Tunnel fractionné</string>
+    <string name="split_tunnel_hint">Activez une application pour la faire passer HORS du VPN (contournement).</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_dynamic_color">Couleurs dynamiques (Material You)</string>
+    <string name="settings_custom_dns">Serveur DNS personnalisé</string>
+    <string name="settings_dns_server">IP du serveur DNS</string>
+    <string name="settings_dns_note">Utilisé comme serveur DNS du VPN (DNS en clair via le tunnel).</string>
+    <string name="settings_section_appearance">Apparence</string>
+    <string name="settings_section_network">Réseau</string>
+    <string name="split_tunnel_summary">Choisir les applications à exclure du VPN</string>
+    <string name="settings_custom_dns_summary">DNS principal et secondaire facultatif</string>
+    <string name="settings_dns_primary">DNS principal</string>
+    <string name="settings_dns_secondary">DNS secondaire (facultatif)</string>
+    <string name="settings_dns_invalid">Saisissez une adresse IPv4 ou IPv6 valide</string>
+
+    <!-- Errors -->
+    <string name="error_no_config">Aucune configuration trouvée. Ouvrez l\'application et reconnectez-vous.</string>
+    <string name="error_tun2socks_config">Échec de l\'écriture de la configuration tun2socks : %1$s</string>
+    <string name="error_establish">Impossible de créer l\'interface VPN. L\'autorisation a peut-être été révoquée.</string>
+    <string name="error_core_launch">Impossible de lancer le cœur Hysteria.</string>
+    <string name="error_tun2socks_start">Impossible de démarrer tun2socks : %1$s</string>
+    <string name="error_core_exited">Le cœur Hysteria s\'est arrêté de façon inattendue (code %1$d).</string>
+</resources>

@@ -99,7 +99,7 @@ class ProfileStore(private val context: Context) {
         insecure = o.optBoolean("insecure", false),
         txMbps = o.optInt("txMbps", 0),
         rxMbps = o.optInt("rxMbps", 0),
-        fastOpen = o.optBoolean("fastOpen", true),
+        fastOpen = o.optBoolean("fastOpen", false),
         port = o.optInt("port", 443),
     )
 }

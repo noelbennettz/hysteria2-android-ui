@@ -28,6 +28,27 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Dynamic colour (Material You) toggle, custom DNS, split tunnelling in Settings
 - Profiles and settings are included in Android Auto Backup
 
+## Languages
+
+The UI is translated into the six official languages of the United Nations, and
+Android's per-app language picker (`Settings → Apps → Hy2droid → Language`) is
+wired up through `res/xml/locales_config.xml`:
+
+| Locale | Resource folder |
+| --- | --- |
+| English | `values/` (default) |
+| Arabic (RTL) | `values-ar/` |
+| Spanish | `values-es/` |
+| French | `values-fr/` |
+| Russian | `values-ru/` |
+| Chinese (Simplified) | `values-zh-rCN/` |
+
+All user-visible text lives in `strings.xml`; adding a language means copying
+`values/strings.xml` into a new `values-<qualifier>/` folder and translating the
+values (keep the `%1$s` / `%1$d` placeholders intact, escape apostrophes as `\'`).
+`app_name` is deliberately not translated. The layouts only use direction-aware
+padding/alignment, so RTL (Arabic) mirrors correctly.
+
 ## How it works
 
 ```
