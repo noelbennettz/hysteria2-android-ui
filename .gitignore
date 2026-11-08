@@ -21,3 +21,6 @@ local.properties
 # The Hysteria core binaries are downloaded at build time (see scripts/core.sh)
 # and pinned by core/core.properties, so they are not tracked in git.
 app/src/main/jniLibs/*/libhysteria.so
+
+# Personal progress/session notes — kept locally, never published.
+PROGRESS.md
