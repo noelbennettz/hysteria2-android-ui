@@ -69,6 +69,8 @@
     <string name="settings_dns_primary">Основной DNS</string>
     <string name="settings_dns_secondary">Дополнительный DNS (необязательно)</string>
     <string name="settings_dns_invalid">Введите корректный адрес IPv4 или IPv6</string>
+    <string name="settings_bypass_lan">Обход локальной сети</string>
+    <string name="settings_bypass_lan_summary">Устройства локальной сети, трансляция и страницы роутера вне VPN</string>
 
     <!-- Errors -->
     <string name="error_no_config">Конфигурация не найдена. Откройте приложение и подключитесь снова.</string>

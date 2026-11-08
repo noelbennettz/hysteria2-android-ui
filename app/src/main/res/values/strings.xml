@@ -71,6 +71,8 @@
     <string name="settings_dns_primary">Primary DNS</string>
     <string name="settings_dns_secondary">Secondary DNS (optional)</string>
     <string name="settings_dns_invalid">Enter a valid IPv4 or IPv6 address</string>
+    <string name="settings_bypass_lan">Bypass local network</string>
+    <string name="settings_bypass_lan_summary">Keep LAN devices, casting and router pages outside the VPN</string>
 
     <!-- Errors -->
     <string name="error_no_config">No configuration found. Open the app and connect again.</string>

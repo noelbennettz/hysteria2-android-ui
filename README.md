@@ -21,6 +21,9 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). When
   disabled, no resolver is injected and DNS goes through the server egress
 - Split tunnelling: pick apps that bypass the VPN
+- Optional **LAN bypass** (Android 13+): local-network traffic — RFC1918,
+  link-local, CGNAT and multicast (mDNS/SSDP) — stays outside the VPN, so NAS
+  boxes, printers, router admin pages and casting keep working
 - Quick Settings tile to connect/disconnect, kept in sync with the tunnel state
 - Always-on VPN support (handles the system-initiated start)
 - Live throughput in the UI; the notification is intentionally minimal (status

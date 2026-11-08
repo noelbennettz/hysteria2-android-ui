@@ -69,6 +69,8 @@
     <string name="settings_dns_primary">DNS principal</string>
     <string name="settings_dns_secondary">DNS secondaire (facultatif)</string>
     <string name="settings_dns_invalid">Saisissez une adresse IPv4 ou IPv6 valide</string>
+    <string name="settings_bypass_lan">Contourner le réseau local</string>
+    <string name="settings_bypass_lan_summary">Garder les appareils du réseau local, la diffusion et les pages du routeur hors du VPN</string>
 
     <!-- Errors -->
     <string name="error_no_config">Aucune configuration trouvée. Ouvrez l\'application et reconnectez-vous.</string>

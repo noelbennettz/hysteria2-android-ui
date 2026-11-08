@@ -1,6 +1,7 @@
 package us.leaf3stones.hy2droid.ui
 
 import android.net.InetAddresses
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.LanRanges
 
 /** Returns true when [value] is a numeric IPv4 or IPv6 address. */
 private fun isValidIp(value: String): Boolean {
@@ -69,6 +72,7 @@ fun SettingsScreen(
     val dnsEnabled by viewModel.customDnsEnabled.collectAsState()
     val dns1 by viewModel.customDnsServer.collectAsState()
     val dns2 by viewModel.customDnsServer2.collectAsState()
+    val bypassLan by viewModel.bypassLan.collectAsState()
 
     var dns1Text by remember { mutableStateOf("") }
     var dns2Text by remember { mutableStateOf("") }
@@ -137,6 +141,18 @@ fun SettingsScreen(
                 onClick = onOpenSplitTunnel,
             )
             HorizontalDivider()
+            // excludeRoute() (a true bypass) only exists from Android 13, so the
+            // switch is hidden entirely on older releases instead of being dead UI.
+            if (Build.VERSION.SDK_INT >= LanRanges.MIN_API) {
+                SwitchRow(
+                    icon = Icons.Filled.Lan,
+                    title = stringResource(R.string.settings_bypass_lan),
+                    subtitle = stringResource(R.string.settings_bypass_lan_summary),
+                    checked = bypassLan,
+                    onCheckedChange = viewModel::setBypassLan,
+                )
+                HorizontalDivider()
+            }
             SwitchRow(
                 icon = Icons.Filled.Dns,
                 title = stringResource(R.string.settings_custom_dns),

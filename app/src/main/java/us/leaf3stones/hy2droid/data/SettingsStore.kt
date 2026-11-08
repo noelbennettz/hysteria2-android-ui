@@ -24,6 +24,7 @@ class SettingsStore(private val context: Context) {
     private val keyDnsServer = stringPreferencesKey("custom_dns_server")
     private val keyDnsServer2 = stringPreferencesKey("custom_dns_server2")
     private val keyDesired = booleanPreferencesKey("desired_connected")
+    private val keyBypassLan = booleanPreferencesKey("bypass_lan")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -49,6 +50,10 @@ class SettingsStore(private val context: Context) {
     val desiredConnected: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyDesired] ?: false }
 
+    /** Whether local-network ranges bypass the tunnel. Default off; Android 13+. */
+    val bypassLan: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyBypassLan] ?: false }
+
     suspend fun setExcluded(packages: Set<String>) {
         context.settingsDataStore.edit { it[keyExcluded] = encode(packages) }
     }
@@ -71,6 +76,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setDesiredConnected(desired: Boolean) {
         context.settingsDataStore.edit { it[keyDesired] = desired }
+    }
+
+    suspend fun setBypassLan(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyBypassLan] = enabled }
     }
 
     private fun decode(json: String?): Set<String> {

@@ -69,6 +69,8 @@
     <string name="settings_dns_primary">DNS الأساسي</string>
     <string name="settings_dns_secondary">DNS الثانوي (اختياري)</string>
     <string name="settings_dns_invalid">أدخل عنوان IPv4 أو IPv6 صالحًا</string>
+    <string name="settings_bypass_lan">تجاوز الشبكة المحلية</string>
+    <string name="settings_bypass_lan_summary">إبقاء أجهزة الشبكة المحلية والبث وصفحات الموجّه خارج VPN</string>
 
     <!-- Errors -->
     <string name="error_no_config">لم يتم العثور على أي إعداد. افتح التطبيق واتصل مرة أخرى.</string>

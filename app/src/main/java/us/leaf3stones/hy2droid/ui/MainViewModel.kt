@@ -48,6 +48,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val customDnsServer2: StateFlow<String> = settings.customDnsServer2
         .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
+    val bypassLan: StateFlow<Boolean> = settings.bypassLan
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     val tunnelState: StateFlow<TunnelState> = TunnelStatus.state
     val stats: StateFlow<TunnelStats> = TunnelStatus.stats
 
@@ -81,6 +84,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setCustomDnsServer2(server: String) {
         viewModelScope.launch { settings.setCustomDnsServer2(server) }
+    }
+
+    fun setBypassLan(enabled: Boolean) {
+        viewModelScope.launch { settings.setBypassLan(enabled) }
     }
 
     /** Persist [profile] as the selected profile and bring the tunnel up for it. */

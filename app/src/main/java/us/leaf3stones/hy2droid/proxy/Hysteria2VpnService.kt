@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.IpPrefix
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -28,10 +29,12 @@ import kotlinx.coroutines.launch
 import us.leaf3stones.hy2droid.BuildConfig
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
+import us.leaf3stones.hy2droid.data.LanRanges
 import us.leaf3stones.hy2droid.data.ProfileStore
 import us.leaf3stones.hy2droid.data.SettingsStore
 import us.leaf3stones.hy2droid.ui.MainActivity
 import java.io.File
+import java.net.InetAddress
 import java.util.Scanner
 
 /**
@@ -116,6 +119,12 @@ class Hysteria2VpnService : VpnService() {
             emptyList()
         }
 
+        val bypassLan = try {
+            settings.bypassLan.first()
+        } catch (_: Exception) {
+            false
+        }
+
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
         if (!ensureConfigFile(configFile)) {
             fail(getString(R.string.error_no_config))
@@ -130,7 +139,7 @@ class Hysteria2VpnService : VpnService() {
             return
         }
 
-        val pfd = establishTunnel(excluded, dnsServers)
+        val pfd = establishTunnel(excluded, dnsServers, bypassLan)
         if (pfd == null) {
             fail(getString(R.string.error_establish))
             return
@@ -177,7 +186,11 @@ class Hysteria2VpnService : VpnService() {
         }
     }
 
-    private fun establishTunnel(excluded: Set<String>, dnsServers: List<String>): ParcelFileDescriptor? = try {
+    private fun establishTunnel(
+        excluded: Set<String>,
+        dnsServers: List<String>,
+        bypassLan: Boolean,
+    ): ParcelFileDescriptor? = try {
         val builder = Builder()
             .setMtu(MTU)
             .addAddress(TUN_IPV4, TUN_PREFIX)
@@ -192,6 +205,7 @@ class Hysteria2VpnService : VpnService() {
         }
         builder.addRoute("0.0.0.0", 0)
         builder.addRoute("::", 0)
+        if (bypassLan) applyLanBypass(builder)
         builder.addDisallowedApplication(packageName)
         for (pkg in excluded) {
             try {
@@ -204,6 +218,29 @@ class Hysteria2VpnService : VpnService() {
     } catch (e: Exception) {
         Log.e(TAG, "establish() failed", e)
         null
+    }
+
+    /**
+     * Keep local-network traffic out of the tunnel (NAS, printers, router pages,
+     * casting discovery). `excludeRoute` only exists from Android 13, and the
+     * settings switch is hidden below that, so this guard is belt and braces.
+     */
+    private fun applyLanBypass(builder: Builder) {
+        if (Build.VERSION.SDK_INT < LanRanges.MIN_API) {
+            Log.w(TAG, "LAN bypass needs Android ${LanRanges.MIN_API}+; ignoring")
+            return
+        }
+        var applied = 0
+        for ((address, prefixLength) in LanRanges.ALL) {
+            try {
+                builder.excludeRoute(IpPrefix(InetAddress.getByName(address), prefixLength))
+                applied++
+            } catch (e: Exception) {
+                // One bad range must never take the whole tunnel down.
+                Log.w(TAG, "excludeRoute failed for $address/$prefixLength", e)
+            }
+        }
+        Log.i(TAG, "LAN bypass: excluded $applied of ${LanRanges.ALL.size} local ranges")
     }
 
     /** Ensure `hysteria.yaml` exists, rebuilding it from the selected profile if missing. */

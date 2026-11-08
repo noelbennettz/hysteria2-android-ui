@@ -69,6 +69,8 @@
     <string name="settings_dns_primary">主 DNS</string>
     <string name="settings_dns_secondary">备用 DNS（可选）</string>
     <string name="settings_dns_invalid">请输入有效的 IPv4 或 IPv6 地址</string>
+    <string name="settings_bypass_lan">绕过局域网</string>
+    <string name="settings_bypass_lan_summary">局域网设备、投屏和路由器管理页面不走 VPN</string>
 
     <!-- Errors -->
     <string name="error_no_config">找不到配置。请打开应用后重新连接。</string>
