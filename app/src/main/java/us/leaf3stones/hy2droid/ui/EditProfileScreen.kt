@@ -85,10 +85,13 @@ fun EditProfileScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // A placeholder (not a label) is used here on purpose: a floating
+                // label reserves 8dp above the outline, which would shift this box
+                // down relative to the Import button next to it.
                 OutlinedTextField(
                     value = importLink,
                     onValueChange = { importLink = it },
-                    label = { Text(stringResource(R.string.field_import_link)) },
+                    placeholder = { Text(stringResource(R.string.field_import_link)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
