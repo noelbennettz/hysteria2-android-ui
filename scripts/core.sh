@@ -30,6 +30,25 @@ ABIS=(arm64-v8a armeabi-v7a x86_64 x86)
 TMP=""
 trap 'rm -rf "${TMP:-}"' EXIT
 
+# Release assets occasionally 5xx (GitHub CDN hiccups) — retry instead of
+# failing the whole CI build on a transient error.
+CURL=(curl --fail --silent --show-error --location
+      --retry 5 --retry-delay 3 --retry-all-errors
+      --connect-timeout 20)
+
+# Upstream has been renamed once already (apernet -> HyNetworks); resolve the
+# canonical owner/repo from the web redirect so asset URLs are always current.
+canonical_repo() {
+  local eff=""
+  eff="$("${CURL[@]}" -o /dev/null -w '%{url_effective}' --max-time 20 \
+        "https://github.com/$HY2_REPO" 2>/dev/null || true)"
+  eff="${eff%/}"
+  case "$eff" in
+    https://github.com/*/*) printf '%s\n' "${eff#https://github.com/}" ;;
+    *) printf '%s\n' "$HY2_REPO" ;;
+  esac
+}
+
 suffix() {
   case "$1" in
     arm64-v8a)   echo arm64 ;;
@@ -56,7 +75,7 @@ resolve_latest() {
   local tag
   # Follow the /releases/latest redirect: no REST API needed, and it keeps
   # working when upstream renames or moves the repository.
-  tag="$(curl -sIL -o /dev/null -w '%{url_effective}' --max-time 20 \
+  tag="$("${CURL[@]}" -o /dev/null -w '%{url_effective}' --max-time 20 \
         "https://github.com/$HY2_REPO/releases/latest" | sed -n 's#.*/tag/##p' | head -n1)"
   case "$tag" in
     app/v*) echo "$tag"; return 0 ;;
@@ -108,16 +127,17 @@ write_props() {
 
 install_tag() {
   local tag; tag="$(normalize_tag "$1")"
-  local base="https://github.com/$HY2_REPO/releases/download/$tag"
+  local repo; repo="$(canonical_repo)"
+  local base="https://github.com/$repo/releases/download/$tag"
   TMP="$(mktemp -d)"
-  echo "==> downloading $HY2_REPO $tag"
-  curl -fsSL "$base/hashes.txt" -o "$TMP/hashes.txt" \
-    || { echo "no hashes.txt for $tag" >&2; return 1; }
+  echo "==> downloading $repo $tag"
+  "${CURL[@]}" "$base/hashes.txt" -o "$TMP/hashes.txt" \
+    || { echo "could not download $base/hashes.txt (retried); upstream CDN problem?" >&2; return 1; }
   local abi name want got
   for abi in "${ABIS[@]}"; do
     name="hysteria-android-$(suffix "$abi")"
-    curl -fsSL "$base/$name" -o "$TMP/$name" \
-      || { echo "missing asset $name for $tag" >&2; return 1; }
+    "${CURL[@]}" "$base/$name" -o "$TMP/$name" \
+      || { echo "could not download $base/$name (retried); upstream CDN problem?" >&2; return 1; }
     want="$(awk -v n="build/$name" '$2 == n { print $1 }' "$TMP/hashes.txt")"
     [ -n "$want" ] || { echo "no upstream checksum for $name in $tag" >&2; return 1; }
     got="$(sha_of "$TMP/$name")"
