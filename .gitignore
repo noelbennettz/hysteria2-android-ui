@@ -18,3 +18,6 @@ local.properties
 /.idea/
 *.jks
 *.keystore
+# The Hysteria core binaries are downloaded at build time (see scripts/core.sh)
+# and pinned by core/core.properties, so they are not tracked in git.
+app/src/main/jniLibs/*/libhysteria.so

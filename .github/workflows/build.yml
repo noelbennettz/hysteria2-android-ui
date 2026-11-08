@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      core_tag:
+        description: 'Hysteria core tag (e.g. app/v2.13.0) or "latest"'
+        required: false
+        default: 'latest'
 
 jobs:
   debug-apk:
@@ -11,6 +16,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Hysteria core
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.core_tag || 'latest' }}"
+          if [ "$tag" = "latest" ]; then
+            tag="$(bash scripts/core.sh latest)"
+            echo "Resolved latest upstream core: $tag"
+          fi
+          bash scripts/core.sh upgrade "$tag"
+          {
+            echo "### Hysteria core"
+            echo '```'
+            bash scripts/core.sh version
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify bundled core
         run: bash scripts/core.sh verify

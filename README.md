@@ -58,34 +58,39 @@ signatures must be preserved.
 
 ## Bundled core
 
-The Hysteria core ships as a prebuilt Android executable at
-`app/src/main/jniLibs/<abi>/libhysteria.so` (the upstream release asset
-`hysteria-android-<arch>`, renamed). Its version and per-ABI SHA-256 checksums
-are recorded in `core/core.properties` and exposed to the app as
-`BuildConfig.CORE_VERSION` (the VPN service logs it on every connect).
+The Hysteria core binaries are **not committed to git**. They are downloaded at
+build time from the upstream release (`hysteria-android-<arch>`) and verified
+against that release's `hashes.txt` into
+`app/src/main/jniLibs/<abi>/libhysteria.so`.
 
-`scripts/core.sh` manages the core:
+`core/core.properties` pins the version plus the per-ABI SHA-256 checksums and is
+exposed to the app as `BuildConfig.CORE_VERSION` (logged by the VPN service on
+every connect).
+
+`scripts/core.sh` manages it:
 
 | Command | Description |
 | --- | --- |
-| `scripts/core.sh version` | Show the recorded vs. embedded core version |
-| `scripts/core.sh verify` | Verify the committed binaries against the manifest (also run in CI) |
-| `scripts/core.sh upgrade app/v2.13.0` | Download, checksum-verify and install a new core |
-| `scripts/core.sh hashes` | Print the current per-ABI checksums |
+| `scripts/core.sh fetch` | Install the pinned core (no-op when already present); Gradle runs this via the `fetchCore` task |
+| `scripts/core.sh latest` | Resolve the newest upstream release tag |
+| `scripts/core.sh upgrade [tag\|latest]` | Install a specific (default: newest) core |
+| `scripts/core.sh version` | Pinned version + whether the binaries match |
+| `scripts/core.sh verify` | Verify the binaries against the manifest (run in CI) |
+| `scripts/core.sh hashes` | Print the per-ABI checksums |
 
-Upgrading is a single command plus a commit:
+CI installs **the latest upstream release on every build**; the resolved version
+is printed in the workflow run summary. To pin a build, dispatch the workflow
+with the `core_tag` input (e.g. `app/v2.12.3`), or locally:
 
 ```bash
-scripts/core.sh upgrade app/v2.13.0
-git add core/core.properties app/src/main/jniLibs
-git commit -m "chore: bump Hysteria core to v2.13.0"
+HY2_CORE_TAG=app/v2.12.3 ./gradlew assembleDebug   # one-off override
+scripts/core.sh upgrade app/v2.12.3                # move the committed pin
 ```
 
 ABI mapping: `arm64-v8a` → `arm64`, `armeabi-v7a` → `armv7`, `x86_64` → `amd64`,
-`x86` → `386`. The service only execs the binary with `-c <config>`, so a core
-bump is a straight binary swap as long as the config schema is unchanged. If a
-future core changes its YAML schema, `HysteriaConfigBuilder` is the only
-app-side touch point.
+`x86` → `386`. A core bump needs no app changes because the service only execs
+the binary with `-c <config>`; if a release changes the YAML schema,
+`HysteriaConfigBuilder` is the only app-side touch point.
 
 ## Building
 
