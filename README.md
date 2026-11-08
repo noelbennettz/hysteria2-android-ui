@@ -9,6 +9,11 @@ device to it.
 Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 `x86` and `x86_64` (per-ABI splits plus a universal APK).
 
+<p align="center">
+  <img src="screenshots/s1.png" width="300" alt="Home screen showing the tunnel status and saved profiles">
+  <img src="screenshots/s2.png" width="300" alt="Settings screen with appearance, split tunnelling, LAN bypass and DNS options">
+</p>
+
 ## Features
 
 - Full-tunnel `VpnService` backed by Hysteria 2, dual-stack (IPv4 + IPv6)
