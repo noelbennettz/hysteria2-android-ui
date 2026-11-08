@@ -30,10 +30,10 @@ ABIS=(arm64-v8a armeabi-v7a x86_64 x86)
 TMP=""
 trap 'rm -rf "${TMP:-}"' EXIT
 
-# Release assets occasionally 5xx (GitHub CDN hiccups) — retry instead of
-# failing the whole CI build on a transient error.
+# Release assets occasionally 5xx (GitHub CDN hiccups) — retry for a few minutes
+# instead of failing the whole CI build on a transient error.
 CURL=(curl --fail --silent --show-error --location
-      --retry 5 --retry-delay 3 --retry-all-errors
+      --retry 10 --retry-delay 10 --retry-max-time 600 --retry-all-errors
       --connect-timeout 20)
 
 # Upstream has been renamed once already (apernet -> HyNetworks); resolve the
