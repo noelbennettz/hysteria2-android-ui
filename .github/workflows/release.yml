@@ -1,0 +1,147 @@
+name: release
+
+# Production (signed) release. Runs on a version tag such as `v2.1.0`, or
+# manually with an explicit version. The signed APKs are published to a GitHub
+# Release; without the signing secrets the job still builds (validating R8) but
+# skips publishing and says so in the log.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Release version, e.g. 2.1.0 (published tag becomes v2.1.0)'
+        required: true
+      core_tag:
+        description: 'Hysteria core tag (e.g. app/v2.13.0) or "latest"'
+        required: false
+        default: 'latest'
+
+permissions:
+  contents: write
+
+jobs:
+  release-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        run: |
+          set -euo pipefail
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            name="${{ github.ref_name }}"
+            name="${name#v}"
+          else
+            name="${{ inputs.version_name }}"
+          fi
+          [ -n "$name" ] || { echo "::error::could not resolve a version name"; exit 1; }
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "Building Hy2droid $name (versionCode ${{ github.run_number }})"
+
+      - name: Install Hysteria core
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.core_tag || 'latest' }}"
+          if [ "$tag" = "latest" ]; then
+            tag="$(bash scripts/core.sh latest)"
+            echo "Resolved latest upstream core: $tag"
+          fi
+          bash scripts/core.sh upgrade "$tag"
+          bash scripts/core.sh version | tee core-version.txt
+
+      - name: Verify bundled core
+        run: bash scripts/core.sh verify
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Prepare signing key
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p signing
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > signing/production.jks
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "Signing key restored from secrets."
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set: the release APK will be UNSIGNED and nothing will be published. Add the signing secrets (see README > Releasing)."
+          fi
+
+      - name: Build release APK
+        env:
+          HY2_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          HY2_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          HY2_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          HY2_VERSION_NAME: ${{ steps.version.outputs.name }}
+          HY2_VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          set +e
+          ./gradlew assembleRelease --no-daemon --stacktrace --console=plain 2>&1 | tee /tmp/release.log
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Gradle release build failed (exit $rc); surfacing errors:"
+            grep -E '^e: |error:|What went wrong|Caused by|> Task .* FAILED|R8: ' /tmp/release.log | tail -n 40 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit "$rc"
+          fi
+
+      - name: Verify APK signature
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          set -euo pipefail
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n1)"
+          "$apksigner" verify --print-certs app/build/outputs/apk/release/app-universal-release.apk
+
+      - name: Upload release APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: hy2droid-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: steps.signing.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION_NAME"
+          core_line="$(grep -m1 'recorded core' core-version.txt || true)"
+          cat > release-notes.md <<NOTES
+          Hy2droid $VERSION_NAME (versionCode $VERSION_CODE)
+
+          - ${core_line:-Hysteria core: see build log}
+          - ABI splits: arm64-v8a, armeabi-v7a, x86_64, x86 (+ universal)
+
+          Install `app-arm64-v8a-release.apk` on most phones, or
+          `app-universal-release.apk` if you are unsure. Requires Android 11+
+          (minSdk 30).
+          NOTES
+
+          mapfile -t files < <(ls app/build/outputs/apk/release/*.apk)
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" \
+              --title "Hy2droid $VERSION_NAME" \
+              --notes-file release-notes.md
+          fi
+          echo "Published https://github.com/${{ github.repository }}/releases/tag/$tag"

@@ -96,14 +96,56 @@ the binary with `-c <config>`; if a release changes the YAML schema,
 
 ```bash
 ./gradlew assembleDebug      # APK at app/build/outputs/apk/debug/
+./gradlew assembleRelease    # signed APK (needs the keystore, see below)
 ```
 
-Release builds require a keystore at `signing/production.jks` plus the
-`HY2_KEYSTORE_PASSWORD` / `HY2_KEY_PASSWORD` / `HY2_KEY_ALIAS` Gradle properties
-or environment variables (never committed).
+### Continuous integration
 
-Continuous integration builds a debug APK on every push to `main` and uploads it
-as a workflow artifact.
+| Workflow | Trigger | Output |
+| --- | --- | --- |
+| `.github/workflows/build.yml` | every push to `main`, or manual | debug APK as a workflow artifact |
+| `.github/workflows/release.yml` | pushing a `v*` tag, or manual with a version | **signed** release APKs + a GitHub Release |
+
+Both workflows install the newest Hysteria core before building (see *Bundled
+core* above).
+
+## Releasing
+
+The release workflow signs the APK and publishes it as a GitHub Release. It
+needs four repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | your keystore, base64-encoded: `base64 -w0 signing/production.jks` |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| `ANDROID_KEY_PASSWORD` | key password |
+| `ANDROID_KEY_ALIAS` | key alias |
+
+Create the keystore once (keep it safe and backed up — losing it means you can
+never update an installed app under the same package name):
+
+```bash
+keytool -genkeypair -v -keystore signing/production.jks -alias signing \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Then publish either by pushing a tag, or manually from the Actions tab:
+
+```bash
+git tag v2.1.0 && git push origin v2.1.0        # tag → versionName 2.1.0
+```
+
+`versionName` comes from the tag (or the `version_name` input) and `versionCode`
+from the workflow run number, so every release is upgradeable.
+
+Without `ANDROID_KEYSTORE_BASE64` the workflow still builds (validating R8 /
+ProGuard against the JNI bindings) but produces an unsigned APK, skips the
+signature check and does not publish — the log says so explicitly.
+
+To sign locally instead, drop the keystore at `signing/production.jks`
+(gitignored) and export `HY2_KEYSTORE_PASSWORD`, `HY2_KEY_PASSWORD` and
+`HY2_KEY_ALIAS` before running `./gradlew assembleRelease`.
+
 
 ## Credits
 

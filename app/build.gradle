@@ -12,6 +12,20 @@ if (corePropsFile.exists()) {
 }
 def coreVersion = coreProps.getProperty('HYSTERIA_VERSION', 'unknown')
 
+// Release builds override these from CI (-P flags or env); defaults keep local
+// debug builds working.
+def appVersionName = (project.findProperty('versionName')
+        ?: System.getenv('HY2_VERSION_NAME')
+        ?: '2.0.0').toString()
+def appVersionCode = (project.findProperty('versionCode')
+        ?: System.getenv('HY2_VERSION_CODE')
+        ?: '2').toString().toInteger()
+
+// Keystore location: CI restores the signing key to signing/production.jks
+// (gitignored), an explicit path can be given through HY2_KEYSTORE_FILE.
+def keystoreFile = file(System.getenv('HY2_KEYSTORE_FILE')
+        ?: rootProject.file('signing/production.jks').absolutePath)
+
 android {
     namespace 'us.leaf3stones.hy2droid'
     compileSdk 34
@@ -20,8 +34,8 @@ android {
         applicationId "us.leaf3stones.hy2droid"
         minSdk 30
         targetSdk 34
-        versionCode 2
-        versionName "2.0.0"
+        versionCode appVersionCode
+        versionName appVersionName
 
         // Exposed at runtime as BuildConfig.CORE_VERSION (see scripts/core.sh).
         buildConfigField "String", "CORE_VERSION", "\"${coreVersion}\""
@@ -46,7 +60,6 @@ android {
             // SECURITY: keystore + passwords are NEVER committed to version control.
             // Provide them locally via gradle properties (e.g. ~/.gradle/gradle.properties
             // or -P flags) or environment variables before building a release.
-            def keystoreFile = rootProject.file("signing/production.jks")
             if (keystoreFile.exists()) {
                 storeFile keystoreFile
                 storePassword(System.getenv("HY2_KEYSTORE_PASSWORD") ?: project.findProperty("HY2_KEYSTORE_PASSWORD"))
@@ -60,7 +73,7 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (rootProject.file("signing/production.jks").exists()) {
+            if (keystoreFile.exists()) {
                 signingConfig signingConfigs.release
             }
         }

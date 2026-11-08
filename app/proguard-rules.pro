@@ -21,3 +21,8 @@
 #-renamesourcefileattribute SourceFile
 -keeppackagenames us.leaf3stones.hy2droid.**
 -dontoptimize
+
+# libtun2socks.so binds its JNI symbols to this exact class name and to the
+# signatures of its native methods, so neither may be renamed or stripped.
+-keep class us.leaf3stones.hy2droid.proxy.Hysteria2VpnService { *; }
+-keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }
