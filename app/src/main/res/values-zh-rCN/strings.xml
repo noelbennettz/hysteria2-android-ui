@@ -1,80 +1,80 @@
 <resources>
     <!-- Main -->
-    <string name="profiles_title">設定檔</string>
-    <string name="empty_profiles">尚無設定檔。點 + 新增。</string>
-    <string name="action_add_profile">新增設定檔</string>
-    <string name="action_more">更多選項</string>
-    <string name="action_edit">編輯</string>
+    <string name="profiles_title">配置</string>
+    <string name="empty_profiles">暂无配置。点 + 添加。</string>
+    <string name="action_add_profile">添加配置</string>
+    <string name="action_more">更多选项</string>
+    <string name="action_edit">编辑</string>
     <string name="action_share">分享</string>
-    <string name="action_delete">刪除</string>
-    <string name="action_disconnect">中斷連線</string>
-    <string name="action_connect">連線</string>
-    <string name="action_scan_import">掃描</string>
-    <string name="import_success">已匯入設定檔</string>
-    <string name="import_invalid">不是有效的 hysteria2 連結</string>
-    <string name="scan_hint">將相機對準 Hysteria 分享 QR code</string>
-    <string name="scan_permission_needed">掃描 QR code 需要相機權限。</string>
+    <string name="action_delete">删除</string>
+    <string name="action_disconnect">断开连接</string>
+    <string name="action_connect">连接</string>
+    <string name="action_scan_import">扫码</string>
+    <string name="import_success">已导入配置</string>
+    <string name="import_invalid">无效的 hysteria2 链接</string>
+    <string name="scan_hint">将摄像头对准 Hysteria 分享二维码</string>
+    <string name="scan_permission_needed">扫描二维码需要相机权限。</string>
 
     <!-- Connection status -->
-    <string name="status_idle">未連線</string>
-    <string name="status_connecting">連線中…</string>
-    <string name="status_connected">已連線</string>
-    <string name="status_disconnecting">中斷中…</string>
-    <string name="status_error">連線錯誤</string>
+    <string name="status_idle">未连接</string>
+    <string name="status_connecting">正在连接…</string>
+    <string name="status_connected">已连接</string>
+    <string name="status_disconnecting">正在断开…</string>
+    <string name="status_error">连接错误</string>
 
     <!-- Share -->
-    <string name="share_title">分享設定檔</string>
-    <string name="link_copied">已複製連結</string>
-    <string name="action_copy">複製</string>
-    <string name="action_close">關閉</string>
+    <string name="share_title">分享配置</string>
+    <string name="link_copied">已复制链接</string>
+    <string name="action_copy">复制</string>
+    <string name="action_close">关闭</string>
 
     <!-- Editor -->
-    <string name="edit_title_add">新增設定檔</string>
-    <string name="edit_title_edit">編輯設定檔</string>
-    <string name="action_save">儲存</string>
+    <string name="edit_title_add">新建配置</string>
+    <string name="edit_title_edit">编辑配置</string>
+    <string name="action_save">保存</string>
     <string name="action_back">返回</string>
-    <string name="action_import">匯入</string>
-    <string name="field_import_link">貼上 hysteria2:// 連結</string>
-    <string name="field_name">名稱</string>
-    <string name="field_server">伺服器（主機）</string>
-    <string name="field_port">連接埠</string>
-    <string name="field_auth">驗證 / 密碼</string>
-    <string name="field_sni">SNI（選填）</string>
-    <string name="field_obfs">混淆密碼（選填）</string>
-    <string name="field_tx">上傳 Mbps</string>
-    <string name="field_rx">下載 Mbps</string>
-    <string name="field_insecure">允許不安全的憑證</string>
+    <string name="action_import">导入</string>
+    <string name="field_import_link">粘贴 hysteria2:// 链接</string>
+    <string name="field_name">名称</string>
+    <string name="field_server">服务器（主机）</string>
+    <string name="field_port">端口</string>
+    <string name="field_auth">认证 / 密码</string>
+    <string name="field_sni">SNI（可选）</string>
+    <string name="field_obfs">混淆密码（可选）</string>
+    <string name="field_tx">上传 Mbps</string>
+    <string name="field_rx">下载 Mbps</string>
+    <string name="field_insecure">允许不安全的证书</string>
     <string name="field_fast_open">QUIC fast open</string>
-    <string name="bandwidth_hint">頻寬留 0 使用 BBR；填入實際 Mbps 可啟用 Brutal 壅塞控制。</string>
+    <string name="bandwidth_hint">带宽留 0 使用 BBR；填入实际 Mbps 可启用 Brutal 拥塞控制。</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">VPN</string>
-    <string name="notification_channel_description">Hysteria 2 通道狀態</string>
-    <string name="notification_title">Hy2droid 執行中</string>
-    <string name="notification_text">你的連線已受保護。</string>
+    <string name="notification_channel_description">Hysteria 2 隧道状态</string>
+    <string name="notification_title">Hy2droid 正在运行</string>
+    <string name="notification_text">你的连接已受保护。</string>
 
-    <string name="split_tunnel_title">分割通道</string>
-    <string name="split_tunnel_hint">開啟某個 App 表示讓它繞過 VPN（不走 VPN）。</string>
+    <string name="split_tunnel_title">分流</string>
+    <string name="split_tunnel_hint">开启某个应用表示让它绕过 VPN（不走 VPN）。</string>
 
     <!-- Settings -->
-    <string name="settings_title">設定</string>
-    <string name="settings_dynamic_color">動態色彩（Material You）</string>
-    <string name="settings_custom_dns">自訂 DNS 伺服器</string>
-    <string name="settings_dns_server">DNS 伺服器 IP</string>
-    <string name="settings_dns_note">作為 VPN 的 DNS 伺服器（透過通道的純 DNS）。</string>
-    <string name="settings_section_appearance">外觀</string>
-    <string name="settings_section_network">網路</string>
-    <string name="split_tunnel_summary">選擇要繞過 VPN 的 App</string>
-    <string name="settings_custom_dns_summary">主要與選填的次要 DNS</string>
-    <string name="settings_dns_primary">主要 DNS</string>
-    <string name="settings_dns_secondary">次要 DNS（選填）</string>
-    <string name="settings_dns_invalid">請輸入有效的 IPv4 或 IPv6 位址</string>
+    <string name="settings_title">设置</string>
+    <string name="settings_dynamic_color">动态取色（Material You）</string>
+    <string name="settings_custom_dns">自定义 DNS 服务器</string>
+    <string name="settings_dns_server">DNS 服务器 IP</string>
+    <string name="settings_dns_note">作为 VPN 的 DNS 服务器（通过隧道的明文 DNS）。</string>
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_section_network">网络</string>
+    <string name="split_tunnel_summary">选择要绕过 VPN 的应用</string>
+    <string name="settings_custom_dns_summary">主 DNS 与可选的备用 DNS</string>
+    <string name="settings_dns_primary">主 DNS</string>
+    <string name="settings_dns_secondary">备用 DNS（可选）</string>
+    <string name="settings_dns_invalid">请输入有效的 IPv4 或 IPv6 地址</string>
 
     <!-- Errors -->
-    <string name="error_no_config">找不到設定。請開啟 App 後重新連線。</string>
-    <string name="error_tun2socks_config">無法寫入 tun2socks 設定：%1$s</string>
-    <string name="error_establish">無法建立 VPN 介面，權限可能已被撤銷。</string>
-    <string name="error_core_launch">無法啟動 Hysteria 核心。</string>
-    <string name="error_tun2socks_start">無法啟動 tun2socks：%1$s</string>
-    <string name="error_core_exited">Hysteria 核心意外停止（代碼 %1$d）。</string>
+    <string name="error_no_config">找不到配置。请打开应用后重新连接。</string>
+    <string name="error_tun2socks_config">无法写入 tun2socks 配置：%1$s</string>
+    <string name="error_establish">无法建立 VPN 接口，权限可能已被撤销。</string>
+    <string name="error_core_launch">无法启动 Hysteria 核心。</string>
+    <string name="error_tun2socks_start">无法启动 tun2socks：%1$s</string>
+    <string name="error_core_exited">Hysteria 核心意外停止（代码 %1$d）。</string>
 </resources>

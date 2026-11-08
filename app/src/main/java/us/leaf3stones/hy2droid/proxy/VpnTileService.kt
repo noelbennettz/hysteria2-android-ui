@@ -8,37 +8,77 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.ui.MainActivity
 
 /** Quick Settings tile that toggles the tunnel with a single tap. */
 class VpnTileService : TileService() {
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var stateJob: Job? = null
+
     override fun onStartListening() {
         super.onStartListening()
+        updateTile()
+        // While the panel is open the tile is bound, and asking the system to
+        // re-bind (requestListeningState) is a no-op. Collect the state here so
+        // the tile follows the tunnel even with Quick Settings open.
+        stateJob?.cancel()
+        stateJob = scope.launch {
+            TunnelStatus.state.collect { updateTile() }
+        }
+    }
+
+    override fun onStopListening() {
+        stateJob?.cancel()
+        stateJob = null
+        super.onStopListening()
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
+    }
+
+    override fun onTileAdded() {
+        super.onTileAdded()
         updateTile()
     }
 
     private fun updateTile() {
         val tile = qsTile ?: return
-        val active = isActive()
-        tile.state = if (active) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        val state = TunnelStatus.state.value
+        tile.state = if (state.isActive()) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.label = getString(R.string.app_name)
+        tile.subtitle = statusText(state)
         tile.icon = Icon.createWithResource(this, R.drawable.ic_vpn_connection)
         tile.updateTile()
     }
 
-    private fun isActive(): Boolean {
-        val state = TunnelStatus.state.value
-        return state is TunnelState.Connected ||
-            state is TunnelState.Connecting ||
-            state is TunnelState.Disconnecting
-    }
+    private fun statusText(state: TunnelState): String = getString(
+        when (state) {
+            TunnelState.Idle -> R.string.status_idle
+            TunnelState.Connecting -> R.string.status_connecting
+            TunnelState.Connected -> R.string.status_connected
+            TunnelState.Disconnecting -> R.string.status_disconnecting
+            is TunnelState.Error -> R.string.status_error
+        },
+    )
+
+    private fun TunnelState.isActive(): Boolean =
+        this is TunnelState.Connected || this is TunnelState.Connecting || this is TunnelState.Disconnecting
 
     override fun onClick() {
         super.onClick()
         try {
-            if (isActive()) {
+            if (TunnelStatus.state.value.isActive()) {
                 startService(
                     Intent(this, Hysteria2VpnService::class.java)
                         .setAction(Hysteria2VpnService.ACTION_STOP_VPN),
