@@ -1,86 +1,103 @@
-# Hysteria 2 · Android
+# Hy2droid — Hysteria 2 for Android
 
 A native Android client for the [Hysteria 2](https://v2.hysteria.network/) proxy
-protocol, built on top of the official Go core (bundled as the prebuilt
-`libhysteria.so`) and [go-tun2socks](https://github.com/eycorsican/go-tun2socks)
-for the TUN ↔ SOCKS5 bridge.
+protocol: a thin Kotlin/Jetpack Compose (Material 3) UI in front of an Android
+`VpnService`, with the official Go core running as a child process and
+[go-tun2socks](https://github.com/eycorsican/go-tun2socks) bridging the TUN
+device to it.
 
-The app is a thin, Material 3 UI plus an Android `VpnService`; all protocol logic
-runs inside the bundled native core. Supports the four common ABIs
-(`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`).
+Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
+`x86` and `x86_64` (per-ABI splits plus a universal APK).
 
 ## Features
 
-- System-wide VPN (full-tunnel `VpnService`) backed by Hysteria 2
-- Local SOCKS5 and HTTP proxy listeners exposed by the core
-- Multiple saved profiles, each represented by its `hysteria2://` share link
-- Import a profile by pasting a `hysteria2://` link, or add fields manually
-- Custom SNI (defaults to the server host when left blank)
-- Salamander obfuscation (leave the obfuscation password blank to disable)
-- Optional "allow insecure certificate"
-- Optional bandwidth hint (Mbps) to enable Hysteria's Brutal congestion control;
-  leave it at 0 to use BBR
-- QUIC fast open enabled by default for lower latency
-- Live upload/download counters while connected
+- Full-tunnel `VpnService` backed by Hysteria 2, dual-stack (IPv4 + IPv6)
+- Multiple saved profiles; import by pasting a `hysteria2://` link or by
+  scanning a QR code (fully offline scanner, no Play Services needed)
+- Share a profile as a QR code
+- Salamander obfuscation, custom SNI, optional "allow insecure certificate"
+- Brutal congestion control via an upload/download bandwidth hint (0 = BBR)
+- `fastOpen` is **off** by default; `lazy` is always on
+- Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). When
+  disabled, no resolver is injected and DNS goes through the server egress
+- Split tunnelling: pick apps that bypass the VPN
+- Quick Settings tile to connect/disconnect, kept in sync with the tunnel state
+- Always-on VPN support (handles the system-initiated start)
+- Live throughput in the UI; the notification is intentionally minimal (status
+  plus a Disconnect action)
+- Dynamic colour (Material You) toggle, custom DNS, split tunnelling in Settings
+- Profiles and settings are included in Android Auto Backup
 
 ## How it works
 
 ```
 UI (Compose / Material 3)
-  └─ MainViewModel ── writes hysteria.yaml ──┐
-                                             ▼
-                              Hysteria2VpnService (VpnService)
-                                 ├─ VpnService.Builder → TUN fd
-                                 ├─ exec libhysteria.so -c hysteria.yaml → :1080 socks5 / :1081 http
-                                 └─ libtun2socks.so (JNI)  TUN fd → 127.0.0.1:1080
+  └─ MainViewModel ── renders config ──┐
+                                       ▼
+                     Hysteria2VpnService (VpnService)
+                        ├─ VpnService.Builder → TUN fd
+                        │    IPv4 10.0.88.88/16, IPv6 fc00::1/64, MTU 1500
+                        ├─ exec libhysteria.so -c hysteria.yaml
+                        │    → 127.0.0.1:1080 (SOCKS5) + :1081 (HTTP)
+                        └─ libtun2socks.so (JNI): TUN fd → SOCKS5
 ```
 
-The Hysteria core runs as a child process exposing a local SOCKS5 listener;
-`tun2socks` bridges the Android TUN device to it. The native `libtun2socks.so`
-binds its JNI symbols to `us.leaf3stones.hy2droid.proxy.Hysteria2VpnService`, so
-that class name and the `startTun2socks`/`stopTun2socks`/`getTun2socksStats`
-signatures must be preserved.
+The core runs as a child process exposing a local SOCKS5 listener; `tun2socks`
+bridges the TUN device to it. The service monitors the child process and tears
+the tunnel down if it exits.
 
-## Usage
+`libtun2socks.so` binds its JNI symbols to the **exact** class
+`us.leaf3stones.hy2droid.proxy.Hysteria2VpnService` and to the signatures of
+`startTun2socks` / `stopTun2socks` / `getTun2socksStats`. Neither the class name
+nor those signatures may change without rebuilding the `.so`, and ProGuard/R8 is
+configured to keep them.
 
-- **Server**: the server domain or IP (optionally with `:port`, default `443`)
-- **Auth**: the Hysteria 2 password
-- **SNI**: TLS SNI; optional, defaults to the server host. May differ from the
-  server address when the server is addressed by IP but the certificate is
-  issued for a hostname
-- **Obfuscation password**: the Salamander password; leave blank if the server
-  does not use obfuscation
-- **Upload / Download Mbps**: set your real line speeds to enable Brutal; both 0
-  disables Brutal and uses BBR (see the
-  [official docs](https://v2.hysteria.network/docs/advanced/Full-Server-Config/))
-- **Allow insecure certificate**: skips TLS verification; should normally stay
-  off (enables man-in-the-middle attacks)
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `app/src/main/java/.../ui` | Compose UI (home, profile editor, settings, split tunnel, QR scanner) |
+| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `HysteriaConfigBuilder`, `HysteriaUri` |
+| `app/src/main/java/.../proxy` | `Hysteria2VpnService`, `VpnTileService`, `TunnelStatus`, `Tun2socksConfig` |
+| `app/src/main/jniLibs` | `libtun2socks.so` (committed); `libhysteria.so` is downloaded at build time |
+| `core/core.properties` | Pinned Hysteria core version + per-ABI checksums |
+| `scripts/core.sh` | Fetch / verify / upgrade the core |
+| `.github/workflows` | `build.yml` (debug) and `release.yml` (signed release) |
+
+## Building
+
+Prerequisites: JDK 17 and an Android SDK with platform 34. The Hysteria core is
+fetched automatically (see *Bundled core*), so a fresh clone builds with:
+
+```bash
+./gradlew assembleDebug        # app/build/outputs/apk/debug/
+./gradlew testDebugUnitTest    # JVM unit tests
+./gradlew assembleRelease      # signed APK when a keystore is present
+```
 
 ## Bundled core
 
 The Hysteria core binaries are **not committed to git**. They are downloaded at
-build time from the upstream release (`hysteria-android-<arch>`) and verified
-against that release's `hashes.txt` into
-`app/src/main/jniLibs/<abi>/libhysteria.so`.
-
-`core/core.properties` pins the version plus the per-ABI SHA-256 checksums and is
-exposed to the app as `BuildConfig.CORE_VERSION` (logged by the VPN service on
-every connect).
+build time from the upstream release (`hysteria-android-<arch>`), verified
+against that release's `hashes.txt`, and installed into
+`app/src/main/jniLibs/<abi>/libhysteria.so`. `core/core.properties` pins the
+version plus the per-ABI SHA-256 checksums and is surfaced to the app as
+`BuildConfig.CORE_VERSION` (logged by the service on every connect).
 
 `scripts/core.sh` manages it:
 
 | Command | Description |
 | --- | --- |
-| `scripts/core.sh fetch` | Install the pinned core (no-op when already present); Gradle runs this via the `fetchCore` task |
+| `scripts/core.sh fetch` | Install the pinned core (no-op when already present); Gradle runs this via the `fetchCore` task on `preBuild` |
 | `scripts/core.sh latest` | Resolve the newest upstream release tag |
 | `scripts/core.sh upgrade [tag\|latest]` | Install a specific (default: newest) core |
 | `scripts/core.sh version` | Pinned version + whether the binaries match |
 | `scripts/core.sh verify` | Verify the binaries against the manifest (run in CI) |
 | `scripts/core.sh hashes` | Print the per-ABI checksums |
 
-CI installs **the latest upstream release on every build**; the resolved version
-is printed in the workflow run summary. To pin a build, dispatch the workflow
-with the `core_tag` input (e.g. `app/v2.12.3`), or locally:
+CI installs **the newest upstream release on every build** and prints the resolved
+version in the run summary. Pin a build with the `core_tag` workflow input
+(e.g. `app/v2.12.3`) or locally:
 
 ```bash
 HY2_CORE_TAG=app/v2.12.3 ./gradlew assembleDebug   # one-off override
@@ -92,60 +109,75 @@ ABI mapping: `arm64-v8a` → `arm64`, `armeabi-v7a` → `armv7`, `x86_64` → `a
 the binary with `-c <config>`; if a release changes the YAML schema,
 `HysteriaConfigBuilder` is the only app-side touch point.
 
-## Building
-
-```bash
-./gradlew assembleDebug      # APK at app/build/outputs/apk/debug/
-./gradlew assembleRelease    # signed APK (needs the keystore, see below)
-```
-
-### Continuous integration
+## Continuous integration and releases
 
 | Workflow | Trigger | Output |
 | --- | --- | --- |
-| `.github/workflows/build.yml` | every push to `main`, or manual | debug APK as a workflow artifact |
-| `.github/workflows/release.yml` | pushing a `v*` tag, or manual with a version | **signed** release APKs + a GitHub Release |
+| `.github/workflows/build.yml` | push to `main`, or manual | debug APK as a workflow artifact |
+| `.github/workflows/release.yml` | pushing a `v*` tag, or manual with a version | signed release APKs + a GitHub Release |
 
-Both workflows install the newest Hysteria core before building (see *Bundled
-core* above).
+Both fetch the newest core, verify it, and build. The release workflow signs with
+a keystore taken from repository secrets, verifies the signature with
+`apksigner`, and publishes `app-universal-release.apk` plus the four ABI splits.
 
-## Releasing
+### Setting up signing
 
-The release workflow signs the APK and publishes it as a GitHub Release. It
-needs four repository secrets (Settings → Secrets and variables → Actions):
+Add four repository secrets (Settings → Secrets and variables → Actions):
 
 | Secret | Value |
 | --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | your keystore, base64-encoded: `base64 -w0 signing/production.jks` |
+| `ANDROID_KEYSTORE_BASE64` | keystore, base64-encoded: `base64 -w0 signing/production.jks` |
 | `ANDROID_KEYSTORE_PASSWORD` | keystore password |
 | `ANDROID_KEY_PASSWORD` | key password |
 | `ANDROID_KEY_ALIAS` | key alias |
 
-Create the keystore once (keep it safe and backed up — losing it means you can
-never update an installed app under the same package name):
+Create the keystore once and back it up — losing it means installed apps can
+never be updated under the same package name:
 
 ```bash
 keytool -genkeypair -v -keystore signing/production.jks -alias signing \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-Then publish either by pushing a tag, or manually from the Actions tab:
+Then publish by pushing a tag (or from the Actions tab with a version input):
 
 ```bash
-git tag v2.1.0 && git push origin v2.1.0        # tag → versionName 2.1.0
+git tag v2.1.0 && git push origin v2.1.0     # versionName 2.1.0
 ```
 
 `versionName` comes from the tag (or the `version_name` input) and `versionCode`
-from the workflow run number, so every release is upgradeable.
+from the workflow run number, so every release is upgradeable. Without
+`ANDROID_KEYSTORE_BASE64` the workflow still builds (validating R8/ProGuard
+against the JNI bindings) but produces an unsigned APK, skips the signature
+check and does not publish.
 
-Without `ANDROID_KEYSTORE_BASE64` the workflow still builds (validating R8 /
-ProGuard against the JNI bindings) but produces an unsigned APK, skips the
-signature check and does not publish — the log says so explicitly.
+To sign locally, place the keystore at `signing/production.jks` (gitignored, or
+point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
+`HY2_KEY_PASSWORD`, `HY2_KEY_ALIAS`, then run `./gradlew assembleRelease`.
 
-To sign locally instead, drop the keystore at `signing/production.jks`
-(gitignored) and export `HY2_KEYSTORE_PASSWORD`, `HY2_KEY_PASSWORD` and
-`HY2_KEY_ALIAS` before running `./gradlew assembleRelease`.
+## Profile fields
 
+- **Server** — domain or IP, plus a separate **port** field (default `443`)
+- **Auth** — the Hysteria 2 password
+- **SNI** — TLS server name; blank means "derive from the server host". Needed
+  when the server is addressed by IP but the certificate is issued to a hostname
+- **Obfuscation password** — Salamander password; blank disables obfs
+- **Upload / Download Mbps** — your real line speeds to enable Brutal; both 0
+  keeps BBR (see the
+  [official docs](https://v2.hysteria.network/docs/advanced/Full-Server-Config/))
+- **Allow insecure certificate** — skips TLS verification; keep it off unless
+  you know what you are doing
+- **QUIC fast open** — off by default; only enable it if you know your network
+  tolerates QUIC 0-RTT
+
+## Troubleshooting
+
+- The core logs to logcat under the `hysteria` tag (lines containing a share URI
+  or the obfs password are redacted).
+- The service logs to the `Hysteria2VpnService` tag, including the bundled core
+  version at every connect: `adb logcat -s Hysteria2VpnService | grep 'Hysteria core'`.
+- If a newly released core breaks connectivity, pin the previous one via the
+  `core_tag` input or `HY2_CORE_TAG` and open an issue.
 
 ## Credits
 
