@@ -56,6 +56,37 @@ signatures must be preserved.
 - **Allow insecure certificate**: skips TLS verification; should normally stay
   off (enables man-in-the-middle attacks)
 
+## Bundled core
+
+The Hysteria core ships as a prebuilt Android executable at
+`app/src/main/jniLibs/<abi>/libhysteria.so` (the upstream release asset
+`hysteria-android-<arch>`, renamed). Its version and per-ABI SHA-256 checksums
+are recorded in `core/core.properties` and exposed to the app as
+`BuildConfig.CORE_VERSION` (the VPN service logs it on every connect).
+
+`scripts/core.sh` manages the core:
+
+| Command | Description |
+| --- | --- |
+| `scripts/core.sh version` | Show the recorded vs. embedded core version |
+| `scripts/core.sh verify` | Verify the committed binaries against the manifest (also run in CI) |
+| `scripts/core.sh upgrade app/v2.13.0` | Download, checksum-verify and install a new core |
+| `scripts/core.sh hashes` | Print the current per-ABI checksums |
+
+Upgrading is a single command plus a commit:
+
+```bash
+scripts/core.sh upgrade app/v2.13.0
+git add core/core.properties app/src/main/jniLibs
+git commit -m "chore: bump Hysteria core to v2.13.0"
+```
+
+ABI mapping: `arm64-v8a` → `arm64`, `armeabi-v7a` → `armv7`, `x86_64` → `amd64`,
+`x86` → `386`. The service only execs the binary with `-c <config>`, so a core
+bump is a straight binary swap as long as the config schema is unchanged. If a
+future core changes its YAML schema, `HysteriaConfigBuilder` is the only
+app-side touch point.
+
 ## Building
 
 ```bash

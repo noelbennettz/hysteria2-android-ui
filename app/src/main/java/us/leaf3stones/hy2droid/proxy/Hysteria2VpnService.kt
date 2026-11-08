@@ -25,6 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import us.leaf3stones.hy2droid.BuildConfig
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
 import us.leaf3stones.hy2droid.data.ProfileStore
@@ -91,6 +92,7 @@ class Hysteria2VpnService : VpnService() {
             return
         }
         shuttingDown = false
+        Log.i(TAG, "Starting tunnel · Hysteria core ${BuildConfig.CORE_VERSION}")
         updateState(TunnelState.Connecting)
 
         val settings = SettingsStore(applicationContext)

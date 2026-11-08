@@ -3,6 +3,15 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
 }
 
+// Version of the bundled Hysteria core, recorded by scripts/core.sh in
+// core/core.properties. Regenerate that file with `scripts/core.sh upgrade`.
+def corePropsFile = rootProject.file('core/core.properties')
+def coreProps = new Properties()
+if (corePropsFile.exists()) {
+    corePropsFile.withInputStream { coreProps.load(it) }
+}
+def coreVersion = coreProps.getProperty('HYSTERIA_VERSION', 'unknown')
+
 android {
     namespace 'us.leaf3stones.hy2droid'
     compileSdk 34
@@ -13,6 +22,9 @@ android {
         targetSdk 34
         versionCode 2
         versionName "2.0.0"
+
+        // Exposed at runtime as BuildConfig.CORE_VERSION (see scripts/core.sh).
+        buildConfigField "String", "CORE_VERSION", "\"${coreVersion}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -62,6 +74,7 @@ android {
     }
     buildFeatures {
         compose true
+        buildConfig true
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.1'
