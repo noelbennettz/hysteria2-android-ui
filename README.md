@@ -3,7 +3,7 @@
 A native Android client for the [Hysteria 2](https://v2.hysteria.network/) proxy
 protocol: a thin Kotlin/Jetpack Compose (Material 3) UI in front of an Android
 `VpnService`, with the official Go core running as a child process and
-[go-tun2socks](https://github.com/eycorsican/go-tun2socks) bridging the TUN
+[hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) bridging the TUN
 device to it.
 
 Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
@@ -26,6 +26,8 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). When
   disabled, no resolver is injected and DNS goes through the server egress
 - Split tunnelling: pick apps that bypass the VPN
+- **Blocked traffic**: refuse flows by protocol and port inside the tunnel — the
+  built-in preset blocks QUIC (UDP 443), which Hysteria 2 cannot accelerate
 - Optional **LAN bypass** (Android 13+): local-network traffic — RFC1918,
   link-local, CGNAT and multicast (mDNS/SSDP) — stays outside the VPN, so NAS
   boxes, printers, router admin pages and casting keep working
@@ -71,7 +73,8 @@ UI (Compose / Material 3)
                         └─ libtun2socks.so (JNI): TUN fd → SOCKS5
 ```
 
-The core runs as a child process exposing a local SOCKS5 listener; `tun2socks`
+The core runs as a child process exposing a local SOCKS5 listener;
+`libtun2socks.so` (hev-socks5-tunnel plus the patches in `native/tun2socks/`)
 bridges the TUN device to it. The service monitors the child process and tears
 the tunnel down if it exits.
 
@@ -79,18 +82,46 @@ the tunnel down if it exits.
 `us.leaf3stones.hy2droid.proxy.Hysteria2VpnService` and to the signatures of
 `startTun2socks` / `stopTun2socks` / `getTun2socksStats`. Neither the class name
 nor those signatures may change without rebuilding the `.so`, and ProGuard/R8 is
-configured to keep them.
+configured to keep them. The prebuilt `.so` files are committed, so building the
+app needs no NDK; `scripts/tun2socks.sh build` reproduces them from a pinned
+upstream tag when a patch changes.
+
+## Blocked traffic
+
+Hysteria 2 forwards UDP through its own QUIC connection and has no UDP
+acceleration, so QUIC inside the tunnel (QUIC over QUIC) is markedly slower than
+TCP on lossy networks — a limitation of the protocol, not of this app. Refusing
+those flows makes browsers and apps fall back to TCP/TLS, which the core handles
+much better.
+
+`Settings → Blocked traffic` keeps a list of `protocol + port` rules (single
+ports or ranges, `TCP`, `UDP` or both) with a one-tap **Block QUIC (UDP 443)**
+preset. Rules are rendered into the tunnelling config:
+
+```yaml
+misc:
+  block-tcp: '25,465'
+  block-udp: '443'
+```
+
+The patched tunnel applies them before any session is created: a blocked TCP
+port is answered with a reset (so the client fails over immediately) and a
+blocked UDP port is dropped. Nothing of a blocked flow reaches the core, and
+there is no per-packet cost for everything else. Changes apply on the next
+connection. With no rules the config carries no `misc:` section at all.
 
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
-| `app/src/main/java/.../ui` | Compose UI (home, profile editor, settings, split tunnel, QR scanner) |
-| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `HysteriaConfigBuilder`, `HysteriaUri` |
+| `app/src/main/java/.../ui` | Compose UI (home, profile editor, settings, split tunnel, blocked traffic, QR scanner) |
+| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `BlockRule`, `HysteriaConfigBuilder`, `HysteriaUri` |
 | `app/src/main/java/.../proxy` | `Hysteria2VpnService`, `VpnTileService`, `TunnelStatus`, `Tun2socksConfig` |
-| `app/src/main/jniLibs` | `libtun2socks.so` (committed); `libhysteria.so` is downloaded at build time |
+| `app/src/main/jniLibs` | `libtun2socks.so` (committed, see `native/tun2socks/`); `libhysteria.so` is downloaded at build time |
+| `native/tun2socks` | Patches applied on top of hev-socks5-tunnel (blocked-port rules, JNI names) |
 | `core/core.properties` | Pinned Hysteria core version + per-ABI checksums |
 | `scripts/core.sh` | Fetch / verify / upgrade the core |
+| `scripts/tun2socks.sh` | Rebuild `libtun2socks.so` from the pinned upstream tag + patches |
 | `.github/workflows` | `build.yml` (debug) and `release.yml` (signed release) |
 
 ## Building
@@ -212,8 +243,9 @@ point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
 
 - [hysteria](https://github.com/apernet/hysteria) — protocol and reference
   implementation. [LICENSE](https://github.com/apernet/hysteria/blob/master/LICENSE.md)
-- [go-tun2socks](https://github.com/eycorsican/go-tun2socks) — TUN ↔ SOCKS5
-  bridge. [LICENSE](https://github.com/eycorsican/go-tun2socks/blob/master/LICENSE)
+- [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) — TUN ↔ SOCKS5
+  bridge, patched for blocked-port rules (see `native/tun2socks/`).
+  [LICENSE](https://github.com/heiher/hev-socks5-tunnel/blob/main/LICENSE)
 
 This application is provided for learning and personal use. Follow the laws of
 your jurisdiction.

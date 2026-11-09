@@ -71,6 +71,23 @@
     <string name="settings_dns_invalid">Introduce una dirección IPv4 o IPv6 válida</string>
     <string name="settings_bypass_lan">Omitir la red local</string>
     <string name="settings_bypass_lan_summary">Mantener los dispositivos de la LAN, la transmisión y las páginas del router fuera de la VPN</string>
+    <string name="settings_blocked_traffic">Tráfico bloqueado</string>
+    <string name="settings_blocked_traffic_summary">Rechazar tráfico como QUIC (UDP 443)</string>
+
+    <!-- Blocked traffic -->
+    <string name="block_title">Tráfico bloqueado</string>
+    <string name="block_hint">El tráfico que coincide se rechaza antes de salir del túnel. Los navegadores prueban QUIC (UDP 443) primero y Hysteria 2 no puede acelerar UDP, así que al bloquearlo pasan a TCP, mucho más rápido en redes malas.</string>
+    <string name="block_empty">No hay nada bloqueado.</string>
+    <string name="block_proto_tcp">TCP</string>
+    <string name="block_proto_udp">UDP</string>
+    <string name="block_proto_both">TCP + UDP</string>
+    <string name="block_add_rule">Añadir una regla</string>
+    <string name="block_port_from">Puerto</string>
+    <string name="block_port_to">Hasta (opcional)</string>
+    <string name="block_port_invalid">Introduce un puerto (1–65535) o un rango</string>
+    <string name="block_action_add">Añadir</string>
+    <string name="block_preset_quic">Bloquear QUIC (UDP 443)</string>
+    <string name="block_applies_hint">Los cambios se aplican la próxima vez que te conectes.</string>
 
     <!-- Errors -->
     <string name="error_no_config">No se encontró ninguna configuración. Abre la app y vuelve a conectar.</string>
@@ -78,5 +95,6 @@
     <string name="error_establish">No se pudo crear la interfaz VPN. Es posible que se haya revocado el permiso.</string>
     <string name="error_core_launch">No se pudo iniciar el núcleo Hysteria.</string>
     <string name="error_tun2socks_start">No se pudo iniciar tun2socks: %1$s</string>
+    <string name="error_tun2socks_failed">No se pudo iniciar el motor del túnel. Inténtalo de nuevo.</string>
     <string name="error_core_exited">El núcleo Hysteria se detuvo inesperadamente (código %1$d).</string>
 </resources>

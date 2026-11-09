@@ -71,6 +71,23 @@
     <string name="settings_dns_invalid">请输入有效的 IPv4 或 IPv6 地址</string>
     <string name="settings_bypass_lan">绕过局域网</string>
     <string name="settings_bypass_lan_summary">局域网设备、投屏和路由器管理页面不走 VPN</string>
+    <string name="settings_blocked_traffic">屏蔽流量</string>
+    <string name="settings_blocked_traffic_summary">拒绝 QUIC（UDP 443）等流量</string>
+
+    <!-- Blocked traffic -->
+    <string name="block_title">屏蔽流量</string>
+    <string name="block_hint">匹配的流量会在离开隧道前被拒绝。浏览器优先使用 QUIC（UDP 443），而 Hysteria 2 无法加速 UDP，屏蔽后浏览器会改用 TCP，在弱网下明显更快。</string>
+    <string name="block_empty">当前没有屏蔽任何流量。</string>
+    <string name="block_proto_tcp">TCP</string>
+    <string name="block_proto_udp">UDP</string>
+    <string name="block_proto_both">TCP + UDP</string>
+    <string name="block_add_rule">添加规则</string>
+    <string name="block_port_from">端口</string>
+    <string name="block_port_to">到（可选）</string>
+    <string name="block_port_invalid">请输入端口（1–65535）或端口范围</string>
+    <string name="block_action_add">添加</string>
+    <string name="block_preset_quic">屏蔽 QUIC（UDP 443）</string>
+    <string name="block_applies_hint">更改将在下次连接时生效。</string>
 
     <!-- Errors -->
     <string name="error_no_config">找不到配置。请打开应用后重新连接。</string>
@@ -78,5 +95,6 @@
     <string name="error_establish">无法建立 VPN 接口，权限可能已被撤销。</string>
     <string name="error_core_launch">无法启动 Hysteria 核心。</string>
     <string name="error_tun2socks_start">无法启动 tun2socks：%1$s</string>
+    <string name="error_tun2socks_failed">无法启动隧道引擎，请重试。</string>
     <string name="error_core_exited">Hysteria 核心意外停止（代码 %1$d）。</string>
 </resources>

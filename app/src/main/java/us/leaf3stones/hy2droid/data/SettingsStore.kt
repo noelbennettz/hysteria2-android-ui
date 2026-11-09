@@ -25,6 +25,7 @@ class SettingsStore(private val context: Context) {
     private val keyDnsServer2 = stringPreferencesKey("custom_dns_server2")
     private val keyDesired = booleanPreferencesKey("desired_connected")
     private val keyBypassLan = booleanPreferencesKey("bypass_lan")
+    private val keyBlockRules = stringPreferencesKey("block_rules")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -54,6 +55,10 @@ class SettingsStore(private val context: Context) {
     val bypassLan: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyBypassLan] ?: false }
 
+    /** Traffic that is refused before it reaches the core. Default: nothing. */
+    val blockRules: Flow<List<BlockRule>> = context.settingsDataStore.data
+        .map { decodeRules(decode(it[keyBlockRules])) }
+
     suspend fun setExcluded(packages: Set<String>) {
         context.settingsDataStore.edit { it[keyExcluded] = encode(packages) }
     }
@@ -80,6 +85,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setBypassLan(enabled: Boolean) {
         context.settingsDataStore.edit { it[keyBypassLan] = enabled }
+    }
+
+    suspend fun setBlockRules(rules: List<BlockRule>) {
+        context.settingsDataStore.edit { it[keyBlockRules] = encode(rules.encodeRules().toSet()) }
     }
 
     private fun decode(json: String?): Set<String> {

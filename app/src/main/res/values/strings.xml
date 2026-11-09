@@ -73,6 +73,23 @@
     <string name="settings_dns_invalid">Enter a valid IPv4 or IPv6 address</string>
     <string name="settings_bypass_lan">Bypass local network</string>
     <string name="settings_bypass_lan_summary">Keep LAN devices, casting and router pages outside the VPN</string>
+    <string name="settings_blocked_traffic">Blocked traffic</string>
+    <string name="settings_blocked_traffic_summary">Refuse flows such as QUIC (UDP 443)</string>
+
+    <!-- Blocked traffic -->
+    <string name="block_title">Blocked traffic</string>
+    <string name="block_hint">Matching traffic is refused before it leaves the tunnel. Browsers try QUIC (UDP 443) first and Hysteria 2 cannot accelerate UDP, so blocking it makes them switch to TCP, which is much faster on poor networks.</string>
+    <string name="block_empty">Nothing is blocked.</string>
+    <string name="block_proto_tcp">TCP</string>
+    <string name="block_proto_udp">UDP</string>
+    <string name="block_proto_both">TCP + UDP</string>
+    <string name="block_add_rule">Add a rule</string>
+    <string name="block_port_from">Port</string>
+    <string name="block_port_to">To (optional)</string>
+    <string name="block_port_invalid">Enter a port (1–65535) or a range</string>
+    <string name="block_action_add">Add</string>
+    <string name="block_preset_quic">Block QUIC (UDP 443)</string>
+    <string name="block_applies_hint">Changes apply the next time you connect.</string>
 
     <!-- Errors -->
     <string name="error_no_config">No configuration found. Open the app and connect again.</string>
@@ -80,5 +97,6 @@
     <string name="error_establish">Could not establish the VPN interface. Permission may have been revoked.</string>
     <string name="error_core_launch">Failed to launch the Hysteria core.</string>
     <string name="error_tun2socks_start">Failed to start tun2socks: %1$s</string>
+    <string name="error_tun2socks_failed">Could not start the tunnel engine. Please try again.</string>
     <string name="error_core_exited">The Hysteria core stopped unexpectedly (code %1$d).</string>
 </resources>

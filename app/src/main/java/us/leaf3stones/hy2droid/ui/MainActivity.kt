@@ -42,6 +42,7 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
         var editorOpen by remember { mutableStateOf(false) }
         var pendingProfile by remember { mutableStateOf<Profile?>(null) }
         var splitTunnelOpen by remember { mutableStateOf(false) }
+        var blockRulesOpen by remember { mutableStateOf(false) }
         var settingsOpen by remember { mutableStateOf(false) }
         var scannerOpen by remember { mutableStateOf(false) }
 
@@ -94,10 +95,15 @@ private fun AppRoot(vm: MainViewModel = viewModel()) {
                 viewModel = vm,
                 onBack = { splitTunnelOpen = false },
             )
+            blockRulesOpen -> BlockRulesScreen(
+                viewModel = vm,
+                onBack = { blockRulesOpen = false },
+            )
             settingsOpen -> SettingsScreen(
                 viewModel = vm,
                 onBack = { settingsOpen = false },
                 onOpenSplitTunnel = { splitTunnelOpen = true },
+                onOpenBlockRules = { blockRulesOpen = true },
             )
             else -> HomeScreen(
                 viewModel = vm,

@@ -71,6 +71,23 @@
     <string name="settings_dns_invalid">Saisissez une adresse IPv4 ou IPv6 valide</string>
     <string name="settings_bypass_lan">Contourner le réseau local</string>
     <string name="settings_bypass_lan_summary">Garder les appareils du réseau local, la diffusion et les pages du routeur hors du VPN</string>
+    <string name="settings_blocked_traffic">Trafic bloqué</string>
+    <string name="settings_blocked_traffic_summary">Refuser le trafic comme QUIC (UDP 443)</string>
+
+    <!-- Blocked traffic -->
+    <string name="block_title">Trafic bloqué</string>
+    <string name="block_hint">Le trafic correspondant est refusé avant de quitter le tunnel. Les navigateurs essaient d\'abord QUIC (UDP 443) et Hysteria 2 ne peut pas accélérer l\'UDP : en le bloquant, ils passent en TCP, bien plus rapide sur un réseau dégradé.</string>
+    <string name="block_empty">Rien n\'est bloqué.</string>
+    <string name="block_proto_tcp">TCP</string>
+    <string name="block_proto_udp">UDP</string>
+    <string name="block_proto_both">TCP + UDP</string>
+    <string name="block_add_rule">Ajouter une règle</string>
+    <string name="block_port_from">Port</string>
+    <string name="block_port_to">Jusqu\'à (facultatif)</string>
+    <string name="block_port_invalid">Saisissez un port (1–65535) ou une plage</string>
+    <string name="block_action_add">Ajouter</string>
+    <string name="block_preset_quic">Bloquer QUIC (UDP 443)</string>
+    <string name="block_applies_hint">Les modifications s\'appliquent à la prochaine connexion.</string>
 
     <!-- Errors -->
     <string name="error_no_config">Aucune configuration trouvée. Ouvrez l\'application et reconnectez-vous.</string>
@@ -78,5 +95,6 @@
     <string name="error_establish">Impossible de créer l\'interface VPN. L\'autorisation a peut-être été révoquée.</string>
     <string name="error_core_launch">Impossible de lancer le cœur Hysteria.</string>
     <string name="error_tun2socks_start">Impossible de démarrer tun2socks : %1$s</string>
+    <string name="error_tun2socks_failed">Impossible de démarrer le moteur du tunnel. Réessayez.</string>
     <string name="error_core_exited">Le cœur Hysteria s\'est arrêté de façon inattendue (code %1$d).</string>
 </resources>

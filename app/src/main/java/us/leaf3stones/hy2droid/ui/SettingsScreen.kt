@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lan
@@ -67,6 +68,7 @@ fun SettingsScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit,
     onOpenSplitTunnel: () -> Unit,
+    onOpenBlockRules: () -> Unit,
 ) {
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val dnsEnabled by viewModel.customDnsEnabled.collectAsState()
@@ -139,6 +141,13 @@ fun SettingsScreen(
                 title = stringResource(R.string.split_tunnel_title),
                 subtitle = stringResource(R.string.split_tunnel_summary),
                 onClick = onOpenSplitTunnel,
+            )
+            HorizontalDivider()
+            ClickRow(
+                icon = Icons.Filled.Block,
+                title = stringResource(R.string.settings_blocked_traffic),
+                subtitle = stringResource(R.string.settings_blocked_traffic_summary),
+                onClick = onOpenBlockRules,
             )
             HorizontalDivider()
             // excludeRoute() (a true bypass) only exists from Android 13, so the

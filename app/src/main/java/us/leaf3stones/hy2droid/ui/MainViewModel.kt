@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import us.leaf3stones.hy2droid.data.BlockRule
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
 import us.leaf3stones.hy2droid.data.Profile
 import us.leaf3stones.hy2droid.data.ProfileStore
@@ -51,6 +52,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val bypassLan: StateFlow<Boolean> = settings.bypassLan
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val blockRules: StateFlow<List<BlockRule>> = settings.blockRules
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     val tunnelState: StateFlow<TunnelState> = TunnelStatus.state
     val stats: StateFlow<TunnelStats> = TunnelStatus.stats
 
@@ -88,6 +92,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setBypassLan(enabled: Boolean) {
         viewModelScope.launch { settings.setBypassLan(enabled) }
+    }
+
+    fun setBlockRules(rules: List<BlockRule>) {
+        viewModelScope.launch { settings.setBlockRules(rules) }
     }
 
     /** Persist [profile] as the selected profile and bring the tunnel up for it. */

@@ -71,6 +71,23 @@
     <string name="settings_dns_invalid">أدخل عنوان IPv4 أو IPv6 صالحًا</string>
     <string name="settings_bypass_lan">تجاوز الشبكة المحلية</string>
     <string name="settings_bypass_lan_summary">إبقاء أجهزة الشبكة المحلية والبث وصفحات الموجّه خارج VPN</string>
+    <string name="settings_blocked_traffic">حركة المرور المحظورة</string>
+    <string name="settings_blocked_traffic_summary">رفض حركة مثل QUIC (UDP 443)</string>
+
+    <!-- Blocked traffic -->
+    <string name="block_title">حركة المرور المحظورة</string>
+    <string name="block_hint">تُرفض حركة المرور المطابقة قبل مغادرتها النفق. تجرّب المتصفحات QUIC (UDP 443) أولاً، ولا يستطيع Hysteria 2 تسريع UDP، لذا فإن حجبها يجعلها تستخدم TCP وهو أسرع بكثير في الشبكات الضعيفة.</string>
+    <string name="block_empty">لا شيء محظور.</string>
+    <string name="block_proto_tcp">TCP</string>
+    <string name="block_proto_udp">UDP</string>
+    <string name="block_proto_both">TCP + UDP</string>
+    <string name="block_add_rule">إضافة قاعدة</string>
+    <string name="block_port_from">المنفذ</string>
+    <string name="block_port_to">إلى (اختياري)</string>
+    <string name="block_port_invalid">أدخل منفذًا (1–65535) أو نطاقًا</string>
+    <string name="block_action_add">إضافة</string>
+    <string name="block_preset_quic">حجب QUIC (UDP 443)</string>
+    <string name="block_applies_hint">تُطبَّق التغييرات في المرة التالية التي تتصل فيها.</string>
 
     <!-- Errors -->
     <string name="error_no_config">لم يتم العثور على أي إعداد. افتح التطبيق واتصل مرة أخرى.</string>
@@ -79,4 +96,5 @@
     <string name="error_core_launch">تعذّر تشغيل نواة Hysteria.</string>
     <string name="error_tun2socks_start">تعذّر بدء tun2socks: %1$s</string>
     <string name="error_core_exited">توقفت نواة Hysteria بشكل غير متوقع (الرمز %1$d).</string>
+    <string name="error_tun2socks_failed">تعذّر بدء محرك النفق. حاول مرة أخرى.</string>
 </resources>

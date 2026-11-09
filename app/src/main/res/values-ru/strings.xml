@@ -71,6 +71,23 @@
     <string name="settings_dns_invalid">Введите корректный адрес IPv4 или IPv6</string>
     <string name="settings_bypass_lan">Обход локальной сети</string>
     <string name="settings_bypass_lan_summary">Устройства локальной сети, трансляция и страницы роутера вне VPN</string>
+    <string name="settings_blocked_traffic">Заблокированный трафик</string>
+    <string name="settings_blocked_traffic_summary">Отклонять трафик вроде QUIC (UDP 443)</string>
+
+    <!-- Blocked traffic -->
+    <string name="block_title">Заблокированный трафик</string>
+    <string name="block_hint">Совпадающий трафик отклоняется до выхода из туннеля. Браузеры сначала пробуют QUIC (UDP 443), а Hysteria 2 не ускоряет UDP, поэтому при блокировке они переходят на TCP — это заметно быстрее в плохих сетях.</string>
+    <string name="block_empty">Ничего не заблокировано.</string>
+    <string name="block_proto_tcp">TCP</string>
+    <string name="block_proto_udp">UDP</string>
+    <string name="block_proto_both">TCP + UDP</string>
+    <string name="block_add_rule">Добавить правило</string>
+    <string name="block_port_from">Порт</string>
+    <string name="block_port_to">До (необязательно)</string>
+    <string name="block_port_invalid">Введите порт (1–65535) или диапазон</string>
+    <string name="block_action_add">Добавить</string>
+    <string name="block_preset_quic">Заблокировать QUIC (UDP 443)</string>
+    <string name="block_applies_hint">Изменения применятся при следующем подключении.</string>
 
     <!-- Errors -->
     <string name="error_no_config">Конфигурация не найдена. Откройте приложение и подключитесь снова.</string>
@@ -78,5 +95,6 @@
     <string name="error_establish">Не удалось создать интерфейс VPN. Возможно, разрешение отозвано.</string>
     <string name="error_core_launch">Не удалось запустить ядро Hysteria.</string>
     <string name="error_tun2socks_start">Не удалось запустить tun2socks: %1$s</string>
+    <string name="error_tun2socks_failed">Не удалось запустить движок туннеля. Повторите попытку.</string>
     <string name="error_core_exited">Ядро Hysteria неожиданно остановилось (код %1$d).</string>
 </resources>

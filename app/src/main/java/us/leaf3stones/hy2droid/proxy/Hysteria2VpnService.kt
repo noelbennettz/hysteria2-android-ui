@@ -51,8 +51,13 @@ import java.util.Scanner
 class Hysteria2VpnService : VpnService() {
 
     // --- JNI surface (do NOT rename/relocate: symbols are bound to this FQCN) ---
-    private external fun startTun2socks(configPath: String, fd: Int)
-    private external fun stopTun2socks()
+    private external fun startTun2socks(configPath: String, fd: Int): Boolean
+    private external fun stopTun2socks(): Boolean
+
+    /**
+     * Traffic counters of the tunnel engine, in order:
+     * `[tx packets, tx bytes, rx packets, rx bytes]`.
+     */
     private external fun getTun2socksStats(): LongArray
 
     private var tunInterface: ParcelFileDescriptor? = null
@@ -125,6 +130,12 @@ class Hysteria2VpnService : VpnService() {
             false
         }
 
+        val blockRules = try {
+            settings.blockRules.first()
+        } catch (_: Exception) {
+            emptyList()
+        }
+
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
         if (!ensureConfigFile(configFile)) {
             fail(getString(R.string.error_no_config))
@@ -133,7 +144,7 @@ class Hysteria2VpnService : VpnService() {
 
         val tun2socksFile = File(filesDir, Tun2socksConfig.FILE_NAME)
         try {
-            tun2socksFile.writeText(Tun2socksConfig.CONTENT)
+            tun2socksFile.writeText(Tun2socksConfig.build(blockRules))
         } catch (e: Exception) {
             fail(getString(R.string.error_tun2socks_config, e.message ?: ""))
             return
@@ -155,11 +166,16 @@ class Hysteria2VpnService : VpnService() {
         coreProcess = process
         monitorJob = serviceScope.launch { monitorCore(process) }
 
-        try {
+        val started = try {
             startTun2socks(tun2socksFile.absolutePath, pfd.fd)
         } catch (e: Throwable) {
             teardown()
             fail(getString(R.string.error_tun2socks_start, e.message ?: ""))
+            return
+        }
+        if (!started) {
+            teardown()
+            fail(getString(R.string.error_tun2socks_failed))
             return
         }
 
@@ -326,8 +342,9 @@ class Hysteria2VpnService : VpnService() {
                 } catch (_: Throwable) {
                     null
                 }
-                if (values != null && values.size >= 2) {
-                    TunnelStatus.setStats(values[0], values[1])
+                if (values != null && values.size >= 4) {
+                    // [tx packets, tx bytes, rx packets, rx bytes]
+                    TunnelStatus.setStats(tx = values[1], rx = values[3])
                 }
                 delay(STATS_INTERVAL_MS)
             }
