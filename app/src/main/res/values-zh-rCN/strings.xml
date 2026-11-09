@@ -59,6 +59,8 @@
     <!-- Settings -->
     <string name="settings_title">设置</string>
     <string name="settings_dynamic_color">动态取色（Material You）</string>
+    <string name="settings_show_address">显示服务器地址</string>
+    <string name="settings_show_address_summary">在配置卡片上显示主机和端口</string>
     <string name="settings_custom_dns">自定义 DNS 服务器</string>
     <string name="settings_dns_server">DNS 服务器 IP</string>
     <string name="settings_dns_note">作为 VPN 的 DNS 服务器（通过隧道的明文 DNS）。</string>

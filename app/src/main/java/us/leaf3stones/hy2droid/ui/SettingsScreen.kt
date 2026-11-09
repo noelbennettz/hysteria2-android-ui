@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -71,6 +72,7 @@ fun SettingsScreen(
     onOpenBlockRules: () -> Unit,
 ) {
     val dynamicColor by viewModel.dynamicColor.collectAsState()
+    val showServerAddress by viewModel.showServerAddress.collectAsState()
     val dnsEnabled by viewModel.customDnsEnabled.collectAsState()
     val dns1 by viewModel.customDnsServer.collectAsState()
     val dns2 by viewModel.customDnsServer2.collectAsState()
@@ -133,6 +135,14 @@ fun SettingsScreen(
                 subtitle = null,
                 checked = dynamicColor,
                 onCheckedChange = viewModel::setDynamicColor,
+            )
+            HorizontalDivider()
+            SwitchRow(
+                icon = Icons.Filled.Public,
+                title = stringResource(R.string.settings_show_address),
+                subtitle = stringResource(R.string.settings_show_address_summary),
+                checked = showServerAddress,
+                onCheckedChange = viewModel::setShowServerAddress,
             )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_network))

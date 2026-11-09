@@ -59,6 +59,8 @@
     <!-- Settings -->
     <string name="settings_title">Ajustes</string>
     <string name="settings_dynamic_color">Color dinámico (Material You)</string>
+    <string name="settings_show_address">Mostrar la dirección del servidor</string>
+    <string name="settings_show_address_summary">Mostrar host y puerto en las tarjetas de perfil</string>
     <string name="settings_custom_dns">Servidor DNS personalizado</string>
     <string name="settings_dns_server">IP del servidor DNS</string>
     <string name="settings_dns_note">Se usa como DNS de la VPN (DNS sin cifrar a través del túnel).</string>

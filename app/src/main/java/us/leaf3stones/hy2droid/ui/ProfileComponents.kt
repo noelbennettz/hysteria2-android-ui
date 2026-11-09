@@ -50,6 +50,7 @@ import us.leaf3stones.hy2droid.data.Profile
 fun ProfileRow(
     profile: Profile,
     selected: Boolean,
+    showAddress: Boolean,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onShare: () -> Unit,
@@ -73,11 +74,15 @@ fun ProfileRow(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(text = profile.name, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = profile.authority,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                // Hidden by default: most people never need to read the IP, and
+                // it is the noisiest line on the screen (Settings → Appearance).
+                if (showAddress) {
+                    Text(
+                        text = profile.authority,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Box {
                 IconButton(onClick = { menuOpen = true }) {

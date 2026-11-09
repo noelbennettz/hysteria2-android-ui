@@ -36,6 +36,8 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Live throughput in the UI; the notification is intentionally minimal (status
   plus a Disconnect action)
 - Dynamic colour (Material You) toggle, custom DNS, split tunnelling in Settings
+- Profile cards show only the profile name by default; the server address is one
+  switch away (Settings → Appearance → *Show server address*)
 - Profiles and settings are included in Android Auto Backup
 
 ## Languages

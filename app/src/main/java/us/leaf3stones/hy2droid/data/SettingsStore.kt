@@ -26,6 +26,7 @@ class SettingsStore(private val context: Context) {
     private val keyDesired = booleanPreferencesKey("desired_connected")
     private val keyBypassLan = booleanPreferencesKey("bypass_lan")
     private val keyBlockRules = stringPreferencesKey("block_rules")
+    private val keyShowAddress = booleanPreferencesKey("show_server_address")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -34,6 +35,10 @@ class SettingsStore(private val context: Context) {
     /** Whether Material You dynamic color is applied. Default on. */
     val dynamicColor: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyDynamic] ?: true }
+
+    /** Whether the profile cards show the server address. Default off (less noise). */
+    val showServerAddress: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyShowAddress] ?: false }
 
     /** Whether a custom upstream DNS server (pushed to the TUN) is used. Default off. */
     val customDnsEnabled: Flow<Boolean> = context.settingsDataStore.data
@@ -65,6 +70,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setDynamicColor(enabled: Boolean) {
         context.settingsDataStore.edit { it[keyDynamic] = enabled }
+    }
+
+    suspend fun setShowServerAddress(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyShowAddress] = enabled }
     }
 
     suspend fun setCustomDnsEnabled(enabled: Boolean) {

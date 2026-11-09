@@ -52,6 +52,7 @@ fun HomeScreen(
     val selectedId by viewModel.selectedId.collectAsState()
     val tunnelState by viewModel.tunnelState.collectAsState()
     val stats by viewModel.stats.collectAsState()
+    val showServerAddress by viewModel.showServerAddress.collectAsState()
     var shareProfile by remember { mutableStateOf<Profile?>(null) }
 
     // The first profile is treated as selected when nothing explicit is stored.
@@ -143,6 +144,7 @@ fun HomeScreen(
                         ProfileRow(
                             profile = profile,
                             selected = profile.id == selectedProfile?.id,
+                            showAddress = showServerAddress,
                             onClick = { viewModel.select(profile.id) },
                             onEdit = { onEdit(profile) },
                             onShare = { shareProfile = profile },

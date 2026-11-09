@@ -59,6 +59,8 @@
     <!-- Settings -->
     <string name="settings_title">Настройки</string>
     <string name="settings_dynamic_color">Динамические цвета (Material You)</string>
+    <string name="settings_show_address">Показывать адрес сервера</string>
+    <string name="settings_show_address_summary">Показывать хост и порт на карточках профилей</string>
     <string name="settings_custom_dns">Свой DNS-сервер</string>
     <string name="settings_dns_server">IP-адрес DNS-сервера</string>
     <string name="settings_dns_note">Используется как DNS-сервер VPN (обычный DNS через туннель).</string>

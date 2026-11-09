@@ -40,6 +40,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val dynamicColor: StateFlow<Boolean> = settings.dynamicColor
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    val showServerAddress: StateFlow<Boolean> = settings.showServerAddress
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     val customDnsEnabled: StateFlow<Boolean> = settings.customDnsEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
@@ -76,6 +79,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setDynamicColor(enabled: Boolean) {
         viewModelScope.launch { settings.setDynamicColor(enabled) }
+    }
+
+    fun setShowServerAddress(enabled: Boolean) {
+        viewModelScope.launch { settings.setShowServerAddress(enabled) }
     }
 
     fun setCustomDnsEnabled(enabled: Boolean) {

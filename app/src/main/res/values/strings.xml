@@ -61,6 +61,8 @@
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_dynamic_color">Dynamic color (Material You)</string>
+    <string name="settings_show_address">Show server address</string>
+    <string name="settings_show_address_summary">Show host and port on the profile cards</string>
     <string name="settings_custom_dns">Custom DNS server</string>
     <string name="settings_dns_server">DNS server IP</string>
     <string name="settings_dns_note">Used as the VPN DNS server (plain DNS through the tunnel).</string>

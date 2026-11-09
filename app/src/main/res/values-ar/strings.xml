@@ -59,6 +59,8 @@
     <!-- Settings -->
     <string name="settings_title">الإعدادات</string>
     <string name="settings_dynamic_color">ألوان ديناميكية (Material You)</string>
+    <string name="settings_show_address">عرض عنوان الخادم</string>
+    <string name="settings_show_address_summary">إظهار المضيف والمنفذ على بطاقات الملفات الشخصية</string>
     <string name="settings_custom_dns">خادم DNS مخصص</string>
     <string name="settings_dns_server">عنوان IP لخادم DNS</string>
     <string name="settings_dns_note">يُستخدم كخادم DNS للـ VPN (DNS عادي عبر النفق).</string>
