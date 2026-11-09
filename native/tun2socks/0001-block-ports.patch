@@ -1,0 +1,165 @@
+diff --git a/src/hev-config.c b/src/hev-config.c
+index ec02afb..50fff59 100644
+--- a/src/hev-config.c
++++ b/src/hev-config.c
+@@ -54,6 +54,14 @@ static int udp_read_write_timeout;
+ static int limit_nofile;
+ static int log_level;
+ 
++/*
++ * Destination ports that must never leave the tunnel, one bitmap per
++ * transport protocol. Filled from `misc.block-tcp` / `misc.block-udp`.
++ */
++#define BLOCK_PORTS_MAX 65536
++static unsigned int block_tcp[BLOCK_PORTS_MAX / 32];
++static unsigned int block_udp[BLOCK_PORTS_MAX / 32];
++
+ static int
+ hev_config_parse_tunnel_ipv4 (yaml_document_t *doc, yaml_node_t *base)
+ {
+@@ -379,6 +387,43 @@ hev_config_parse_log_level (const char *value)
+     return HEV_LOGGER_WARN;
+ }
+ 
++/*
++ * Parses a comma separated list of ports and port ranges ("443,8000-8100")
++ * into the given bitmap. Malformed input stops the parse, everything already
++ * collected is kept.
++ */
++static void
++hev_config_parse_block_ports (unsigned int *ports, const char *value)
++{
++    const char *p = value;
++
++    while (*p) {
++        unsigned long start, stop, port;
++        char *end;
++
++        if (*p == ',' || *p == ' ' || *p == '\t') {
++            p++;
++            continue;
++        }
++
++        start = strtoul (p, &end, 10);
++        if (end == p || start < 1 || start >= BLOCK_PORTS_MAX)
++            break;
++        stop = start;
++        p = end;
++        if (*p == '-') {
++            p++;
++            stop = strtoul (p, &end, 10);
++            if (end == p || stop < start || stop >= BLOCK_PORTS_MAX)
++                break;
++            p = end;
++        }
++
++        for (port = start; port <= stop; port++)
++            ports[port / 32] |= 1u << (port % 32);
++    }
++}
++
+ static int
+ hev_config_parse_misc (yaml_document_t *doc, yaml_node_t *base)
+ {
+@@ -434,6 +479,10 @@ hev_config_parse_misc (yaml_document_t *doc, yaml_node_t *base)
+             log_level = hev_config_parse_log_level (value);
+         else if (0 == strcmp (key, "limit-nofile"))
+             limit_nofile = strtol (value, NULL, 10);
++        else if (0 == strcmp (key, "block-tcp"))
++            hev_config_parse_block_ports (block_tcp, value);
++        else if (0 == strcmp (key, "block-udp"))
++            hev_config_parse_block_ports (block_udp, value);
+     }
+ 
+     if (tcp_rw_timeout <= 0)
+@@ -523,6 +572,8 @@ hev_config_reset (void)
+     memset (log_file, 0, sizeof (log_file));
+     memset (pid_file, 0, sizeof (pid_file));
+     memset (&srv, 0, sizeof (srv));
++    memset (block_tcp, 0, sizeof (block_tcp));
++    memset (block_udp, 0, sizeof (block_udp));
+ 
+     tun_mtu = 8500;
+     multi_queue = 0;
+@@ -805,3 +856,21 @@ hev_config_get_misc_log_level (void)
+ {
+     return log_level;
+ }
++
++int
++hev_config_get_block_tcp (unsigned int port)
++{
++    if (port >= BLOCK_PORTS_MAX)
++        return 0;
++
++    return (block_tcp[port / 32] >> (port % 32)) & 1;
++}
++
++int
++hev_config_get_block_udp (unsigned int port)
++{
++    if (port >= BLOCK_PORTS_MAX)
++        return 0;
++
++    return (block_udp[port / 32] >> (port % 32)) & 1;
++}
+diff --git a/src/hev-config.h b/src/hev-config.h
+index 04e2e43..d3995a3 100644
+--- a/src/hev-config.h
++++ b/src/hev-config.h
+@@ -63,4 +63,7 @@ const char *hev_config_get_misc_pid_file (void);
+ const char *hev_config_get_misc_log_file (void);
+ int hev_config_get_misc_log_level (void);
+ 
++int hev_config_get_block_tcp (unsigned int port);
++int hev_config_get_block_udp (unsigned int port);
++
+ #endif /* __HEV_CONFIG_H__ */
+diff --git a/src/hev-socks5-tunnel.c b/src/hev-socks5-tunnel.c
+index 2f0d54d..aa35762 100644
+--- a/src/hev-socks5-tunnel.c
++++ b/src/hev-socks5-tunnel.c
+@@ -20,6 +20,7 @@
+ 
+ #include <lwip/tcp.h>
+ #include <lwip/udp.h>
++#include <lwip/def.h>
+ #include <lwip/nd6.h>
+ #include <lwip/netif.h>
+ #include <lwip/ip4_frag.h>
+@@ -208,6 +209,17 @@ tcp_accept_handler (void *arg, struct tcp_pcb *pcb, err_t err)
+     if (!READ_ONCE (run))
+         return ERR_RST;
+ 
++    /*
++     * A blocked destination port: abort the handshake so the client sees a
++     * reset right away (and can fall back to a protocol that works) instead
++     * of waiting for the proxy to time out.
++     */
++    if (hev_config_get_block_tcp (lwip_ntohs (pcb->local_port))) {
++        LOG_D ("%p tcp blocked port %u", pcb,
++               (unsigned int)lwip_ntohs (pcb->local_port));
++        return ERR_RST;
++    }
++
+     tcp = hev_socks5_session_tcp_new (pcb, &mutex);
+     if (!tcp)
+         return ERR_MEM;
+@@ -277,6 +289,17 @@ udp_recv_handler (void *arg, struct udp_pcb *pcb, struct pbuf *p,
+         return;
+     }
+ 
++    /*
++     * A blocked destination port: drop the datagram (the pbuf is freed by the
++     * lwIP caller) and unbind the pcb, so nothing is forwarded downstream.
++     */
++    if (hev_config_get_block_udp (lwip_ntohs (pcb->local_port))) {
++        LOG_D ("%p udp blocked port %u", pcb,
++               (unsigned int)lwip_ntohs (pcb->local_port));
++        udp_remove (pcb);
++        return;
++    }
++
+     dns = hev_mapped_dns_get ();
+     if (dns && addr->type == IPADDR_TYPE_V4) {
+         int faddr = hev_config_get_mapdns_address ();

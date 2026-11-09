@@ -38,6 +38,9 @@ jobs:
       - name: Verify bundled core
         run: bash scripts/core.sh verify
 
+      - name: Verify tun2socks binaries
+        run: bash scripts/tun2socks.sh verify
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

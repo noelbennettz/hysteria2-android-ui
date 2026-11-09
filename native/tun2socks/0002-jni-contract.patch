@@ -1,0 +1,37 @@
+diff --git a/src/hev-jni.c b/src/hev-jni.c
+index 6639837..162264a 100644
+--- a/src/hev-jni.c
++++ b/src/hev-jni.c
+@@ -53,15 +53,12 @@ static pthread_key_t current_jni_env;
+ static jboolean native_start_service (JNIEnv *env, jobject thiz,
+                                       jstring conig_path, jint fd);
+ static jboolean native_stop_service (JNIEnv *env, jobject thiz);
+-static jboolean native_is_running (JNIEnv *env, jobject thiz);
+ static jlongArray native_get_stats (JNIEnv *env, jobject thiz);
+ 
+ static JNINativeMethod native_methods[] = {
+-    { "TProxyStartService", "(Ljava/lang/String;I)Z",
+-      (void *)native_start_service },
+-    { "TProxyStopService", "()Z", (void *)native_stop_service },
+-    { "TProxyIsRunning", "()Z", (void *)native_is_running },
+-    { "TProxyGetStats", "()[J", (void *)native_get_stats },
++    { "startTun2socks", "(Ljava/lang/String;I)Z", (void *)native_start_service },
++    { "stopTun2socks", "()Z", (void *)native_stop_service },
++    { "getTun2socksStats", "()[J", (void *)native_get_stats },
+ };
+ 
+ static void
+@@ -184,13 +181,6 @@ exit:
+     return res == 0 ? JNI_TRUE : JNI_FALSE;
+ }
+ 
+-static jboolean
+-native_is_running (JNIEnv *env, jobject thiz)
+-{
+-    return atomic_load_explicit (&is_running, memory_order_acquire) ? JNI_TRUE :
+-                                                                      JNI_FALSE;
+-}
+-
+ static jlongArray
+ native_get_stats (JNIEnv *env, jobject thiz)
+ {

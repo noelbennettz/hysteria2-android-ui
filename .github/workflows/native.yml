@@ -1,0 +1,35 @@
+name: native
+
+# Rebuilds libtun2socks.so (hev-socks5-tunnel + the patches in native/tun2socks)
+# with the pinned NDK and uploads the result. The binaries are committed, so this
+# only runs on demand: use it to refresh them after changing a patch or bumping
+# HEV_TAG in scripts/tun2socks.sh.
+on:
+  workflow_dispatch:
+
+jobs:
+  tun2socks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up NDK
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;25.2.9519653" >/dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> "$GITHUB_ENV"
+
+      - name: Build libtun2socks.so
+        run: bash scripts/tun2socks.sh build
+
+      - name: Verify
+        run: bash scripts/tun2socks.sh verify
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: libtun2socks-so
+          path: app/src/main/jniLibs/*/libtun2socks.so
+          if-no-files-found: error
