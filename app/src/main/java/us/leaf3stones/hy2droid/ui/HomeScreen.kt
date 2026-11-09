@@ -12,8 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.QrCode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -74,7 +74,7 @@ fun HomeScreen(
                     }
                     IconButton(onClick = onScan) {
                         Icon(
-                            imageVector = Icons.Filled.QrCodeScanner,
+                            imageVector = Icons.Outlined.QrCode,
                             contentDescription = stringResource(R.string.action_scan_import),
                         )
                     }

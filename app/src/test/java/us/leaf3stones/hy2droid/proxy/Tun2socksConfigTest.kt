@@ -1,9 +1,11 @@
 package us.leaf3stones.hy2droid.proxy
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import us.leaf3stones.hy2droid.data.BlockRule
+import us.leaf3stones.hy2droid.data.DEFAULT_BLOCK_RULES
 
 class Tun2socksConfigTest {
 
@@ -21,6 +23,15 @@ class Tun2socksConfigTest {
     fun `udp rules are emitted as block-udp`() {
         val yaml = Tun2socksConfig.build(listOf(BlockRule.QUIC))
 
+        assertTrue(yaml.contains("misc:\n  block-udp: '443'"))
+        assertFalse(yaml.contains("block-tcp"))
+    }
+
+    @Test
+    fun `the default rule set blocks QUIC out of the box`() {
+        val yaml = Tun2socksConfig.build(DEFAULT_BLOCK_RULES)
+
+        assertEquals(listOf(BlockRule.QUIC), DEFAULT_BLOCK_RULES)
         assertTrue(yaml.contains("misc:\n  block-udp: '443'"))
         assertFalse(yaml.contains("block-tcp"))
     }

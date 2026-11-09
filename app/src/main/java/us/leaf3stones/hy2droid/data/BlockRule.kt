@@ -97,6 +97,14 @@ data class BlockRule(
     }
 }
 
+/**
+ * Rules a fresh install starts with: QUIC (UDP/443). Hysteria 2 cannot
+ * accelerate UDP, so QUIC inside the tunnel is much slower than TCP on poor
+ * networks; refusing it makes browsers fall back to TCP automatically. Users can
+ * remove the rule (or add others) in Settings → Blocked traffic.
+ */
+val DEFAULT_BLOCK_RULES: List<BlockRule> = listOf(BlockRule.QUIC)
+
 /** The `misc.block-tcp` value: comma separated ports/ranges, `""` when nothing applies. */
 fun List<BlockRule>.tcpPortSpec(): String = portSpec(udp = false)
 

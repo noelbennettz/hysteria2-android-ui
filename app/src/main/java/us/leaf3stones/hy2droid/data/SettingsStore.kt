@@ -60,9 +60,15 @@ class SettingsStore(private val context: Context) {
     val bypassLan: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyBypassLan] ?: false }
 
-    /** Traffic that is refused before it reaches the core. Default: nothing. */
+    /**
+     * Traffic that is refused before it reaches the core. Defaults to QUIC
+     * (UDP/443), which Hysteria 2 cannot accelerate; an explicit (even empty)
+     * stored list always wins over the default.
+     */
     val blockRules: Flow<List<BlockRule>> = context.settingsDataStore.data
-        .map { decodeRules(decode(it[keyBlockRules])) }
+        .map { prefs ->
+            prefs[keyBlockRules]?.let { decodeRules(decode(it)) } ?: DEFAULT_BLOCK_RULES
+        }
 
     suspend fun setExcluded(packages: Set<String>) {
         context.settingsDataStore.edit { it[keyExcluded] = encode(packages) }

@@ -26,8 +26,8 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). When
   disabled, no resolver is injected and DNS goes through the server egress
 - Split tunnelling: pick apps that bypass the VPN
-- **Blocked traffic**: refuse flows by protocol and port inside the tunnel — the
-  built-in preset blocks QUIC (UDP 443), which Hysteria 2 cannot accelerate
+- **Blocked traffic**: refuse flows by protocol and port inside the tunnel —
+  QUIC (UDP 443) is blocked by default, because Hysteria 2 cannot accelerate it
 - Optional **LAN bypass** (Android 13+): local-network traffic — RFC1918,
   link-local, CGNAT and multicast (mDNS/SSDP) — stays outside the VPN, so NAS
   boxes, printers, router admin pages and casting keep working
@@ -97,8 +97,9 @@ those flows makes browsers and apps fall back to TCP/TLS, which the core handles
 much better.
 
 `Settings → Blocked traffic` keeps a list of `protocol + port` rules (single
-ports or ranges, `TCP`, `UDP` or both) with a one-tap **Block QUIC (UDP 443)**
-preset. Rules are rendered into the tunnelling config:
+ports or ranges, `TCP`, `UDP` or both). **QUIC (UDP 443) is in the list on a
+fresh install** — that is the whole point of the feature; users can delete it or
+add their own rules. Rules are rendered into the tunnelling config:
 
 ```yaml
 misc:
