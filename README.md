@@ -153,6 +153,7 @@ connection. With no rules the config carries no `misc:` section at all.
 | `core/core.properties` | Pinned Hysteria core version + per-ABI checksums |
 | `scripts/core.sh` | Fetch / verify / upgrade the core |
 | `scripts/tun2socks.sh` | Rebuild `libtun2socks.so` from the pinned upstream tag + patches |
+| `scripts/prune-runs.sh` | Delete all but the newest three runs of the workflow calling it |
 | `.github/workflows` | `build.yml` (debug) and `release.yml` (signed release) |
 
 ## Building
@@ -214,6 +215,12 @@ manual run with an explicit `core_tag` moves it). The debug workflow follows the
 newest upstream core, which is the point of it. Signing uses a keystore from
 repository secrets, verified with `apksigner`; the release publishes
 `app-universal-release.apk` plus the four ABI splits.
+
+Every workflow ends with `scripts/prune-runs.sh 3`: it deletes the runs of *that
+workflow* older than the three newest (logs and artifacts included, which keeps
+the Actions tab and the artifact quota small). A deleted release run does not
+remove its GitHub Release. Each workflow grants `actions: write` for it, and the
+script stops after one pass if it cannot delete anything.
 
 ### Setting up signing
 
