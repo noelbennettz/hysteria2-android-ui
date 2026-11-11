@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -137,6 +138,23 @@ private fun AppRoot(
             blockRulesOpen = false
             settingsOpen = false
             scannerOpen = false
+        }
+
+        // System back closes one level (innermost first) instead of finishing the
+        // activity. Without this every sub-screen was a dead end: pressing back on
+        // Settings left the app entirely.
+        val inSubScreen = scannerOpen || editorOpen || splitTunnelOpen || blockRulesOpen || settingsOpen
+        BackHandler(enabled = inSubScreen) {
+            when {
+                scannerOpen -> scannerOpen = false
+                editorOpen -> {
+                    editorOpen = false
+                    editing = null
+                }
+                splitTunnelOpen -> splitTunnelOpen = false
+                blockRulesOpen -> blockRulesOpen = false
+                settingsOpen -> settingsOpen = false
+            }
         }
 
         val vpnPermissionLauncher = rememberLauncherForActivityResult(
