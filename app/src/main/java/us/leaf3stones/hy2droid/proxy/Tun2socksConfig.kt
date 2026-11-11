@@ -19,21 +19,18 @@ object Tun2socksConfig {
     /** File name (under `filesDir`) the native library reads. */
     const val FILE_NAME = "tun2socks.yaml"
 
-    /** Local SOCKS5 port of the Hysteria core. */
-    const val SOCKS_PORT = 1080
-
     /** Render the YAML for [blockRules] (empty = no filtering at all). */
     fun build(blockRules: List<BlockRule> = emptyList()): String {
         val lines = mutableListOf(
             "tunnel:",
             "  name: tun0",
-            "  mtu: 1500",
+            "  mtu: ${Tun.MTU}",
             "  multi-queue: false",
-            "  ipv4: 10.0.88.88",
-            "  ipv6: 'fc00::1'",
+            "  ipv4: ${Tun.IPV4}",
+            "  ipv6: '${Tun.IPV6}'",
             "",
             "socks5:",
-            "  port: $SOCKS_PORT",
+            "  port: ${Tun.SOCKS_PORT}",
             "  address: 127.0.0.1",
             "  udp: 'udp'",
         )

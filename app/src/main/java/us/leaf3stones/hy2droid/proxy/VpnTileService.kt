@@ -7,6 +7,7 @@ import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -79,7 +80,11 @@ class VpnTileService : TileService() {
         super.onClick()
         try {
             if (TunnelStatus.state.value.isActive()) {
-                startService(
+                // The service already runs in the foreground, but plain startService()
+                // trips the background-start restriction on Android 12+; the
+                // foreground variant keeps this path working from Quick Settings.
+                ContextCompat.startForegroundService(
+                    this,
                     Intent(this, Hysteria2VpnService::class.java)
                         .setAction(Hysteria2VpnService.ACTION_STOP_VPN),
                 )
@@ -102,9 +107,15 @@ class VpnTileService : TileService() {
                         .setAction(Hysteria2VpnService.ACTION_START_VPN),
                 )
             }
-        } catch (_: Throwable) {
-            // Never crash the Quick Settings panel.
+        } catch (e: Throwable) {
+            // Never crash the Quick Settings panel; the log line is what tells us
+            // the toggle was swallowed (the tile would just stay out of sync).
+            Log.w(TAG, "Quick Settings toggle failed", e)
         }
         updateTile()
+    }
+
+    private companion object {
+        private const val TAG = "VpnTileService"
     }
 }

@@ -6,7 +6,11 @@ import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.ConnectivityManager
 import android.net.IpPrefix
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -66,24 +70,56 @@ class Hysteria2VpnService : VpnService() {
     private var logDrainThread: Thread? = null
     private var statsJob: Job? = null
     private var monitorJob: Job? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     @Volatile
     private var shuttingDown = false
+
+    /** True while *we* are tearing the core down, so its exit is not an error. */
+    @Volatile
+    private var coreStoppedByUs = false
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP_VPN -> {
+                // Also reached through startForegroundService (notification action,
+                // Quick Settings tile), so satisfy the foreground contract first.
+                startForegroundSafely(getString(R.string.status_disconnecting))
+                persistDesiredConnected(false)
                 stopTunnel()
                 return START_NOT_STICKY
             }
 
-            ACTION_START_VPN, SYS_SYSTEM_VPN, null -> {
-                // System-initiated start (always-on VPN or process-death restart): auto
-                // connect the last selected profile, rebuilding the config if needed.
+            ACTION_START_VPN -> {
+                // An explicit start (app or tile): the user wants the tunnel up.
+                persistDesiredConnected(true)
                 startForegroundSafely()
                 serviceScope.launch { startTunnel() }
+                return START_STICKY
+            }
+
+            // System-initiated start: always-on VPN, or a restart after the process
+            // was killed. Honour what the user left behind instead of blindly
+            // coming back up after they pressed Disconnect.
+            SYS_SYSTEM_VPN, null -> {
+                startForegroundSafely()
+                serviceScope.launch {
+                    val wanted = try {
+                        SettingsStore(applicationContext).desiredConnected.first()
+                    } catch (_: Exception) {
+                        false
+                    }
+                    if (wanted) {
+                        startTunnel()
+                    } else {
+                        Log.i(TAG, "System start ignored: the user had disconnected")
+                        updateState(TunnelState.Idle)
+                        stopForegroundSafely()
+                        stopSelf()
+                    }
+                }
                 return START_STICKY
             }
 
@@ -94,6 +130,19 @@ class Hysteria2VpnService : VpnService() {
         }
     }
 
+    /** Record whether the user wants the tunnel up, so a restart can respect it. */
+    private fun persistDesiredConnected(desired: Boolean) {
+        try {
+            // SettingsStore uses a process-wide DataStore; the write is quick but
+            // must not run on the main thread.
+            CoroutineScope(Dispatchers.IO).launch {
+                SettingsStore(applicationContext).setDesiredConnected(desired)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not persist the connection preference: ${e.message}")
+        }
+    }
+
     /** Establish the tunnel, launch the core and start tun2socks. Runs on IO. */
     private suspend fun startTunnel() {
         if (tunInterface != null) {
@@ -101,6 +150,7 @@ class Hysteria2VpnService : VpnService() {
             return
         }
         shuttingDown = false
+        coreStoppedByUs = false
         Log.i(TAG, "Starting tunnel · Hysteria core ${BuildConfig.CORE_VERSION}")
         updateState(TunnelState.Connecting)
 
@@ -157,6 +207,7 @@ class Hysteria2VpnService : VpnService() {
             return
         }
         tunInterface = pfd
+        registerNetworkTracking()
 
         val process = launchCore(configFile)
         if (process == null) {
@@ -209,9 +260,9 @@ class Hysteria2VpnService : VpnService() {
         bypassLan: Boolean,
     ): ParcelFileDescriptor? = try {
         val builder = Builder()
-            .setMtu(MTU)
-            .addAddress(TUN_IPV4, TUN_PREFIX)
-            .addAddress(TUN_IPV6, TUN_PREFIX6)
+            .setMtu(Tun.MTU)
+            .addAddress(Tun.IPV4, Tun.PREFIX4)
+            .addAddress(Tun.IPV6, Tun.PREFIX6)
         for (dns in dnsServers) {
             if (dns.isBlank()) continue
             try {
@@ -260,6 +311,60 @@ class Hysteria2VpnService : VpnService() {
         Log.i(TAG, "LAN bypass: excluded $applied of ${LanRanges.ALL.size} local ranges")
     }
 
+    /**
+     * Keep the tun pinned to the physical network the device is actually using.
+     * Without this, a Wi-Fi ↔ mobile handover can leave the tunnel routing into a
+     * network that is gone (no traffic until the app is toggled).
+     */
+    private fun registerNetworkTracking() {
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return
+        if (networkCallback != null) return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) = updateUnderlying(network)
+
+            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                if (caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+                    updateUnderlying(network)
+                }
+            }
+
+            override fun onLost(network: Network) = Unit
+        }
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+            .build()
+        try {
+            manager.registerNetworkCallback(request, callback)
+            networkCallback = callback
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not track the underlying network", e)
+        }
+    }
+
+    private fun unregisterNetworkTracking() {
+        val callback = networkCallback ?: return
+        networkCallback = null
+        try {
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
+        } catch (_: Exception) {
+            // Already gone.
+        }
+    }
+
+    /** Point the tunnel at [network] when it is a real (non-VPN) transport. */
+    private fun updateUnderlying(network: Network) {
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return
+        val caps = manager.getNetworkCapabilities(network) ?: return
+        if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)) return
+        try {
+            setUnderlyingNetworks(arrayOf(network))
+            Log.i(TAG, "Underlying network: $network")
+        } catch (e: Exception) {
+            Log.w(TAG, "setUnderlyingNetworks failed", e)
+        }
+    }
+
     /** Ensure `hysteria.yaml` exists, rebuilding it from the selected profile if missing. */
     private suspend fun ensureConfigFile(configFile: File): Boolean {
         if (configFile.exists()) return true
@@ -275,7 +380,7 @@ class Hysteria2VpnService : VpnService() {
         } catch (_: Exception) {
             null
         }
-        val profile = profiles.firstOrNull { it.id == selectedId } ?: profiles.last()
+        val profile = profiles.firstOrNull { it.id == selectedId } ?: profiles.first()
         return try {
             configFile.writeText(HysteriaConfigBuilder.build(profile))
             true
@@ -293,7 +398,7 @@ class Hysteria2VpnService : VpnService() {
             // The core log is what the diagnostics export ships; without it a
             // failed handshake leaves no trace once logcat rolls over.
             val coreLog = try {
-                CoreLog(applicationContext)
+                CoreLog.open(applicationContext)
             } catch (e: Exception) {
                 Log.w(TAG, "Could not open the core log file", e)
                 null
@@ -331,7 +436,7 @@ class Hysteria2VpnService : VpnService() {
         } catch (_: InterruptedException) {
             return
         }
-        if (shuttingDown) return
+        if (shuttingDown || coreStoppedByUs) return
         Log.w(TAG, "Core exited unexpectedly with code $exit")
         serviceScope.launch {
             teardown()
@@ -382,6 +487,10 @@ class Hysteria2VpnService : VpnService() {
         statsJob = null
         monitorJob?.cancel()
         monitorJob = null
+        // Mark the core exit as expected *before* killing it, so monitorCore does
+        // not overwrite the real error message (or the Idle state) afterwards.
+        coreStoppedByUs = true
+        unregisterNetworkTracking()
         try {
             stopTun2socks()
         } catch (_: Throwable) {
@@ -415,6 +524,7 @@ class Hysteria2VpnService : VpnService() {
 
     override fun onRevoke() {
         shuttingDown = true
+        persistDesiredConnected(false)
         stopTunnel()
         super.onRevoke()
     }
@@ -426,7 +536,7 @@ class Hysteria2VpnService : VpnService() {
         super.onDestroy()
     }
 
-    private fun startForegroundSafely() {
+    private fun startForegroundSafely(text: String = getString(R.string.status_connecting)) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
@@ -446,7 +556,7 @@ class Hysteria2VpnService : VpnService() {
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
-            buildNotification(getString(R.string.status_connecting)),
+            buildNotification(text),
             type,
         )
     }
@@ -507,12 +617,6 @@ class Hysteria2VpnService : VpnService() {
         const val HYSTERIA_CONFIG_FILE = "hysteria.yaml"
 
         private const val CORE_BINARY = "libhysteria.so"
-        private const val MTU = 1500
-        private const val TUN_IPV4 = "10.0.88.88"
-        private const val TUN_PREFIX = 16
-        private const val TUN_IPV6 = "fc00::1"
-        private const val TUN_PREFIX6 = 64
-        private const val DNS_SERVER = "1.0.0.1"
         private const val STATS_INTERVAL_MS = 1000L
         private const val CHANNEL_ID = "hy2droid_vpn"
         private const val NOTIFICATION_ID = 100
