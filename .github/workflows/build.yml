@@ -60,6 +60,19 @@ jobs:
             exit "$rc"
           fi
 
+      - name: Lint
+        run: |
+          set +e
+          ./gradlew lintDebug --no-daemon --console=plain 2>&1 | tee /tmp/lint.log
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::Lint reported errors (exit $rc):"
+            grep -E 'Error: |error: ' /tmp/lint.log | head -n 40 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit "$rc"
+          fi
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:

@@ -49,12 +49,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          tag="${{ github.event.inputs.core_tag || 'latest' }}"
+          tag="${{ github.event.inputs.core_tag || '' }}"
           if [ "$tag" = "latest" ]; then
             tag="$(bash scripts/core.sh latest)"
             echo "Resolved latest upstream core: $tag"
           fi
-          bash scripts/core.sh upgrade "$tag"
+          if [ -z "$tag" ]; then
+            # Tag push: ship the core pinned in core/core.properties, so rebuilding
+            # the same tag later yields the same binaries.
+            echo "Using the core pinned in core/core.properties"
+            bash scripts/core.sh fetch
+          else
+            bash scripts/core.sh upgrade "$tag"
+          fi
           bash scripts/core.sh version | tee core-version.txt
 
       - name: Verify bundled core
@@ -91,7 +98,7 @@ jobs:
           HY2_VERSION_CODE: ${{ steps.version.outputs.code }}
         run: |
           set +e
-          ./gradlew assembleRelease --no-daemon --stacktrace --console=plain 2>&1 | tee /tmp/release.log
+          ./gradlew testDebugUnitTest assembleRelease --no-daemon --stacktrace --console=plain 2>&1 | tee /tmp/release.log
           rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
             echo "::error::Gradle release build failed (exit $rc); surfacing errors:"

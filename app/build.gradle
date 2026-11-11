@@ -16,10 +16,10 @@ def coreVersion = coreProps.getProperty('HYSTERIA_VERSION', 'unknown')
 // debug builds working.
 def appVersionName = (project.findProperty('versionName')
         ?: System.getenv('HY2_VERSION_NAME')
-        ?: '2.0.0').toString()
+        ?: '1.0.0').toString()
 def appVersionCode = (project.findProperty('versionCode')
         ?: System.getenv('HY2_VERSION_CODE')
-        ?: '2').toString().toInteger()
+        ?: '1').toString().toInteger()
 
 // Keystore location: CI restores the signing key to signing/production.jks
 // (gitignored), an explicit path can be given through HY2_KEYSTORE_FILE.
@@ -96,6 +96,15 @@ android {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
+    }
+
+    // CI runs `lintDebug`: lint errors fail the build, warnings stay warnings.
+    // Translation coverage is checked by the i18n script instead (it compares the
+    // key sets across all locales, which lint cannot do).
+    lint {
+        abortOnError = true
+        warningsAsErrors = false
+        disable 'MissingTranslation'
     }
 }
 
