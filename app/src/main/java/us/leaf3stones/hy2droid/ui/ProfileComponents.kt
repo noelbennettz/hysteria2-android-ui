@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -91,26 +92,26 @@ fun ProfileRow(
             // The measured latency sits on the same row as the menu that starts
             // the test, so the number and the action stay together.
             when {
-                latencyTesting -> Text(
+                latencyTesting -> LatencyLabel(
                     text = stringResource(R.string.latency_testing),
-                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(end = 4.dp),
                 )
 
-                latencyMeasured && latencyMs != null -> Text(
-                    text = stringResource(R.string.latency_ms, latencyMs),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 4.dp),
-                )
-
-                latencyMeasured -> Text(
-                    text = stringResource(R.string.latency_failed),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(end = 4.dp),
-                )
+                latencyMeasured -> {
+                    val ms = latencyMs
+                    LatencyLabel(
+                        text = if (ms != null) {
+                            stringResource(R.string.latency_ms, ms)
+                        } else {
+                            stringResource(R.string.latency_failed)
+                        },
+                        color = if (ms != null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
             }
             Box {
                 IconButton(onClick = { menuOpen = true }) {
@@ -152,6 +153,17 @@ fun ProfileRow(
             }
         }
     }
+}
+
+/** Small latency badge, kept next to the menu that triggers the measurement. */
+@Composable
+private fun LatencyLabel(text: String, color: ComposeColor) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = color,
+        modifier = Modifier.padding(end = 4.dp),
+    )
 }
 
 /** Placeholder shown when there are no profiles yet. */

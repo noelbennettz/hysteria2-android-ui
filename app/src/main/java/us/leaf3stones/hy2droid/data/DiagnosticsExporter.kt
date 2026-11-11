@@ -101,14 +101,14 @@ class DiagnosticsExporter(private val context: Context) {
         return sb.toString()
     }
 
-    /** This process' logcat ring buffer, newest [LOGCAT_LINES] lines. */
+    /** This process' logcat ring buffer, newest [LOGCAT_LINES] lines (bounded). */
     private fun readLogcat(): String = try {
         val process = ProcessBuilder("logcat", "-d", "-v", "threadtime", "-t", LOGCAT_LINES.toString())
             .redirectErrorStream(true)
             .start()
         val text = process.inputStream.bufferedReader().use { it.readText() }
         process.waitFor()
-        text.ifBlank { "logcat returned nothing" }
+        text.ifBlank { "logcat returned nothing" }.takeLast(MAX_LOG_CHARS)
     } catch (e: Exception) {
         "logcat unavailable: ${e.message}"
     }
@@ -154,6 +154,7 @@ class DiagnosticsExporter(private val context: Context) {
         private const val CONFIG_ENTRY = "hysteria.config.redacted.yaml"
         private const val LOGCAT_LINES = 4000
         private const val MAX_LOG_BYTES = 512L * 1024
+        private const val MAX_LOG_CHARS = 800_000
 
         /** Suggested file name for the SAF picker. */
         fun suggestedFileName(): String =

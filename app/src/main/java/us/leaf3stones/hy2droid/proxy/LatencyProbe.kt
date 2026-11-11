@@ -32,50 +32,54 @@ class LatencyProbe(private val context: Context) {
     /** Returns the measured latency in milliseconds, or `null` when the probe failed. */
     suspend fun measure(profile: Profile): Int? = withContext(Dispatchers.IO) {
         if (profile.server.isBlank()) return@withContext null
-        val ports = freePorts()
-        if (ports == null) {
-            Log.w(TAG, "No free local ports for the latency probe")
-            return@withContext null
-        }
-        val (socksPort, httpPort) = ports
-        val configFile = File(context.cacheDir, "latency-${UUID.randomUUID()}.yaml")
-        var process: Process? = null
+        // A crash or a force-stop mid-probe can leave a config (with the auth
+        // secret) in the cache dir; every probe clears out the previous ones.
+        clearStaleConfigs()
+        val (socksPort, httpPort) = freePorts() ?: return@withContext null
+        val configFile = File(context.cacheDir, "$CONFIG_PREFIX${UUID.randomUUID()}.yaml")
         try {
-            // `lazy` is passed explicitly, not inherited from the builder default:
-            // with an eager core a flaky network turns into a reconnect loop while
-            // we are only waiting for one request.
+            // `lazy` is explicit, not inherited from the builder default: with an
+            // eager core a flaky network turns into a reconnect loop while we are
+            // only waiting for one request.
             configFile.writeText(
                 HysteriaConfigBuilder.build(profile, socksPort, httpPort, lazy = true),
             )
-            val binary = File(context.applicationInfo.nativeLibraryDir, CORE_BINARY)
-            val proc = ProcessBuilder(binary.absolutePath, "-c", configFile.absolutePath)
-                .redirectErrorStream(true)
-                .start()
-            process = proc
-            drainQuietly(proc)
-            if (!awaitListening(proc, httpPort)) {
-                Log.w(TAG, "Latency probe core never listened on 127.0.0.1:$httpPort")
-                return@withContext null
+            val core = startCore(configFile) ?: return@withContext null
+            try {
+                if (!awaitListening(core, httpPort)) {
+                    Log.w(TAG, "Probe core never listened on 127.0.0.1:$httpPort")
+                    return@withContext null
+                }
+                PROBE_TARGETS.firstNotNullOfOrNull { roundTrip(httpPort, it) }
+            } finally {
+                // Disposable: it is never reused, and a leftover client would
+                // keep the QUIC session alive and retry on a flaky network.
+                stop(core)
             }
-            for (target in PROBE_TARGETS) {
-                val ms = roundTrip(httpPort, target)
-                if (ms != null) return@withContext ms
-            }
-            null
         } catch (e: Exception) {
             Log.w(TAG, "Latency probe failed: ${e.message}")
             null
         } finally {
-            // The probe core is disposable: it is never reused and must not
-            // survive the measurement (a leftover client would keep the QUIC
-            // session alive and retry on a flaky network).
-            process?.let(::stop)
-            try {
-                configFile.delete()
-            } catch (_: Throwable) {
-                // Cache dir is wiped by the system anyway.
-            }
+            configFile.delete()
         }
+    }
+
+    /** Start the bundled core on [configFile] and begin discarding its output. */
+    private fun startCore(configFile: File): Process? = try {
+        val binary = File(context.applicationInfo.nativeLibraryDir, CORE_BINARY)
+        ProcessBuilder(binary.absolutePath, "-c", configFile.absolutePath)
+            .redirectErrorStream(true)
+            .start()
+            .also(::drainQuietly)
+    } catch (e: Exception) {
+        Log.w(TAG, "Could not start the probe core: ${e.message}")
+        null
+    }
+
+    /** Remove probe configs left behind by an interrupted run. */
+    private fun clearStaleConfigs() {
+        context.cacheDir.listFiles { file -> file.name.startsWith(CONFIG_PREFIX) }
+            ?.forEach { it.delete() }
     }
 
     /** SIGTERM, then SIGKILL if the core has not exited in time. */
@@ -164,6 +168,9 @@ class LatencyProbe(private val context: Context) {
         private const val TAG = "LatencyProbe"
         private const val CORE_BINARY = "libhysteria.so"
         private const val LOOPBACK = "127.0.0.1"
+
+        /** Prefix of the throwaway configs written to the cache dir. */
+        private const val CONFIG_PREFIX = "latency-"
 
         /**
          * `generate_204` endpoints, tried in order. Both are served by the node's

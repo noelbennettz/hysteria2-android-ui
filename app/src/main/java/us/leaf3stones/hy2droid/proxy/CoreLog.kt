@@ -23,25 +23,25 @@ class CoreLog(context: Context) : Closeable {
 
     private val dir = File(context.filesDir, DIR).apply { mkdirs() }
     private val file = File(dir, FILE_NAME)
-    private val writer: BufferedWriter
     private val stamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
+    private var written = 0L
+    private var writer: BufferedWriter = openWriter()
     private var closed = false
-
-    init {
-        rotate()
-        writer = BufferedWriter(FileWriter(file, true))
-    }
 
     @Synchronized
     fun write(line: String) {
         if (closed) return
         try {
             writer.write(stamp.format(Date()))
-            writer.write(' '.code)
+            writer.write(" ")
             writer.write(line)
             writer.newLine()
             // Flushed per line: an export right after a crash must have the tail.
             writer.flush()
+            written += line.length + STAMP_RESERVE
+            // A long session would otherwise grow without bound: the cap has to be
+            // enforced while running, not only when the file is opened.
+            if (written >= MAX_BYTES) rotate()
         } catch (e: Exception) {
             Log.w(TAG, "Could not append to the core log: ${e.message}")
         }
@@ -58,11 +58,33 @@ class CoreLog(context: Context) : Closeable {
         }
     }
 
-    private fun rotate() {
+    /** Open the live file, first archiving it when the previous session left it full. */
+    private fun openWriter(): BufferedWriter {
+        rotateIfFull()
+        written = file.length()
+        return BufferedWriter(FileWriter(file, true))
+    }
+
+    private fun rotateIfFull() {
         if (file.length() < MAX_BYTES) return
-        val archive = File(dir, ARCHIVE_NAME)
-        archive.delete()
-        file.renameTo(archive)
+        archiveCurrent()
+    }
+
+    /** Move the live file aside and start a new one; only the newest archive is kept. */
+    private fun rotate() {
+        try {
+            writer.close()
+        } catch (_: Exception) {
+            // Keep going: reopening below still truncates nothing.
+        }
+        archiveCurrent()
+        writer = BufferedWriter(FileWriter(file, true))
+        written = 0
+    }
+
+    private fun archiveCurrent() {
+        File(dir, ARCHIVE_NAME).delete()
+        file.renameTo(File(dir, ARCHIVE_NAME))
     }
 
     companion object {
@@ -70,6 +92,7 @@ class CoreLog(context: Context) : Closeable {
         const val FILE_NAME = "hysteria.log"
         const val ARCHIVE_NAME = "hysteria.1.log"
         private const val MAX_BYTES = 512 * 1024L
+        private const val STAMP_RESERVE = 25
         private const val TAG = "CoreLog"
 
         /** The live core log file (may not exist yet). */
