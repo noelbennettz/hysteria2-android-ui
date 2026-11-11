@@ -70,6 +70,8 @@
     <string name="settings_dynamic_color">Dynamic color (Material You)</string>
     <string name="settings_show_address">Show server address</string>
     <string name="settings_show_address_summary">Show host and port on the profile cards</string>
+    <string name="settings_show_traffic">Live traffic</string>
+    <string name="settings_show_traffic_summary">Show throughput on the status card and in the notification</string>
     <string name="settings_custom_dns">Custom DNS server</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_network">Network</string>

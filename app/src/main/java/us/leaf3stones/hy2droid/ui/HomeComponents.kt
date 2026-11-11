@@ -30,6 +30,7 @@ import us.leaf3stones.hy2droid.proxy.TunnelStats
 fun ConnectionCard(
     state: TunnelState,
     stats: TunnelStats,
+    showTraffic: Boolean,
     profileName: String? = null,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -56,7 +57,7 @@ fun ConnectionCard(
                 )
             }
 
-            if (state is TunnelState.Connected) {
+            if (state is TunnelState.Connected && showTraffic) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = "↑ " + formatBytes(stats.tx) + "    ↓ " + formatBytes(stats.rx),

@@ -79,6 +79,21 @@ class DiagnosticsExporter(private val context: Context) {
         sb.append("  bypass LAN: ").append(
             runCatching { settings.bypassLan.first() }.getOrDefault(false),
         ).append('\n')
+        // MTU and PMTU are the two knobs for "it connects but nothing loads",
+        // so a diagnostics zip without them cannot answer the first question.
+        sb.append("  tunnel MTU: ").append(
+            runCatching { settings.mtu.first() }.getOrDefault(-1),
+        ).append('\n')
+        sb.append("  path MTU discovery: ").append(
+            if (runCatching { settings.disablePathMtuDiscovery.first() }.getOrDefault(false)) {
+                "disabled"
+            } else {
+                "enabled"
+            },
+        ).append('\n')
+        sb.append("  live traffic: ").append(
+            runCatching { settings.showTraffic.first() }.getOrDefault(false),
+        ).append('\n')
         sb.append("  auto latency test: ").append(
             runCatching { settings.autoTestLatency.first() }.getOrDefault(false),
         ).append("\n\n")

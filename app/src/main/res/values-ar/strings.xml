@@ -67,6 +67,8 @@
     <string name="settings_dynamic_color">ألوان ديناميكية (Material You)</string>
     <string name="settings_show_address">عرض عنوان الخادم</string>
     <string name="settings_show_address_summary">إظهار المضيف والمنفذ على بطاقات الملفات الشخصية</string>
+    <string name="settings_show_traffic">حركة البيانات المباشرة</string>
+    <string name="settings_show_traffic_summary">إظهار معدل النقل في بطاقة الحالة وفي الإشعار</string>
     <string name="settings_custom_dns">خادم DNS مخصص</string>
     <string name="settings_section_appearance">المظهر</string>
     <string name="settings_section_network">الشبكة</string>

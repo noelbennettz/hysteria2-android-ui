@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import us.leaf3stones.hy2droid.data.BlockRule
+import us.leaf3stones.hy2droid.data.ConfigFile
 import us.leaf3stones.hy2droid.data.DEFAULT_BLOCK_RULES
 import us.leaf3stones.hy2droid.data.DiagnosticsExporter
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
@@ -50,6 +51,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     val showServerAddress: StateFlow<Boolean> = settings.showServerAddress
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val showTraffic: StateFlow<Boolean> = settings.showTraffic
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val autoTestLatency: StateFlow<Boolean> = settings.autoTestLatency
@@ -145,6 +149,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setShowServerAddress(enabled) }
     }
 
+    fun setShowTraffic(enabled: Boolean) {
+        viewModelScope.launch { settings.setShowTraffic(enabled) }
+    }
+
     fun setAutoTestLatency(enabled: Boolean) {
         // Turning it back on is a fresh request: it should probe again even if this
         // process already did one pass.
@@ -182,17 +190,35 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Persist [profile] as the selected profile and bring the tunnel up for it. */
     fun connect(profile: Profile) {
+        viewModelScope.launch { connectNow(profile) }
+    }
+
+    /**
+     * Connect by id instead of by object, for the VPN-permission callback: a
+     * configuration change while the system dialog is up recreates the activity,
+     * and a `Profile` held in `remember` would be gone by the time it answers.
+     */
+    fun connectById(id: String) {
         viewModelScope.launch {
-            store.select(profile.id)
-            val yaml = HysteriaConfigBuilder.build(
-                profile,
-                disablePathMtuDiscovery = settings.disablePathMtuDiscovery.first(),
-            )
-            withContext(Dispatchers.IO) { configFile.writeText(yaml) }
-            val intent = Intent(getApplication<Application>(), Hysteria2VpnService::class.java)
-                .setAction(Hysteria2VpnService.ACTION_START_VPN)
-            ContextCompat.startForegroundService(getApplication<Application>(), intent)
+            val profile = runCatching { store.profiles.first() }
+                .getOrDefault(emptyList())
+                .firstOrNull { it.id == id } ?: return@launch
+            connectNow(profile)
         }
+    }
+
+    private suspend fun connectNow(profile: Profile) {
+        store.select(profile.id)
+        val yaml = HysteriaConfigBuilder.build(
+            profile,
+            disablePathMtuDiscovery = settings.disablePathMtuDiscovery.first(),
+        )
+        // Written atomically: a torn config would be accepted by the service
+        // ("the file exists") and fail the core on every start.
+        withContext(Dispatchers.IO) { ConfigFile.write(configFile, yaml) }
+        val intent = Intent(getApplication<Application>(), Hysteria2VpnService::class.java)
+            .setAction(Hysteria2VpnService.ACTION_START_VPN)
+        ContextCompat.startForegroundService(getApplication<Application>(), intent)
     }
 
     /** Ask the running service to tear the tunnel down. */
@@ -232,7 +258,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             // Read through the store instead of the StateFlow: it may still hold
             // the empty initial value right after process start.
             val all = runCatching { store.profiles.first() }.getOrDefault(emptyList())
-            val known = _latency.value
+            // Read the cache from the store, not from `_latency`: the seeding
+            // collector may not have run yet on a cold start, and probing
+            // everything again would defeat the cache.
+            val known = runCatching { store.latencies.first() }.getOrDefault(emptyMap())
             for (profile in all) {
                 if (profile.id in known) continue
                 probe(profile)

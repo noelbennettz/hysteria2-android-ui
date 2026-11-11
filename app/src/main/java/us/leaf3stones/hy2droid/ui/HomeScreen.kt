@@ -57,6 +57,7 @@ fun HomeScreen(
     val tunnelState by viewModel.tunnelState.collectAsState()
     val stats by viewModel.stats.collectAsState()
     val showServerAddress by viewModel.showServerAddress.collectAsState()
+    val showTraffic by viewModel.showTraffic.collectAsState()
     val autoTestLatency by viewModel.autoTestLatency.collectAsState()
     val latency by viewModel.latency.collectAsState()
     val latencyTesting by viewModel.latencyTesting.collectAsState()
@@ -110,10 +111,13 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (selectedProfile != null) {
+                // Also shown when the list is empty but a tunnel is up: otherwise
+                // deleting the running profile leaves no way to disconnect from the
+                // app at all.
+                if (selectedProfile != null || active) {
                     FloatingActionButton(
                         onClick = {
-                            if (active) onDisconnect() else onConnect(selectedProfile)
+                            if (active) onDisconnect() else selectedProfile?.let(onConnect)
                         },
                         containerColor = if (active) {
                             MaterialTheme.colorScheme.primaryContainer
@@ -153,6 +157,7 @@ fun HomeScreen(
             ConnectionCard(
                 state = tunnelState,
                 stats = stats,
+                showTraffic = showTraffic,
                 profileName = activeProfile?.let { it.name.ifBlank { it.authority } },
             )
             Spacer(Modifier.height(20.dp))

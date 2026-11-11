@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -87,6 +88,7 @@ fun SettingsScreen(
 ) {
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val showServerAddress by viewModel.showServerAddress.collectAsState()
+    val showTraffic by viewModel.showTraffic.collectAsState()
     val dnsEnabled by viewModel.customDnsEnabled.collectAsState()
     val dns1 by viewModel.customDnsServer.collectAsState()
     val dns2 by viewModel.customDnsServer2.collectAsState()
@@ -180,6 +182,14 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_show_address_summary),
                 checked = showServerAddress,
                 onCheckedChange = viewModel::setShowServerAddress,
+            )
+            HorizontalDivider()
+            SwitchRow(
+                icon = Icons.Filled.Speed,
+                title = stringResource(R.string.settings_show_traffic),
+                subtitle = stringResource(R.string.settings_show_traffic_summary),
+                checked = showTraffic,
+                onCheckedChange = viewModel::setShowTraffic,
             )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_network))
@@ -294,7 +304,7 @@ fun SettingsScreen(
             }
             HorizontalDivider()
             SwitchRow(
-                icon = Icons.Filled.Speed,
+                icon = Icons.Filled.Timer,
                 title = stringResource(R.string.settings_auto_test_latency),
                 subtitle = stringResource(R.string.settings_auto_test_latency_summary),
                 checked = autoTestLatency,

@@ -46,12 +46,18 @@ class ProfileStore(private val context: Context) {
         .map { it[keySelected] }
 
     /**
-     * The last measured latency per profile id, in milliseconds. Persisted so a
-     * relaunch does not have to re-handshake every node; failed probes are not
-     * stored (they would be stale the moment the network changed).
+     * The last measured latency per profile id, in milliseconds, dropping entries
+     * older than [LATENCY_TTL_MS]: a number from last week says nothing about the
+     * node's speed right now, and stale values would keep the list sorted by
+     * something that is no longer true. Failed probes are not stored at all.
      */
     val latencies: Flow<Map<String, Int>> = context.profileDataStore.data
-        .map { decodeLatencies(it[keyLatency]) }
+        .map { prefs ->
+            val now = System.currentTimeMillis()
+            decodeLatencyEntries(prefs[keyLatency])
+                .filterValues { now - it.measuredAt <= LATENCY_TTL_MS }
+                .mapValues { it.value.millis }
+        }
 
     /** Insert or replace [profile] by id. Selects it if nothing is selected yet. */
     suspend fun upsert(profile: Profile) {
@@ -77,9 +83,9 @@ class ProfileStore(private val context: Context) {
             val list = current.filterNot { it.id == id }
             prefs[keyProfiles] = encodeList(list)
             // The cached latency of a deleted node is dead weight.
-            val latencies = decodeLatencies(prefs[keyLatency]).toMutableMap()
-            if (latencies.remove(id) != null) {
-                prefs[keyLatency] = JSONObject(latencies as Map<*, *>).toString()
+            val entries = decodeLatencyEntries(prefs[keyLatency]).toMutableMap()
+            if (entries.remove(id) != null) {
+                prefs[keyLatency] = encodeLatencyEntries(entries)
             }
             if (prefs[keySelected] == id) {
                 val next = successorAfterRemoval(list, removedIndex)
@@ -91,9 +97,13 @@ class ProfileStore(private val context: Context) {
     /** Store (or, with `null`, forget) the measured latency of [id]. */
     suspend fun setLatency(id: String, millis: Int?) {
         context.profileDataStore.edit { prefs ->
-            val latencies = decodeLatencies(prefs[keyLatency]).toMutableMap()
-            if (millis == null) latencies.remove(id) else latencies[id] = millis
-            prefs[keyLatency] = JSONObject(latencies as Map<*, *>).toString()
+            val entries = decodeLatencyEntries(prefs[keyLatency]).toMutableMap()
+            if (millis == null) {
+                entries.remove(id)
+            } else {
+                entries[id] = LatencyEntry(millis, System.currentTimeMillis())
+            }
+            prefs[keyLatency] = encodeLatencyEntries(entries)
         }
     }
 
@@ -112,20 +122,35 @@ class ProfileStore(private val context: Context) {
         }
     }
 
-    /** Decode the latency map; unknown shapes degrade to "nothing measured yet". */
-    private fun decodeLatencies(json: String?): Map<String, Int> {
+    /**
+     * Decode the latency map. Both the `{id: {ms, at}}` shape and a bare
+     * `{id: millis}` are understood, so an older cache degrades instead of
+     * throwing; a bare entry gets timestamp 0 and therefore counts as expired.
+     */
+    private fun decodeLatencyEntries(json: String?): Map<String, LatencyEntry> {
         if (json.isNullOrBlank()) return emptyMap()
         return try {
             val obj = JSONObject(json)
             buildMap {
                 for (key in obj.keys()) {
-                    val millis = obj.optInt(key, -1)
-                    if (millis > 0) put(key, millis)
+                    val entry = obj.optJSONObject(key)
+                    val millis = entry?.optInt("ms", -1) ?: obj.optInt(key, -1)
+                    if (millis <= 0) continue
+                    put(key, LatencyEntry(millis, entry?.optLong("at", 0L) ?: 0L))
                 }
             }
         } catch (_: Exception) {
             emptyMap()
         }
+    }
+
+    /** Encode as `{id: {ms, at}}`, keeping each entry's own timestamp. */
+    private fun encodeLatencyEntries(entries: Map<String, LatencyEntry>): String {
+        val obj = JSONObject()
+        for ((id, entry) in entries) {
+            obj.put(id, JSONObject().put("ms", entry.millis).put("at", entry.measuredAt))
+        }
+        return obj.toString()
     }
 
     private fun encodeList(profiles: List<Profile>): String {
@@ -147,6 +172,9 @@ class ProfileStore(private val context: Context) {
         put("fastOpen", p.fastOpen)
         put("port", p.port)
     }
+
+    /** One cached measurement: the value and when it was taken. */
+    private data class LatencyEntry(val millis: Int, val measuredAt: Long)
 
     private fun decode(o: JSONObject): Profile = Profile(
         id = o.getString("id"),
@@ -173,5 +201,8 @@ class ProfileStore(private val context: Context) {
     private companion object {
         /** Envelope prefix of that withdrawn experiment; never written again. */
         const val SEALED_PREFIX = "enc:v1:"
+
+        /** How long a measured latency stays meaningful (24 h). */
+        const val LATENCY_TTL_MS = 24L * 60 * 60 * 1000
     }
 }

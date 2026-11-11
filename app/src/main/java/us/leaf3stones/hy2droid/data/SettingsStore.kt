@@ -30,6 +30,7 @@ class SettingsStore(private val context: Context) {
     private val keyAutoTestLatency = booleanPreferencesKey("auto_test_latency")
     private val keyDisablePmtud = booleanPreferencesKey("disable_path_mtu_discovery")
     private val keyMtu = intPreferencesKey("tunnel_mtu")
+    private val keyShowTraffic = booleanPreferencesKey("show_live_traffic")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -42,6 +43,14 @@ class SettingsStore(private val context: Context) {
     /** Whether the profile cards show the server address. Default off (less noise). */
     val showServerAddress: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyShowAddress] ?: false }
+
+    /**
+     * Whether live throughput is shown (status card and notification). Off by
+     * default: on Android 14 the notification can be swiped away, and a
+     * throughput update would bring it straight back.
+     */
+    val showTraffic: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyShowTraffic] ?: false }
 
     /**
      * Whether node latency is measured when the app opens (and the list is then
@@ -102,6 +111,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setShowServerAddress(enabled: Boolean) {
         context.settingsDataStore.edit { it[keyShowAddress] = enabled }
+    }
+
+    suspend fun setShowTraffic(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyShowTraffic] = enabled }
     }
 
     suspend fun setAutoTestLatency(enabled: Boolean) {

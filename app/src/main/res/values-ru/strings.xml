@@ -67,6 +67,8 @@
     <string name="settings_dynamic_color">Динамические цвета (Material You)</string>
     <string name="settings_show_address">Показывать адрес сервера</string>
     <string name="settings_show_address_summary">Показывать хост и порт на карточках профилей</string>
+    <string name="settings_show_traffic">Трафик в реальном времени</string>
+    <string name="settings_show_traffic_summary">Показывать скорость на карточке состояния и в уведомлении</string>
     <string name="settings_custom_dns">Свой DNS-сервер</string>
     <string name="settings_section_appearance">Оформление</string>
     <string name="settings_section_network">Сеть</string>

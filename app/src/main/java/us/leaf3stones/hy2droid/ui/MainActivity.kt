@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -131,13 +132,20 @@ private fun AppRoot(
     }
 
     Hy2droidTheme(dynamicColor = dynamicColor) {
-        var editing by remember { mutableStateOf<Profile?>(null) }
-        var editorOpen by remember { mutableStateOf(false) }
-        var pendingProfile by remember { mutableStateOf<Profile?>(null) }
-        var splitTunnelOpen by remember { mutableStateOf(false) }
-        var blockRulesOpen by remember { mutableStateOf(false) }
-        var settingsOpen by remember { mutableStateOf(false) }
-        var scannerOpen by remember { mutableStateOf(false) }
+        // Saveable so a rotation does not silently drop the user back on the list
+        // (or, in the editor, throw the draft away).
+        var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+        var editorOpen by rememberSaveable { mutableStateOf(false) }
+        var pendingProfileId by rememberSaveable { mutableStateOf<String?>(null) }
+        var splitTunnelOpen by rememberSaveable { mutableStateOf(false) }
+        var blockRulesOpen by rememberSaveable { mutableStateOf(false) }
+        var settingsOpen by rememberSaveable { mutableStateOf(false) }
+        var scannerOpen by rememberSaveable { mutableStateOf(false) }
+
+        // The editor works on the stored profile: the ViewModel survives a
+        // rotation, so this resolves on the first frame after one.
+        val profiles by vm.profiles.collectAsState()
+        val editing = editingId?.let { id -> profiles.firstOrNull { it.id == id } }
 
         // Launcher / Quick Settings long-press: come back to the list, not to
         // whatever sub-screen happened to be open when the app went to background.
@@ -145,7 +153,7 @@ private fun AppRoot(
         LaunchedEffect(homeRequests) {
             if (homeRequests == 0) return@LaunchedEffect
             editorOpen = false
-            editing = null
+            editingId = null
             splitTunnelOpen = false
             blockRulesOpen = false
             settingsOpen = false
@@ -161,7 +169,7 @@ private fun AppRoot(
                 scannerOpen -> scannerOpen = false
                 editorOpen -> {
                     editorOpen = false
-                    editing = null
+                    editingId = null
                 }
                 splitTunnelOpen -> splitTunnelOpen = false
                 blockRulesOpen -> blockRulesOpen = false
@@ -172,16 +180,18 @@ private fun AppRoot(
         val vpnPermissionLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.StartActivityForResult(),
         ) { result ->
+            // Remembered as an id: the grant can arrive after a rotation, when a
+            // captured Profile object would no longer exist.
             if (result.resultCode == Activity.RESULT_OK) {
-                pendingProfile?.let { vm.connect(it) }
+                pendingProfileId?.let { vm.connectById(it) }
             }
-            pendingProfile = null
+            pendingProfileId = null
         }
 
         fun requestConnect(profile: Profile) {
             val prepare = VpnService.prepare(context)
             if (prepare != null) {
-                pendingProfile = profile
+                pendingProfileId = profile.id
                 vpnPermissionLauncher.launch(prepare)
             } else {
                 vm.connect(profile)
@@ -201,11 +211,11 @@ private fun AppRoot(
                 onSave = { profile ->
                     vm.save(profile)
                     editorOpen = false
-                    editing = null
+                    editingId = null
                 },
                 onBack = {
                     editorOpen = false
-                    editing = null
+                    editingId = null
                 },
             )
             splitTunnelOpen -> SplitTunnelScreen(
@@ -225,11 +235,11 @@ private fun AppRoot(
             else -> HomeScreen(
                 viewModel = vm,
                 onAdd = {
-                    editing = null
+                    editingId = null
                     editorOpen = true
                 },
                 onEdit = { profile ->
-                    editing = profile
+                    editingId = profile.id
                     editorOpen = true
                 },
                 onConnect = ::requestConnect,

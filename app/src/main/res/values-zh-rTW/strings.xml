@@ -67,6 +67,8 @@
     <string name="settings_dynamic_color">動態色彩（Material You）</string>
     <string name="settings_show_address">顯示伺服器位址</string>
     <string name="settings_show_address_summary">在節點卡片上顯示主機與連接埠</string>
+    <string name="settings_show_traffic">即時流量</string>
+    <string name="settings_show_traffic_summary">在狀態卡片與通知中顯示傳輸速率</string>
     <string name="settings_custom_dns">自訂 DNS 伺服器</string>
     <string name="settings_section_appearance">外觀</string>
     <string name="settings_section_network">網路</string>

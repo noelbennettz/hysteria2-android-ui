@@ -67,6 +67,8 @@
     <string name="settings_dynamic_color">动态取色（Material You）</string>
     <string name="settings_show_address">显示服务器地址</string>
     <string name="settings_show_address_summary">在配置卡片上显示主机和端口</string>
+    <string name="settings_show_traffic">实时流量</string>
+    <string name="settings_show_traffic_summary">在状态卡片和通知中显示传输速率</string>
     <string name="settings_custom_dns">自定义 DNS 服务器</string>
     <string name="settings_section_appearance">外观</string>
     <string name="settings_section_network">网络</string>

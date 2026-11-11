@@ -3,8 +3,11 @@ package us.leaf3stones.hy2droid.proxy
 import android.app.NotificationChannel
 import android.app.PendingIntent
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
@@ -39,6 +42,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import us.leaf3stones.hy2droid.BuildConfig
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.ConfigFile
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
 import us.leaf3stones.hy2droid.data.LanRanges
 import us.leaf3stones.hy2droid.data.ProfileStore
@@ -85,6 +89,23 @@ class Hysteria2VpnService : VpnService() {
     /** True while *we* are tearing the core down, so its exit is not an error. */
     @Volatile
     private var coreStoppedByUs = false
+
+    /**
+     * Set when the user swipes the ongoing notification away (Android 14+ allows
+     * that). Updating a dismissed notification would bring it straight back, so
+     * throughput refreshes stop until the next connect.
+     */
+    @Volatile
+    private var notificationDismissed = false
+
+    /** Clears [notificationDismissed] when the notification is dismissed. */
+    private val dismissReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_NOTIFICATION_DISMISSED) {
+                notificationDismissed = true
+            }
+        }
+    }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -162,11 +183,21 @@ class Hysteria2VpnService : VpnService() {
 
     private suspend fun startTunnelLocked() {
         if (tunInterface != null) {
-            Log.d(TAG, "Tunnel already running; ignoring duplicate start")
-            return
+            // A second start while connected means "bring up the selected profile",
+            // which is how a switched profile takes effect. Same profile: ignore.
+            val wanted = activeProfileId()
+            if (wanted == null || wanted == TunnelStatus.activeProfileId.value) {
+                Log.d(TAG, "Tunnel already running; ignoring duplicate start")
+                return
+            }
+            Log.i(TAG, "Selected profile changed; restarting the tunnel")
+            // Tear down without stopSelf(): the service must stay alive to build
+            // the new tunnel (and the foreground notification stays posted).
+            teardownTunnel()
         }
         shuttingDown = false
         coreStoppedByUs = false
+        notificationDismissed = false
         Log.i(TAG, "Starting tunnel · Hysteria core ${BuildConfig.CORE_VERSION}")
         updateState(TunnelState.Connecting)
 
@@ -445,14 +476,8 @@ class Hysteria2VpnService : VpnService() {
         } catch (_: Exception) {
             false
         }
-        return try {
-            configFile.writeText(
-                HysteriaConfigBuilder.build(profile, disablePathMtuDiscovery = pmtudDisabled),
-            )
-            ConfigPrep.Ready
-        } catch (_: Exception) {
-            ConfigPrep.Failed
-        }
+        val yaml = HysteriaConfigBuilder.build(profile, disablePathMtuDiscovery = pmtudDisabled)
+        return if (ConfigFile.write(configFile, yaml)) ConfigPrep.Ready else ConfigPrep.Failed
     }
 
     private fun launchCore(configFile: File): Process? = try {
@@ -503,6 +528,12 @@ class Hysteria2VpnService : VpnService() {
             return
         }
         if (shuttingDown || coreStoppedByUs) return
+        // A reconnect can already own the tunnel by the time this fires; tearing
+        // down then would kill the *new* core and TUN.
+        if (coreProcess !== process) {
+            Log.i(TAG, "A superseded core exited with code $exit; ignoring")
+            return
+        }
         Log.w(TAG, "Core exited unexpectedly with code $exit")
         serviceScope.launch {
             teardown()
@@ -537,7 +568,14 @@ class Hysteria2VpnService : VpnService() {
                         lastRx = values[3]
                         lastAt = now
                         ticks = 0
-                        refreshNotification(txRate, rxRate)
+                        // Live throughput is opt-in; without it the notification
+                        // keeps the plain status text (and never re-posts).
+                        val showTraffic = try {
+                            SettingsStore(applicationContext).showTraffic.first()
+                        } catch (_: Exception) {
+                            false
+                        }
+                        if (showTraffic) refreshNotification(txRate, rxRate)
                     }
                 }
                 delay(STATS_INTERVAL_MS)
@@ -545,11 +583,16 @@ class Hysteria2VpnService : VpnService() {
         }
     }
 
-    private fun stopTunnel() {
+    /** Release the tunnel but keep the service (and its notification) alive. */
+    private fun teardownTunnel() {
         shuttingDown = true
         updateState(TunnelState.Disconnecting)
         teardown()
         updateState(TunnelState.Idle)
+    }
+
+    private fun stopTunnel() {
+        teardownTunnel()
         stopForegroundSafely()
         stopSelf()
     }
@@ -610,11 +653,32 @@ class Hysteria2VpnService : VpnService() {
         super.onRevoke()
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        // Dynamic receiver: a manifest-declared implicit broadcast is not delivered
+        // any more, and this one only ever comes from our own notification.
+        ContextCompat.registerReceiver(
+            this,
+            dismissReceiver,
+            IntentFilter(ACTION_NOTIFICATION_DISMISSED),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+    }
+
     override fun onDestroy() {
         shuttingDown = true
+        unregisterReceiverSafely()
         teardown()
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    private fun unregisterReceiverSafely() {
+        try {
+            unregisterReceiver(dismissReceiver)
+        } catch (_: Exception) {
+            // Already unregistered (onCreate never ran, or it is registered twice).
+        }
     }
 
     private fun startForegroundSafely(text: String = getString(R.string.status_connecting)) {
@@ -653,10 +717,19 @@ class Hysteria2VpnService : VpnService() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE,
         )
-        val stopIntent = PendingIntent.getService(
+        // getForegroundService, not getService: the background start restriction
+        // applies to a notification action as well, and the service calls
+        // startForeground() first thing anyway.
+        val stopIntent = PendingIntent.getForegroundService(
             this,
             1,
             Intent(this, Hysteria2VpnService::class.java).setAction(ACTION_STOP_VPN),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+        val dismissIntent = PendingIntent.getBroadcast(
+            this,
+            2,
+            Intent(ACTION_NOTIFICATION_DISMISSED).setPackage(packageName),
             PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
@@ -664,8 +737,10 @@ class Hysteria2VpnService : VpnService() {
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_vpn_connection)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(contentIntent)
+            .setDeleteIntent(dismissIntent)
             .addAction(R.drawable.ic_vpn_connection, getString(R.string.action_disconnect), stopIntent)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
@@ -678,6 +753,8 @@ class Hysteria2VpnService : VpnService() {
      */
     private fun refreshNotification(txRate: Long = -1, rxRate: Long = -1) {
         if (shuttingDown) return
+        // The user swiped it away; re-posting would just make it come back.
+        if (notificationDismissed) return
         // POST_NOTIFICATIONS is a runtime permission from Android 13: without the
         // explicit check the update would throw (and lint rightly complains).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -712,6 +789,10 @@ class Hysteria2VpnService : VpnService() {
 
         const val ACTION_START_VPN = "us.leaf3stones.hy2droid.proxy.ACTION_START_VPN"
         const val ACTION_STOP_VPN = "us.leaf3stones.hy2droid.proxy.ACTION_STOP_VPN"
+
+        /** Broadcast by the notification's delete intent when the user swipes it away. */
+        private const val ACTION_NOTIFICATION_DISMISSED =
+            "us.leaf3stones.hy2droid.proxy.ACTION_NOTIFICATION_DISMISSED"
 
         /** The action Android sends when starting the service for always-on VPN. */
         private const val SYS_SYSTEM_VPN = "android.net.VpnService"

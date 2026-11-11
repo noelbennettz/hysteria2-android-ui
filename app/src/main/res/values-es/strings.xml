@@ -67,6 +67,8 @@
     <string name="settings_dynamic_color">Color dinámico (Material You)</string>
     <string name="settings_show_address">Mostrar la dirección del servidor</string>
     <string name="settings_show_address_summary">Mostrar host y puerto en las tarjetas de perfil</string>
+    <string name="settings_show_traffic">Tráfico en vivo</string>
+    <string name="settings_show_traffic_summary">Muestra el caudal en la tarjeta de estado y en la notificación</string>
     <string name="settings_custom_dns">Servidor DNS personalizado</string>
     <string name="settings_section_appearance">Apariencia</string>
     <string name="settings_section_network">Red</string>
