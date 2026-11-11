@@ -94,7 +94,6 @@
     <string name="settings_export_logs_summary">把应用日志和 Hysteria 核心日志保存为 zip 文件</string>
     <string name="always_on_title">已开启始终开启的 VPN</string>
     <string name="always_on_message">断开后 Android 会立刻重新启动这个节点。要彻底停止，请在系统设置中关闭“始终开启的 VPN”。</string>
-    <string name="action_disconnect_anyway">仍然断开</string>
     <string name="action_test_latency">测试延迟</string>
     <string name="latency_testing">测试中…</string>
     <string name="latency_ms">%1$d 毫秒</string>

@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -104,12 +103,18 @@ private fun AppRoot(
     val pendingLink by incomingLink.collectAsState()
     val context = LocalContext.current
 
-    // Always-on VPN is a system setting the app cannot turn off; when it is on,
-    // Android brings the tunnel straight back and "Disconnect" looks broken.
-    val alwaysOnVpn = remember {
-        Settings.Secure.getString(context.contentResolver, ALWAYS_ON_VPN_APP) == context.packageName
-    }
+    // Always-on VPN cannot be detected up front: `always_on_vpn_app` is a
+    // restricted secure setting and reading it throws SecurityException from
+    // Android 12 on. Instead the service notices a system-initiated restart right
+    // after a user stop and raises this flag.
+    val restartedBySystem by vm.restartedBySystem.collectAsState()
     var alwaysOnWarning by remember { mutableStateOf(false) }
+    LaunchedEffect(restartedBySystem) {
+        if (restartedBySystem) {
+            vm.acknowledgeSystemRestart()
+            alwaysOnWarning = true
+        }
+    }
 
     // Shared by the QR scanner and the VIEW intent filter: one code path, one
     // message, so a deep link behaves exactly like a scanned code.
@@ -258,9 +263,7 @@ private fun AppRoot(
                     editorOpen = true
                 },
                 onConnect = ::requestConnect,
-                onDisconnect = {
-                    if (alwaysOnVpn) alwaysOnWarning = true else vm.disconnect()
-                },
+                onDisconnect = vm::disconnect,
                 onOpenSettings = { settingsOpen = true },
                 onScan = { scannerOpen = true },
             )
@@ -272,24 +275,11 @@ private fun AppRoot(
                 title = { Text(stringResource(R.string.always_on_title)) },
                 text = { Text(stringResource(R.string.always_on_message)) },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            alwaysOnWarning = false
-                            vm.disconnect()
-                        },
-                    ) {
-                        Text(stringResource(R.string.action_disconnect_anyway))
-                    }
-                },
-                dismissButton = {
                     TextButton(onClick = { alwaysOnWarning = false }) {
-                        Text(stringResource(R.string.action_cancel))
+                        Text(stringResource(R.string.action_close))
                     }
                 },
             )
         }
     }
 }
-
-/** `Settings.Secure` key naming the package always-on VPN is configured for. */
-private const val ALWAYS_ON_VPN_APP = "always_on_vpn_app"

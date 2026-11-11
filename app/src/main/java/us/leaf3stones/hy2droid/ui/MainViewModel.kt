@@ -86,6 +86,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Profile the running tunnel was built for; `null` while nothing is up. */
     val activeProfileId: StateFlow<String?> = TunnelStatus.activeProfileId
 
+    /** True when the system restarted the tunnel by itself (always-on VPN). */
+    val restartedBySystem: StateFlow<Boolean> = TunnelStatus.restartedBySystem
+
     /** Measured latency per profile id; a `null` value means the probe failed. */
     private val _latency = MutableStateFlow<Map<String, Int?>>(emptyMap())
     val latency: StateFlow<Map<String, Int?>> = _latency
@@ -151,6 +154,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setShowTraffic(enabled: Boolean) {
         viewModelScope.launch { settings.setShowTraffic(enabled) }
+    }
+
+    /** The always-on hint was shown; do not show it again for this restart. */
+    fun acknowledgeSystemRestart() {
+        TunnelStatus.setRestartedBySystem(false)
     }
 
     fun setAutoTestLatency(enabled: Boolean) {

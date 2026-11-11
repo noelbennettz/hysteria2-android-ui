@@ -94,7 +94,6 @@
     <string name="settings_export_logs_summary">Сохраняет журналы приложения и ядра Hysteria в zip-файл</string>
     <string name="always_on_title">Включён постоянный VPN</string>
     <string name="always_on_message">Android снова запустит этот профиль сразу после отключения. Чтобы остановить его насовсем, отключите постоянный VPN в настройках системы.</string>
-    <string name="action_disconnect_anyway">Всё равно отключить</string>
     <string name="action_test_latency">Проверить задержку</string>
     <string name="latency_testing">Проверка…</string>
     <string name="latency_ms">%1$d мс</string>

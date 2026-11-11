@@ -94,7 +94,6 @@
     <string name="settings_export_logs_summary">Enregistre les journaux de l\'app et du cœur Hysteria dans un zip</string>
     <string name="always_on_title">La VPN permanente est activée</string>
     <string name="always_on_message">Android relance ce profil juste après la déconnexion. Pour l\'arrêter définitivement, désactivez la VPN permanente dans les réglages du système.</string>
-    <string name="action_disconnect_anyway">Se déconnecter quand même</string>
     <string name="action_test_latency">Tester la latence</string>
     <string name="latency_testing">Test en cours…</string>
     <string name="latency_ms">%1$d ms</string>

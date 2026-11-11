@@ -94,7 +94,6 @@
     <string name="settings_export_logs_summary">Guarda los registros de la app y del núcleo Hysteria en un zip</string>
     <string name="always_on_title">La VPN siempre activa está encendida</string>
     <string name="always_on_message">Android vuelve a iniciar este perfil justo después de desconectarte. Para detenerlo del todo, desactiva la VPN siempre activa en los ajustes del sistema.</string>
-    <string name="action_disconnect_anyway">Desconectar igualmente</string>
     <string name="action_test_latency">Probar latencia</string>
     <string name="latency_testing">Probando…</string>
     <string name="latency_ms">%1$d ms</string>

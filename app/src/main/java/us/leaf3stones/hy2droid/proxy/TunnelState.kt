@@ -46,8 +46,21 @@ object TunnelStatus {
     private val _activeProfileId = MutableStateFlow<String?>(null)
     val activeProfileId: StateFlow<String?> = _activeProfileId.asStateFlow()
 
+    /**
+     * Set when the system brought the tunnel back on its own, which means
+     * always-on VPN is enabled. Reading `always_on_vpn_app` is forbidden from
+     * Android 12 (SecurityException), so this is detected behaviourally: a
+     * system-initiated start right after a user-initiated stop.
+     */
+    private val _restartedBySystem = MutableStateFlow(false)
+    val restartedBySystem: StateFlow<Boolean> = _restartedBySystem.asStateFlow()
+
     internal fun setState(state: TunnelState) {
         _state.value = state
+    }
+
+    internal fun setRestartedBySystem(value: Boolean) {
+        _restartedBySystem.value = value
     }
 
     internal fun setActiveProfile(id: String?) {

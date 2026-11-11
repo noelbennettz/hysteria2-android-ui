@@ -99,7 +99,6 @@
     <!-- Always-on VPN -->
     <string name="always_on_title">Always-on VPN is on</string>
     <string name="always_on_message">Android starts this profile again right after you disconnect. To stop it for good, turn off Always-on VPN in the system settings.</string>
-    <string name="action_disconnect_anyway">Disconnect anyway</string>
 
     <!-- Latency -->
     <string name="action_test_latency">Test latency</string>

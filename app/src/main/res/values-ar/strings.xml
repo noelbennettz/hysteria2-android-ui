@@ -94,7 +94,6 @@
     <string name="settings_export_logs_summary">حفظ سجلات التطبيق ونواة Hysteria في ملف zip</string>
     <string name="always_on_title">VPN الدائم مفعّل</string>
     <string name="always_on_message">سيعيد Android تشغيل هذا الملف فور قطع الاتصال. لإيقافه نهائيًا، أوقف VPN الدائم من إعدادات النظام.</string>
-    <string name="action_disconnect_anyway">قطع الاتصال على أي حال</string>
     <string name="action_test_latency">اختبار زمن الاستجابة</string>
     <string name="latency_testing">جارٍ الاختبار…</string>
     <string name="latency_ms">%1$d مللي ثانية</string>

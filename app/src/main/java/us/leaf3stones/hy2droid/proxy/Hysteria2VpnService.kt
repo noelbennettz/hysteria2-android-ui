@@ -117,6 +117,14 @@ class Hysteria2VpnService : VpnService() {
     @Volatile
     private var requestedProfileId: String? = null
 
+    /**
+     * When the user last asked us to stop. A system-initiated start shortly after
+     * that is always-on VPN bringing the tunnel back (the setting itself is not
+     * readable from an app since Android 12).
+     */
+    @Volatile
+    private var lastUserStopAt = 0L
+
     private val serviceScope = CoroutineScope(
         SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, error ->
             // SupervisorJob only keeps siblings alive; without this handler an
@@ -149,6 +157,7 @@ class Hysteria2VpnService : VpnService() {
             ACTION_STOP_VPN -> {
                 // Also reached through startForegroundService (notification action,
                 // Quick Settings tile), so satisfy the foreground contract first.
+                lastUserStopAt = SystemClock.elapsedRealtime()
                 startForegroundSafely(getString(R.string.status_disconnecting))
                 requestStop()
                 return START_NOT_STICKY
@@ -157,6 +166,7 @@ class Hysteria2VpnService : VpnService() {
             ACTION_START_VPN -> {
                 // An explicit start (app or tile), possibly for a specific profile.
                 requestedProfileId = intent.getStringExtra(EXTRA_PROFILE_ID)
+                TunnelStatus.setRestartedBySystem(false)
                 startForegroundSafely()
                 launchStart()
                 return START_STICKY
@@ -169,6 +179,13 @@ class Hysteria2VpnService : VpnService() {
             SYS_SYSTEM_VPN, null -> {
                 // No request to honour: whatever is selected is the answer.
                 requestedProfileId = null
+                // Right after a user-initiated stop this can only be always-on VPN,
+                // which is the one way to learn about it on Android 12+.
+                val sinceStop = SystemClock.elapsedRealtime() - lastUserStopAt
+                if (lastUserStopAt > 0 && sinceStop in 0..ALWAYS_ON_RESTART_WINDOW_MS) {
+                    Log.i(TAG, "Restarted by the system ${sinceStop}ms after a stop; always-on VPN")
+                    TunnelStatus.setRestartedBySystem(true)
+                }
                 startForegroundSafely()
                 launchStart()
                 return START_STICKY
@@ -849,6 +866,12 @@ class Hysteria2VpnService : VpnService() {
 
         /** Stats ticks between two notification refreshes (5 s at 1 s cadence). */
         private const val NOTIFICATION_REFRESH_TICKS = 5
+
+        /**
+         * How soon after a user-initiated stop a system-initiated start still
+         * counts as always-on VPN bringing the tunnel back.
+         */
+        private const val ALWAYS_ON_RESTART_WINDOW_MS = 10_000L
         private const val CHANNEL_ID = "hy2droid_vpn"
         private const val NOTIFICATION_ID = 100
         private const val TAG = "Hysteria2VpnService"

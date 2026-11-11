@@ -94,7 +94,6 @@
     <string name="settings_export_logs_summary">將應用程式與 Hysteria 核心的記錄存成 zip 檔</string>
     <string name="always_on_title">已開啟常駐 VPN</string>
     <string name="always_on_message">你斷線後 Android 會立刻重新啟動這個節點。要徹底停止，請到系統設定關閉「常駐 VPN」。</string>
-    <string name="action_disconnect_anyway">仍要斷線</string>
 
     <!-- Latency -->
     <string name="action_test_latency">測試延遲</string>
