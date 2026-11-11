@@ -35,10 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
@@ -181,9 +179,11 @@ fun EmptyState(modifier: Modifier = Modifier) {
 /** Dialog showing the profile's hysteria2 share link as text + QR, with a copy button. */
 @Composable
 fun ShareDialog(profile: Profile, onDismiss: () -> Unit) {
-    val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     val link = remember(profile) { HysteriaUri.build(profile) }
+
+    // The QR and the link carry the auth secret.
+    SecureWindow()
     val qrBitmap = remember(link) {
         runCatching {
             val size = 512
@@ -218,7 +218,7 @@ fun ShareDialog(profile: Profile, onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = {
-                clipboard.setText(AnnotatedString(link))
+                context.copySensitive(link)
                 Toast.makeText(context, R.string.link_copied, Toast.LENGTH_SHORT).show()
                 onDismiss()
             }) {

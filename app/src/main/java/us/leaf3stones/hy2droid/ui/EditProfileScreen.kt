@@ -62,6 +62,9 @@ fun EditProfileScreen(
 
     val valid = server.isNotBlank() && auth.isNotBlank()
 
+    // The auth and obfs fields are visible here: keep them out of screenshots.
+    SecureWindow()
+
     Scaffold(
         topBar = {
             TopAppBar(

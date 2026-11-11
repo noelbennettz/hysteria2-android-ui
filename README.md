@@ -49,8 +49,8 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Dynamic colour (Material You) toggle, custom DNS, split tunnelling in Settings
 - Profile cards show only the profile name by default; the server address is one
   switch away (Settings → Appearance → *Show server address*)
-- Profiles and settings are included in Android Auto Backup (the secrets travel
-  as ciphertext, see below)
+- Profiles and settings are included in Android Auto Backup (secrets too, so a
+  restore on a new phone keeps the profiles usable — see Security notes)
 
 ## Languages
 
@@ -130,7 +130,7 @@ connection. With no rules the config carries no `misc:` section at all.
 | Path | Contents |
 | --- | --- |
 | `app/src/main/java/.../ui` | Compose UI (home, profile editor, settings, split tunnel, blocked traffic, QR scanner) |
-| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `BlockRule`, `HysteriaConfigBuilder`, `HysteriaUri`, `CredentialCipher`, `ProfileOrdering`, `Redact`, `DiagnosticsExporter` |
+| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `BlockRule`, `HysteriaConfigBuilder`, `HysteriaUri`, `ProfileOrdering`, `Redact`, `DiagnosticsExporter` |
 | `app/src/main/java/.../proxy` | `Hysteria2VpnService`, `VpnTileService`, `TunnelStatus`, `Tun2socksConfig`, `LatencyProbe`, `CoreLog` |
 | `app/src/main/jniLibs` | `libtun2socks.so` (committed, see `native/tun2socks/`); `libhysteria.so` is downloaded at build time |
 | `native/tun2socks` | Patches applied on top of hev-socks5-tunnel (blocked-port rules, JNI names) |
@@ -247,24 +247,29 @@ point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
 
 ## Security notes
 
-- **Secrets at rest**: `auth` and the obfs password are sealed with AES-256-GCM
-  before they reach the profiles DataStore; the key lives in the Android Keystore
-  (`hy2droid.credentials`) and never leaves the device. Projects upgraded from an
-  older version are migrated in place on first launch.
-- A restored cloud backup / device transfer on a *new* phone brings the profiles
-  back but not their secrets — the ciphertext is bound to the old device's key.
-  Paste the password again (or re-import the share link). The same happens after
-  an uninstall/reinstall or "clear app data": uninstalling deletes the Keystore
-  key with the app's UID. Everything else (names, servers, ports, SNI, bandwidth,
-  obfs *enabled*, order, selected profile, all settings) is unaffected.
-- The YAML the core reads (`files/hysteria.yaml`) contains the password in
-  plaintext because the core needs it: it is written for the session, deleted as
-  soon as the tunnel stops, and excluded from backups together with the core log.
-- The notification, the UI and the exported diagnostics never contain the secret:
-  diagnostics mask `auth` / obfs `password` and drop core log lines carrying a
-  share link.
-- The latency probe writes its temporary config into the app cache and removes it
-  after the measurement (stale copies from a crash are swept on the next probe).
+- **Where the secrets live**: `auth` and the obfs password are stored as-is in
+  the profiles DataStore under the app's private directory (`/data/data/...`,
+  mode `0700`, owned by the app UID). No other app can read them — that is
+  enforced by the per-app UID, not by our code. The app writes nothing to shared
+  storage, declares no `FileProvider`, and no exported component hands out data.
+- **Screens and clipboard**: the share dialog sets `FLAG_SECURE` while it is
+  open, so the QR and the link cannot be captured by screenshots, screen
+  recordings or the recents thumbnail; copying the link marks the clip
+  `EXTRA_IS_SENSITIVE` (Android 13+), which hides previews and shortens its life.
+- **What this does not cover, on purpose**: a rooted device or `adb` on a
+  debuggable build can read the private directory, and Android's own backup can
+  carry the file (Auto Backup is end-to-end encrypted with the device lock on
+  Android 9+). That is the price for a backup restore that keeps working on a new
+  phone, and it is why there is no Keystore wrapper: the encryption bought little
+  against those two paths and cost a restore that silently lost every password.
+- The YAML the core reads (`files/hysteria.yaml`) is written for the session and
+  deleted when the tunnel stops; it and the core log are excluded from backups.
+- Exported diagnostics mask `auth` / obfs `password` and drop core log lines that
+  carry a share link. Nothing else in the app writes the secret anywhere (not the
+  notification, not logcat, not files outside the private dir).
+- Any app on the device can hand us a `hysteria2://` link — that is the deep-link
+  feature. An imported profile is never auto-selected nor auto-connected, so the
+  user still has to choose it and press connect.
 
 ## Troubleshooting
 

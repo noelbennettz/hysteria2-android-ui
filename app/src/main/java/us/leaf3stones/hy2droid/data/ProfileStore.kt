@@ -19,15 +19,12 @@ private val Context.profileDataStore: DataStore<Preferences> by preferencesDataS
  * cache: JSON is schema-tolerant across app versions and never throws on read
  * (a corrupt payload degrades to an empty list).
  *
- * The two secrets (`auth`, obfs password) are sealed with [CredentialCipher]
- * before they are written, so the file on disk — and any backup of it — holds
- * ciphertext. Values written by older versions are still readable and get
- * rewritten in place by [encryptLegacyCredentials].
+ * Secrets are stored as-is: the file lives in the app's private directory, which
+ * no other app can read (see the Security notes in the README for the full
+ * threat model). Keeping them usable is what makes a backup restore on a new
+ * phone just work.
  */
-class ProfileStore(
-    private val context: Context,
-    private val cipher: CredentialCipher = CredentialCipher.withAndroidKeystore(),
-) {
+class ProfileStore(private val context: Context) {
     private val keyProfiles = stringPreferencesKey("profiles_json")
     private val keySelected = stringPreferencesKey("selected_id")
 
@@ -67,32 +64,6 @@ class ProfileStore(
         context.profileDataStore.edit { prefs -> prefs[keySelected] = id }
     }
 
-    /**
-     * Rewrite credentials stored in plaintext by an older version as ciphertext.
-     * Runs on every start and is a no-op once everything is sealed.
-     */
-    suspend fun encryptLegacyCredentials() {
-        context.profileDataStore.edit { prefs ->
-            val json = prefs[keyProfiles] ?: return@edit
-            if (!hasPlaintextCredential(json)) return@edit
-            prefs[keyProfiles] = encodeList(decodeList(json))
-        }
-    }
-
-    /** True when the stored JSON still carries an unsealed credential. */
-    private fun hasPlaintextCredential(json: String): Boolean = try {
-        val array = JSONArray(json)
-        (0 until array.length()).any { index ->
-            val item = array.getJSONObject(index)
-            CREDENTIAL_FIELDS.any { field ->
-                val raw = item.optString(field)
-                raw.isNotEmpty() && !cipher.isEncrypted(raw)
-            }
-        }
-    } catch (_: Exception) {
-        false
-    }
-
     private fun decodeList(json: String?): List<Profile> {
         if (json.isNullOrBlank()) return emptyList()
         return try {
@@ -113,9 +84,9 @@ class ProfileStore(
         put("id", p.id)
         put("name", p.name)
         put("server", p.server)
-        put("auth", cipher.encrypt(p.auth))
+        put("auth", p.auth)
         put("sni", p.sni)
-        put("obfsPassword", cipher.encrypt(p.obfsPassword))
+        put("obfsPassword", p.obfsPassword)
         put("insecure", p.insecure)
         put("txMbps", p.txMbps)
         put("rxMbps", p.rxMbps)
@@ -127,11 +98,9 @@ class ProfileStore(
         id = o.getString("id"),
         name = o.optString("name"),
         server = o.optString("server"),
-        // `null` = sealed with a key this install no longer has (restored backup,
-        // cleared app data): keep the profile, make the user retype the secret.
-        auth = cipher.decrypt(o.optString("auth")).orEmpty(),
+        auth = usable(o.optString("auth")),
         sni = o.optString("sni"),
-        obfsPassword = cipher.decrypt(o.optString("obfsPassword")).orEmpty(),
+        obfsPassword = usable(o.optString("obfsPassword")),
         insecure = o.optBoolean("insecure", false),
         txMbps = o.optInt("txMbps", 0),
         rxMbps = o.optInt("rxMbps", 0),
@@ -139,8 +108,16 @@ class ProfileStore(
         port = o.optInt("port", 443),
     )
 
+    /**
+     * A short-lived build sealed secrets with a Keystore key that no longer
+     * exists; such a value would be copied into the core config as junk, so it
+     * degrades to "no secret" and the user retypes it once.
+     */
+    private fun usable(stored: String): String =
+        if (stored.startsWith(SEALED_PREFIX)) "" else stored
+
     private companion object {
-        /** Fields that must never reach the DataStore in plaintext. */
-        val CREDENTIAL_FIELDS = listOf("auth", "obfsPassword")
+        /** Envelope prefix of that withdrawn experiment; never written again. */
+        const val SEALED_PREFIX = "enc:v1:"
     }
 }

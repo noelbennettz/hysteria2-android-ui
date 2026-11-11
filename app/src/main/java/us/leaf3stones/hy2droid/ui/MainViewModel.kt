@@ -83,11 +83,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var latencyJob: Job? = null
     private var autoTestStarted = false
 
-    init {
-        // One-off: profiles saved by older versions carry plaintext secrets.
-        viewModelScope.launch { store.encryptLegacyCredentials() }
-    }
-
     fun save(profile: Profile) {
         viewModelScope.launch { store.upsert(profile) }
     }
