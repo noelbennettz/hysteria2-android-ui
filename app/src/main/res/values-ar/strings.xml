@@ -83,7 +83,7 @@
     <string name="settings_disable_pmtud">تعطيل اكتشاف MTU للمسار</string>
     <string name="settings_disable_pmtud_summary">حل بديل للشبكات التي تُسقط حزم QUIC الكبيرة (ثقوب MTU السوداء)؛ يُطبَّق عند الاتصال التالي</string>
     <string name="settings_mtu">MTU النفق</string>
-    <string name="settings_mtu_summary">%1$d بايت؛ 1280 يعمل في كل الشبكات، ارفعها لتقليل الحمل الإضافي</string>
+    <string name="settings_mtu_summary">%1$d بايت؛ اخفضها إذا تعطلت الحزم الكبيرة</string>
     <string name="settings_mtu_hint">1280 – 1500 — تُطبَّق عند الاتصال التالي</string>
     <string name="settings_blocked_traffic">حركة المرور المحظورة</string>
     <string name="settings_blocked_traffic_summary">رفض حركة مثل QUIC (UDP 443)</string>

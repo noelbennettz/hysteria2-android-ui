@@ -19,11 +19,11 @@ object HysteriaConfigBuilder {
     const val DEFAULT_HTTP_PORT = 1081
 
     /**
-     * QUIC heartbeat interval. Between 2 s and 60 s (upstream validates that), and
-     * comfortably below the 30 s idle timeout so a dropped keepalive does not cost
-     * a reconnect.
+     * QUIC heartbeat interval. Upstream validates 2 s – 60 s. 20 s keeps the
+     * session warm against the 30 s idle timeout without waking the radio as often
+     * as 10 s did (10 s measurably increased battery drain on a phone).
      */
-    const val KEEP_ALIVE = "10s"
+    const val KEEP_ALIVE = "20s"
 
     /** Build the full YAML config for [profile]. */
     fun build(
@@ -83,9 +83,8 @@ object HysteriaConfigBuilder {
         sb.append("lazy: ").append(lazy).append('\n')
         sb.append("quic:\n")
         sb.append("  maxIdleTimeout: 30s\n")
-        // Heartbeat. 10 s is upstream's own default and, against a 30 s idle
-        // timeout, it means a single lost keepalive no longer lets the session
-        // idle out — which would turn the next request into a cold reconnect.
+        // Heartbeat. 20 s keeps the session alive without waking the radio every
+        // 10 s, which cost battery for no measurable latency gain.
         sb.append("  keepAlivePeriod: ").append(KEEP_ALIVE).append('\n')
         if (disablePathMtuDiscovery) {
             sb.append("  disablePathMTUDiscovery: true\n")

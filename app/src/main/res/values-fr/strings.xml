@@ -83,7 +83,7 @@
     <string name="settings_disable_pmtud">Désactiver la découverte du MTU de chemin</string>
     <string name="settings_disable_pmtud_summary">Contournement pour les réseaux qui suppriment les gros paquets QUIC (trous noirs de MTU) ; appliqué à la prochaine connexion</string>
     <string name="settings_mtu">MTU du tunnel</string>
-    <string name="settings_mtu_summary">%1$d octets ; 1280 passe partout, augmentez pour moins de surcharge</string>
+    <string name="settings_mtu_summary">%1$d octets ; à réduire si les gros paquets bloquent</string>
     <string name="settings_mtu_hint">1280 – 1500 ; appliqué à la prochaine connexion</string>
     <string name="settings_blocked_traffic">Trafic bloqué</string>
     <string name="settings_blocked_traffic_summary">Refuser le trafic comme QUIC (UDP 443)</string>

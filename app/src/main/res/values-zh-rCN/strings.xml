@@ -83,7 +83,7 @@
     <string name="settings_disable_pmtud">关闭路径 MTU 发现</string>
     <string name="settings_disable_pmtud_summary">针对会丢弃大包 QUIC 数据的网络（MTU 黑洞）的变通方法；更改在下次连接时生效</string>
     <string name="settings_mtu">隧道 MTU</string>
-    <string name="settings_mtu_summary">%1$d 字节；1280 在各网络都能用，想减少额外开销可以调高</string>
+    <string name="settings_mtu_summary">%1$d 字节；大包卡住时可以调低</string>
     <string name="settings_mtu_hint">1280 – 1500，下次连接时生效</string>
     <string name="settings_blocked_traffic">屏蔽流量</string>
     <string name="settings_blocked_traffic_summary">拒绝 QUIC（UDP 443）等流量</string>

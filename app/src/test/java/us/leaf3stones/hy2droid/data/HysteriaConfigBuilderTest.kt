@@ -71,7 +71,7 @@ class HysteriaConfigBuilderTest {
         assertFalse(HysteriaConfigBuilder.build(profile).contains("disablePathMTUDiscovery"))
         assertTrue(
             HysteriaConfigBuilder.build(profile, disablePathMtuDiscovery = true)
-                .contains("quic:\n  maxIdleTimeout: 30s\n  keepAlivePeriod: 10s\n  disablePathMTUDiscovery: true\n"),
+                .contains("quic:\n  maxIdleTimeout: 30s\n  keepAlivePeriod: 20s\n  disablePathMTUDiscovery: true\n"),
         )
     }
 

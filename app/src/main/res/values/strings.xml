@@ -86,7 +86,7 @@
     <string name="settings_disable_pmtud">Disable path MTU discovery</string>
     <string name="settings_disable_pmtud_summary">Workaround for networks that drop large QUIC packets (MTU black holes); applies on the next connect</string>
     <string name="settings_mtu">Tunnel MTU</string>
-    <string name="settings_mtu_summary">%1$d bytes; 1280 works on every network, raise it to trim the overhead</string>
+    <string name="settings_mtu_summary">%1$d bytes; lower it if large packets stall</string>
     <string name="settings_mtu_hint">1280 – 1500 — applies on the next connect</string>
     <string name="settings_blocked_traffic">Blocked traffic</string>
     <string name="settings_blocked_traffic_summary">Refuse flows such as QUIC (UDP 443)</string>
