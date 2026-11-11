@@ -50,6 +50,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -185,18 +186,23 @@ fun SettingsScreen(
                 onClick = onOpenBlockRules,
             )
             HorizontalDivider()
-            // excludeRoute() (a true bypass) only exists from Android 13, so the
-            // switch is hidden entirely on older releases instead of being dead UI.
-            if (Build.VERSION.SDK_INT >= LanRanges.MIN_API) {
-                SwitchRow(
-                    icon = Icons.Filled.Lan,
-                    title = stringResource(R.string.settings_bypass_lan),
-                    subtitle = stringResource(R.string.settings_bypass_lan_summary),
-                    checked = bypassLan,
-                    onCheckedChange = viewModel::setBypassLan,
-                )
-                HorizontalDivider()
-            }
+            // `excludeRoute()` (a true bypass) only exists from Android 13; on older
+            // releases the row stays visible but disabled, so the feature is
+            // discoverable instead of silently missing.
+            val lanSupported = Build.VERSION.SDK_INT >= LanRanges.MIN_API
+            SwitchRow(
+                icon = Icons.Filled.Lan,
+                title = stringResource(R.string.settings_bypass_lan),
+                subtitle = if (lanSupported) {
+                    stringResource(R.string.settings_bypass_lan_summary)
+                } else {
+                    stringResource(R.string.settings_requires_android_13)
+                },
+                checked = lanSupported && bypassLan,
+                enabled = lanSupported,
+                onCheckedChange = viewModel::setBypassLan,
+            )
+            HorizontalDivider()
             SwitchRow(
                 icon = Icons.Filled.Dns,
                 title = stringResource(R.string.settings_custom_dns),
@@ -264,7 +270,15 @@ fun SettingsScreen(
                 icon = Icons.Filled.BugReport,
                 title = stringResource(R.string.settings_export_logs),
                 subtitle = stringResource(R.string.settings_export_logs_summary),
-                onClick = { exportLauncher.launch(DiagnosticsExporter.suggestedFileName()) },
+                onClick = {
+                    try {
+                        exportLauncher.launch(DiagnosticsExporter.suggestedFileName())
+                    } catch (_: Exception) {
+                        // No document provider on this build: tell the user instead
+                        // of letting ActivityNotFoundException kill the app.
+                        Toast.makeText(context, R.string.export_failed, Toast.LENGTH_LONG).show()
+                    }
+                },
             )
             HorizontalDivider()
         }
@@ -287,13 +301,15 @@ private fun SwitchRow(
     title: String,
     subtitle: String?,
     checked: Boolean,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .alpha(if (enabled) 1f else 0.38f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -311,7 +327,7 @@ private fun SwitchRow(
                 )
             }
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
 

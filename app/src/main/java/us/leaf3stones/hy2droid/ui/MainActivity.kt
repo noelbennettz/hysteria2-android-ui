@@ -67,7 +67,7 @@ private fun AppRoot(
     fun importLink(text: String) {
         val profile = HysteriaUri.parse(text)
         if (profile != null) {
-            vm.save(profile)
+            vm.import(profile)
             Toast.makeText(context, R.string.import_success, Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(context, R.string.import_invalid, Toast.LENGTH_SHORT).show()

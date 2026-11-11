@@ -2,6 +2,7 @@ package us.leaf3stones.hy2droid.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -175,38 +176,45 @@ private fun CameraPreview(onResult: (String) -> Unit, modifier: Modifier = Modif
 /** Decode the Y (luma) plane of one frame; invokes [onText] on the first QR payload. */
 private fun decodeFrame(imageProxy: ImageProxy, onText: (String) -> Unit) {
     try {
-        val image = imageProxy.image
-        if (image != null) {
-            val plane = image.planes[0]
-            val buffer = plane.buffer
-            val data = ByteArray(buffer.remaining())
-            buffer.get(data)
-            val source = PlanarYUVLuminanceSource(
-                data,
-                plane.rowStride,
-                image.height,
-                0,
-                0,
-                image.width,
-                image.height,
-                false,
+        val image = imageProxy.image ?: return
+        val plane = image.planes.firstOrNull() ?: return
+        val buffer = plane.buffer
+        val width = image.width
+        val height = image.height
+        val rowStride = plane.rowStride
+        if (width <= 0 || height <= 0 || rowStride < width) return
+        // ZXing reads up to (height - 1) * rowStride + width; a buffer without the
+        // trailing row padding would throw and kill the analyzer thread.
+        if (buffer.remaining() < rowStride * (height - 1) + width) return
+
+        val data = ByteArray(buffer.remaining())
+        buffer.get(data)
+        val source = PlanarYUVLuminanceSource(
+            data,
+            rowStride,
+            height,
+            0,
+            0,
+            width,
+            height,
+            false,
+        )
+        val bitmap = BinaryBitmap(HybridBinarizer(source))
+        val reader = MultiFormatReader().apply {
+            setHints(
+                mapOf(
+                    DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
+                    DecodeHintType.TRY_HARDER to true,
+                ),
             )
-            val bitmap = BinaryBitmap(HybridBinarizer(source))
-            val reader = MultiFormatReader().apply {
-                setHints(
-                    mapOf(
-                        DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
-                        DecodeHintType.TRY_HARDER to true,
-                    ),
-                )
-            }
-            try {
-                val result = reader.decode(bitmap)
-                onText(result.text)
-            } catch (_: ReaderException) {
-                // No QR in this frame; wait for the next.
-            }
         }
+        onText(reader.decode(bitmap).text)
+    } catch (_: ReaderException) {
+        // No QR in this frame; wait for the next.
+    } catch (error: Throwable) {
+        // An unexpected pixel format or stride must never take the analyzer thread
+        // (and with it the process) down.
+        Log.w("QrScanner", "Frame skipped: ${error.javaClass.simpleName}")
     } finally {
         imageProxy.close()
     }

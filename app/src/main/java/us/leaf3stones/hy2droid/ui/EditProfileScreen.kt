@@ -59,8 +59,12 @@ fun EditProfileScreen(
     var insecure by remember { mutableStateOf(initial?.insecure ?: false) }
     var fastOpen by remember { mutableStateOf(initial?.fastOpen ?: false) }
     var importLink by remember { mutableStateOf("") }
+    var importFailed by remember { mutableStateOf(false) }
 
-    val valid = server.isNotBlank() && auth.isNotBlank()
+    // A port outside 1–65535 would only surface as a core error after Connect.
+    val portValue = port.toIntOrNull()
+    val portValid = portValue != null && portValue in 1..65535
+    val valid = server.isNotBlank() && auth.isNotBlank() && portValid
 
     // The auth and obfs fields are visible here: keep them out of screenshots.
     SecureWindow()
@@ -100,14 +104,16 @@ fun EditProfileScreen(
                 )
                 OutlinedButton(
                     onClick = {
-                        HysteriaUri.parse(importLink)?.let { p ->
-                            name = p.name
-                            server = p.server
-                            port = p.port.toString()
-                            auth = p.auth
-                            sni = p.sni
-                            obfs = p.obfsPassword
-                            insecure = p.insecure
+                        val parsed = HysteriaUri.parse(importLink)
+                        importFailed = importLink.isNotBlank() && parsed == null
+                        if (parsed != null) {
+                            name = parsed.name
+                            server = parsed.server
+                            port = parsed.port.toString()
+                            auth = parsed.auth
+                            sni = parsed.sni
+                            obfs = parsed.obfsPassword
+                            insecure = parsed.insecure
                         }
                     },
                     shape = RoundedCornerShape(4.dp),
@@ -117,6 +123,13 @@ fun EditProfileScreen(
                 ) {
                     Text(stringResource(R.string.action_import))
                 }
+            }
+            if (importFailed) {
+                Text(
+                    text = stringResource(R.string.import_invalid),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
 
             OutlinedTextField(
@@ -135,9 +148,15 @@ fun EditProfileScreen(
             )
             OutlinedTextField(
                 value = port,
-                onValueChange = { port = it.filter(Char::isDigit) },
+                onValueChange = { port = it.filter(Char::isDigit).take(5) },
                 label = { Text(stringResource(R.string.field_port)) },
                 singleLine = true,
+                isError = port.isNotEmpty() && !portValid,
+                supportingText = {
+                    if (port.isNotEmpty() && !portValid) {
+                        Text(stringResource(R.string.field_port_invalid))
+                    }
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -202,7 +221,7 @@ fun EditProfileScreen(
                             id = profileId,
                             name = name.ifBlank { server },
                             server = server.trim(),
-                            port = port.toIntOrNull() ?: 443,
+                            port = portValue ?: 443,
                             auth = auth,
                             sni = sni.trim(),
                             obfsPassword = obfs.trim(),

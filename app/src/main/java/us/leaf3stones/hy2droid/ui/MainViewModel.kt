@@ -21,6 +21,7 @@ import us.leaf3stones.hy2droid.data.DEFAULT_BLOCK_RULES
 import us.leaf3stones.hy2droid.data.DiagnosticsExporter
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
 import us.leaf3stones.hy2droid.data.Profile
+import us.leaf3stones.hy2droid.data.ProfileMerge
 import us.leaf3stones.hy2droid.data.ProfileStore
 import us.leaf3stones.hy2droid.data.SettingsStore
 import us.leaf3stones.hy2droid.proxy.Hysteria2VpnService
@@ -85,6 +86,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun save(profile: Profile) {
         viewModelScope.launch { store.upsert(profile) }
+    }
+
+    /**
+     * Import a profile from a share link or QR code: an entry pointing at the same
+     * host and port is updated in place instead of being appended twice.
+     */
+    fun import(profile: Profile) {
+        viewModelScope.launch {
+            val existing = runCatching { store.profiles.first() }.getOrDefault(emptyList())
+            store.upsert(ProfileMerge.resolve(existing, profile))
+        }
     }
 
     fun delete(id: String) {
