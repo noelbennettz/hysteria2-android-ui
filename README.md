@@ -253,7 +253,10 @@ point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
   older version are migrated in place on first launch.
 - A restored cloud backup / device transfer on a *new* phone brings the profiles
   back but not their secrets — the ciphertext is bound to the old device's key.
-  Paste the password again (or re-import the share link).
+  Paste the password again (or re-import the share link). The same happens after
+  an uninstall/reinstall or "clear app data": uninstalling deletes the Keystore
+  key with the app's UID. Everything else (names, servers, ports, SNI, bandwidth,
+  obfs *enabled*, order, selected profile, all settings) is unaffected.
 - The YAML the core reads (`files/hysteria.yaml`) contains the password in
   plaintext because the core needs it: it is written for the session, deleted as
   soon as the tunnel stops, and excluded from backups together with the core log.
