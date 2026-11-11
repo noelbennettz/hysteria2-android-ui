@@ -84,9 +84,9 @@ class SettingsStore(private val context: Context) {
         .map { it[keyBypassLan] ?: false }
 
     /**
-     * TUN interface MTU. 1450 leaves room for the QUIC/UDP/IP overhead inside a
-     * 1500-byte path; a smaller value is the usual fix for networks that stall on
-     * full-size packets (see also [disablePathMtuDiscovery]).
+     * TUN interface MTU. Defaults to 1280, the IPv6 minimum, which every path
+     * carries; a larger value trims the per-packet overhead but stalls on
+     * networks that drop full-size packets (see also [disablePathMtuDiscovery]).
      */
     val mtu: Flow<Int> = context.settingsDataStore.data
         .map { clampMtu(it[keyMtu] ?: DEFAULT_MTU) }
@@ -182,10 +182,13 @@ class SettingsStore(private val context: Context) {
         val DEFAULT_DNS_SERVERS: List<String> = listOf(DEFAULT_DNS_PRIMARY, DEFAULT_DNS_SECONDARY)
 
         /**
-         * Default TUN MTU. 1450 keeps a full QUIC datagram inside a 1500-byte
-         * path, which avoids the fragmentation stalls seen at 1500.
+         * Default TUN MTU: the IPv6 minimum (1280). Inside a tunnel every packet
+         * is one QUIC datagram, so a smaller MTU costs a little overhead but works
+         * on every path — including the mobile networks that silently drop
+         * full-size packets. Raise it to 1500 (Settings → Network) when the path is
+         * clean and the overhead matters.
          */
-        const val DEFAULT_MTU = 1450
+        const val DEFAULT_MTU = 1280
 
         /** Smallest MTU still able to carry IPv6; below this nothing works. */
         const val MIN_MTU = 1280

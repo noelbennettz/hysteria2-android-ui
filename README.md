@@ -42,9 +42,10 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   `quic.disablePathMTUDiscovery: true`, the standard workaround for networks
   that silently drop large QUIC packets (MTU black holes), where connections
   otherwise stall
-- **Tunnel MTU** (Settings → Network, default 1450, range 1280–1500): the same
+- **Tunnel MTU** (Settings → Network, default 1280, range 1280–1500): the same
   value goes into the TUN interface and the tun2socks config, so the two cannot
-  drift apart; lowering it is the second half of the black-hole fix
+  drift apart. 1280 is the IPv6 minimum and works on every path; raise it when
+  the networks you use are clean and the per-packet overhead matters
 - Deleting a profile asks first — the auth secret cannot be recovered
 - Quick Settings tile to connect/disconnect, kept in sync with the tunnel state;
   a tap connects the last selected profile (with an empty list it does nothing)
@@ -107,7 +108,7 @@ UI (Compose / Material 3)
                      Hysteria2VpnService (VpnService)
                         ├─ VpnService.Builder → TUN fd
                         │    IPv4 10.0.88.88/16, IPv6 fc00::1/64,
-                        │    MTU from Settings (default 1450)
+                        │    MTU from Settings (default 1280)
                         ├─ exec libhysteria.so -c hysteria.yaml
                         │    → 127.0.0.1:1080 (SOCKS5) + :1081 (HTTP)
                         └─ libtun2socks.so (JNI): TUN fd → SOCKS5

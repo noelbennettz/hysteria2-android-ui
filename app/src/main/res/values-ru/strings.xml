@@ -83,7 +83,7 @@
     <string name="settings_disable_pmtud">Отключить обнаружение MTU пути</string>
     <string name="settings_disable_pmtud_summary">Обход для сетей, отбрасывающих крупные QUIC-пакеты (чёрные дыры MTU); применяется при следующем подключении</string>
     <string name="settings_mtu">MTU туннеля</string>
-    <string name="settings_mtu_summary">%1$d байт; уменьшите, если крупные пакеты застревают</string>
+    <string name="settings_mtu_summary">%1$d байт; 1280 работает везде, увеличьте, чтобы снизить накладные расходы</string>
     <string name="settings_mtu_hint">1280 – 1500; применится при следующем подключении</string>
     <string name="settings_blocked_traffic">Заблокированный трафик</string>
     <string name="settings_blocked_traffic_summary">Отклонять трафик вроде QUIC (UDP 443)</string>

@@ -83,7 +83,7 @@
     <string name="settings_disable_pmtud">Desactivar el descubrimiento de MTU de ruta</string>
     <string name="settings_disable_pmtud_summary">Solución para redes que descartan paquetes QUIC grandes (agujeros negros de MTU); se aplica en la próxima conexión</string>
     <string name="settings_mtu">MTU del túnel</string>
-    <string name="settings_mtu_summary">%1$d bytes; redúcelo si los paquetes grandes se atascan</string>
+    <string name="settings_mtu_summary">%1$d bytes; 1280 funciona en todas las redes, súbelo para reducir la sobrecarga</string>
     <string name="settings_mtu_hint">1280 – 1500; se aplica en la próxima conexión</string>
     <string name="settings_blocked_traffic">Tráfico bloqueado</string>
     <string name="settings_blocked_traffic_summary">Rechazar tráfico como QUIC (UDP 443)</string>
