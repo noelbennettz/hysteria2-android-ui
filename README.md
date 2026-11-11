@@ -35,13 +35,18 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   `quic.disablePathMTUDiscovery: true`, the standard workaround for networks
   that silently drop large QUIC packets (MTU black holes), where connections
   otherwise stall
+- **Tunnel MTU** (Settings → Network, default 1450, range 1280–1500): the same
+  value goes into the TUN interface and the tun2socks config, so the two cannot
+  drift apart; lowering it is the second half of the black-hole fix
+- Deleting a profile asks first — the auth secret cannot be recovered
 - Quick Settings tile to connect/disconnect, kept in sync with the tunnel state;
   a tap connects the last selected profile (with an empty list it does nothing)
 - **Latency test** per node from the profile menu, measured by a real request
   through a throwaway core instance (a Hysteria 2 server only answers UDP, so a
   TCP ping would be meaningless). Optional *Test latency on launch*
-  (Settings → Network, off by default) measures every node when the app opens and
-  then lists the fastest one first — it never switches the node for you
+  (Settings → Network, off by default) measures the nodes that have no result
+  yet and then lists the fastest one first — it never switches the node for you,
+  and the numbers survive a restart
 - **Share-link deep link**: tapping a `hysteria2://` (or `hy2://`) link in a
   browser opens the app and adds the profile straight away — no pasting, no
   editor, no manual file
@@ -49,8 +54,8 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   the persisted Hysteria core log, a build/device summary and the running config
   with `auth` / obfs passwords masked — no storage permission needed
 - Always-on VPN support (handles the system-initiated start)
-- Live throughput in the UI; the notification is intentionally minimal (status
-  plus a Disconnect action)
+- Live throughput in the UI and in the notification; the notification keeps the
+  Disconnect action
 - Dynamic colour (Material You) toggle, custom DNS, split tunnelling in Settings
 - Profile cards show only the profile name by default; the server address is one
   switch away (Settings → Appearance → *Show server address*)
