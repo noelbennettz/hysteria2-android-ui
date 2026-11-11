@@ -12,6 +12,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.URI
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 /**
  * Measures one profile's round-trip latency by actually talking to the node.
@@ -40,7 +41,12 @@ class LatencyProbe(private val context: Context) {
         val configFile = File(context.cacheDir, "latency-${UUID.randomUUID()}.yaml")
         var process: Process? = null
         try {
-            configFile.writeText(HysteriaConfigBuilder.build(profile, socksPort, httpPort))
+            // `lazy` is passed explicitly, not inherited from the builder default:
+            // with an eager core a flaky network turns into a reconnect loop while
+            // we are only waiting for one request.
+            configFile.writeText(
+                HysteriaConfigBuilder.build(profile, socksPort, httpPort, lazy = true),
+            )
             val binary = File(context.applicationInfo.nativeLibraryDir, CORE_BINARY)
             val proc = ProcessBuilder(binary.absolutePath, "-c", configFile.absolutePath)
                 .redirectErrorStream(true)
@@ -60,16 +66,28 @@ class LatencyProbe(private val context: Context) {
             Log.w(TAG, "Latency probe failed: ${e.message}")
             null
         } finally {
-            try {
-                process?.destroy()
-            } catch (_: Throwable) {
-                // Already gone.
-            }
+            // The probe core is disposable: it is never reused and must not
+            // survive the measurement (a leftover client would keep the QUIC
+            // session alive and retry on a flaky network).
+            process?.let(::stop)
             try {
                 configFile.delete()
             } catch (_: Throwable) {
                 // Cache dir is wiped by the system anyway.
             }
+        }
+    }
+
+    /** SIGTERM, then SIGKILL if the core has not exited in time. */
+    private fun stop(process: Process) {
+        try {
+            process.destroy()
+            if (!process.waitFor(REAP_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                process.destroyForcibly()
+                process.waitFor(REAP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            }
+        } catch (_: Exception) {
+            // Already gone; nothing to reap.
         }
     }
 
@@ -160,5 +178,6 @@ class LatencyProbe(private val context: Context) {
         private const val READ_TIMEOUT_MS = 3_000
         private const val CONNECT_TIMEOUT_MS = 800
         private const val POLL_INTERVAL_MS = 50L
+        private const val REAP_TIMEOUT_MS = 1_500L
     }
 }

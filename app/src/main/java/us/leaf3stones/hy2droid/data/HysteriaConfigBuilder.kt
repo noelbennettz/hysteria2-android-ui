@@ -23,6 +23,12 @@ object HysteriaConfigBuilder {
         profile: Profile,
         socksPort: Int = DEFAULT_SOCKS_PORT,
         httpPort: Int = DEFAULT_HTTP_PORT,
+        /**
+         * `lazy: true` lets the core dial on demand instead of holding a session
+         * open. It stays on for both the real tunnel and the latency probe: a
+         * flapping network must not leave a hot reconnect loop running.
+         */
+        lazy: Boolean = true,
     ): String {
         val sb = StringBuilder()
         sb.append("server: ").append(quote(profile.authority)).append('\n')
@@ -60,7 +66,7 @@ object HysteriaConfigBuilder {
         sb.append("http:\n")
         sb.append("  listen: 127.0.0.1:").append(httpPort).append('\n')
         sb.append("fastOpen: ").append(profile.fastOpen).append('\n')
-        sb.append("lazy: true\n")
+        sb.append("lazy: ").append(lazy).append('\n')
         sb.append("quic:\n")
         sb.append("  maxIdleTimeout: 30s\n")
         sb.append("  keepAlivePeriod: 20s\n")

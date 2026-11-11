@@ -52,6 +52,19 @@ class HysteriaConfigBuilderTest {
     }
 
     @Test
+    fun `is lazy by default and can be made eager explicitly`() {
+        val profile = Profile(id = "3", name = "n", server = "h:443", auth = "a")
+
+        assertTrue(HysteriaConfigBuilder.build(profile).contains("lazy: true"))
+        assertTrue(
+            HysteriaConfigBuilder.build(profile, lazy = true).contains("lazy: true"),
+        )
+        assertTrue(
+            HysteriaConfigBuilder.build(profile, lazy = false).contains("lazy: false"),
+        )
+    }
+
+    @Test
     fun `escapes special characters so values cannot break the document`() {
         val quoted = HysteriaConfigBuilder.quote("a\"b\\c:d#e")
 
