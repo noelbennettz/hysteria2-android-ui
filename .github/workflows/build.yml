@@ -10,6 +10,11 @@ on:
         required: false
         default: 'latest'
 
+# actions: write is for the run cleanup step at the end of the job.
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   debug-apk:
     runs-on: ubuntu-latest
@@ -79,4 +84,12 @@ jobs:
           name: hy2droid-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # Last on purpose: keep the Actions tab and the artifact quota small by
+      # deleting every run of this workflow older than the newest three.
+      - name: Prune old workflow runs
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/prune-runs.sh 3
 

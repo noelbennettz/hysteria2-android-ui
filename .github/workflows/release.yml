@@ -21,6 +21,8 @@ on:
 
 permissions:
   contents: write
+  # For the run cleanup step at the end of the job.
+  actions: write
 
 jobs:
   release-apk:
@@ -152,3 +154,11 @@ jobs:
               --notes-file release-notes.md
           fi
           echo "Published https://github.com/${{ github.repository }}/releases/tag/$tag"
+
+      # Last on purpose: keep only the newest three runs of this workflow. The
+      # published releases are separate objects and survive their run.
+      - name: Prune old workflow runs
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/prune-runs.sh 3

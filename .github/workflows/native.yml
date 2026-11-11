@@ -7,6 +7,11 @@ name: native
 on:
   workflow_dispatch:
 
+# actions: write is for the run cleanup step at the end of the job.
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   tun2socks:
     runs-on: ubuntu-latest
@@ -33,3 +38,10 @@ jobs:
           name: libtun2socks-so
           path: app/src/main/jniLibs/*/libtun2socks.so
           if-no-files-found: error
+
+      # Last on purpose: keep only the newest three runs of this workflow.
+      - name: Prune old workflow runs
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/prune-runs.sh 3
