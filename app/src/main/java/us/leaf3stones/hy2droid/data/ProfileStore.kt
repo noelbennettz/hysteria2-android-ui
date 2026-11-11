@@ -14,6 +14,14 @@ import org.json.JSONObject
 private val Context.profileDataStore: DataStore<Preferences> by preferencesDataStore(name = "hysteria_profiles")
 
 /**
+ * Id to keep selected after the entry at [removedIndex] was deleted: the entry
+ * above it, or the new first entry when the removed one was on top (or when the
+ * id was no longer in the list). `null` means nothing is left.
+ */
+internal fun successorAfterRemoval(remaining: List<Profile>, removedIndex: Int): String? =
+    remaining.getOrNull((removedIndex - 1).coerceAtLeast(0))?.id
+
+/**
  * Persists [Profile]s (and the selected profile id) as a single JSON array in a
  * Preferences DataStore. Replaces the previous fragile `ObjectOutputStream`
  * cache: JSON is schema-tolerant across app versions and never throws on read
@@ -47,13 +55,20 @@ class ProfileStore(private val context: Context) {
         }
     }
 
-    /** Remove the profile with [id]; reselect the first remaining profile if it was selected. */
+    /**
+     * Remove the profile with [id]. When it was the selected one the selection
+     * moves to the entry *above* it, so a Quick Settings tap right after a
+     * delete connects the node next to the one that just went away instead of
+     * jumping to the top of the list.
+     */
     suspend fun delete(id: String) {
         context.profileDataStore.edit { prefs ->
-            val list = decodeList(prefs[keyProfiles]).filterNot { it.id == id }
+            val current = decodeList(prefs[keyProfiles])
+            val removedIndex = current.indexOfFirst { it.id == id }
+            val list = current.filterNot { it.id == id }
             prefs[keyProfiles] = encodeList(list)
             if (prefs[keySelected] == id) {
-                val next = list.firstOrNull()?.id
+                val next = successorAfterRemoval(list, removedIndex)
                 if (next == null) prefs.remove(keySelected) else prefs[keySelected] = next
             }
         }

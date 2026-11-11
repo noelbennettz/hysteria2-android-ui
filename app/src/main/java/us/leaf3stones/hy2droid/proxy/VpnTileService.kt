@@ -16,8 +16,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.ProfileStore
 import us.leaf3stones.hy2droid.ui.MainActivity
 
 /** Quick Settings tile that toggles the tunnel with a single tap. */
@@ -84,40 +87,69 @@ class VpnTileService : TileService() {
     override fun onClick() {
         super.onClick()
         try {
-            if (TunnelStatus.state.value.isActive()) {
-                // The service already runs in the foreground, but plain startService()
-                // trips the background-start restriction on Android 12+; the
-                // foreground variant keeps this path working from Quick Settings.
-                ContextCompat.startForegroundService(
-                    this,
-                    Intent(this, Hysteria2VpnService::class.java)
-                        .setAction(Hysteria2VpnService.ACTION_STOP_VPN),
-                )
-            } else if (VpnService.prepare(this) != null) {
-                // VPN permission not granted yet: open the app so the user can grant it.
-                // A launcher intent so the app lands on its home screen.
-                val intent = Intent(this, MainActivity::class.java)
-                    .setAction(Intent.ACTION_MAIN)
-                    .addCategory(Intent.CATEGORY_LAUNCHER)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    val pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-                    startActivityAndCollapse(pi)
-                } else {
-                    @Suppress("DEPRECATION")
-                    startActivityAndCollapse(intent)
+            when {
+                TunnelStatus.state.value.isActive() -> {
+                    // The service already runs in the foreground, but plain startService()
+                    // trips the background-start restriction on Android 12+; the
+                    // foreground variant keeps this path working from Quick Settings.
+                    ContextCompat.startForegroundService(
+                        this,
+                        Intent(this, Hysteria2VpnService::class.java)
+                            .setAction(Hysteria2VpnService.ACTION_STOP_VPN),
+                    )
                 }
-            } else {
-                // The service rebuilds the config from the last selected profile if needed.
-                ContextCompat.startForegroundService(
-                    this,
-                    Intent(this, Hysteria2VpnService::class.java)
-                        .setAction(Hysteria2VpnService.ACTION_START_VPN),
-                )
+
+                VpnService.prepare(this) != null -> {
+                    // VPN permission not granted yet: open the app so the user can grant it.
+                    // A launcher intent so the app lands on its home screen.
+                    val intent = Intent(this, MainActivity::class.java)
+                        .setAction(Intent.ACTION_MAIN)
+                        .addCategory(Intent.CATEGORY_LAUNCHER)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        val pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+                        startActivityAndCollapse(pi)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        startActivityAndCollapse(intent)
+                    }
+                }
+
+                // Reading the stored profiles is I/O, so the start happens off the tap.
+                // The service rebuilds the config from the last selected profile.
+                else -> scope.launch { connectSelectedProfile() }
             }
         } catch (e: Throwable) {
             // Never crash the Quick Settings panel; the log line is what tells us
             // the toggle was swallowed (the tile would just stay out of sync).
+            Log.w(TAG, "Quick Settings toggle failed", e)
+        }
+        updateTile()
+    }
+
+    /**
+     * Start the tunnel for the last selected profile. With an empty list the tap
+     * is a no-op: no foreground notification, no error state, nothing to undo.
+     */
+    private suspend fun connectSelectedProfile() {
+        val hasProfile = withContext(Dispatchers.IO) {
+            try {
+                ProfileStore(applicationContext).profiles.first().isNotEmpty()
+            } catch (_: Exception) {
+                false
+            }
+        }
+        if (!hasProfile) {
+            Log.i(TAG, "No profile stored; ignoring the tile tap")
+            return
+        }
+        try {
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, Hysteria2VpnService::class.java)
+                    .setAction(Hysteria2VpnService.ACTION_START_VPN),
+            )
+        } catch (e: Throwable) {
             Log.w(TAG, "Quick Settings toggle failed", e)
         }
         updateTile()

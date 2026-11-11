@@ -35,7 +35,8 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   `quic.disablePathMTUDiscovery: true`, the standard workaround for networks
   that silently drop large QUIC packets (MTU black holes), where connections
   otherwise stall
-- Quick Settings tile to connect/disconnect, kept in sync with the tunnel state
+- Quick Settings tile to connect/disconnect, kept in sync with the tunnel state;
+  a tap connects the last selected profile (with an empty list it does nothing)
 - **Latency test** per node from the profile menu, measured by a real request
   through a throwaway core instance (a Hysteria 2 server only answers UDP, so a
   TCP ping would be meaningless). Optional *Test latency on launch*

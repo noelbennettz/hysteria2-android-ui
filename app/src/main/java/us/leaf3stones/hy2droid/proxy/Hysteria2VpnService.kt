@@ -163,9 +163,24 @@ class Hysteria2VpnService : VpnService() {
         }
 
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
-        if (!ensureConfigFile(configFile)) {
-            fail(getString(R.string.error_no_config))
-            return
+        when (ensureConfigFile(configFile)) {
+            ConfigPrep.Ready -> Unit
+
+            ConfigPrep.NoProfile -> {
+                // Nothing stored to connect to (the tile can be tapped with an
+                // empty list): undo the "connecting" state quietly instead of
+                // flashing an error notification.
+                Log.i(TAG, "No profile stored; nothing to connect")
+                updateState(TunnelState.Idle)
+                stopForegroundSafely()
+                stopSelf()
+                return
+            }
+
+            ConfigPrep.Failed -> {
+                fail(getString(R.string.error_no_config))
+                return
+            }
         }
 
         val tun2socksFile = File(filesDir, Tun2socksConfig.FILE_NAME)
@@ -340,16 +355,19 @@ class Hysteria2VpnService : VpnService() {
         }
     }
 
+    /** Outcome of preparing `hysteria.yaml` before the core is launched. */
+    private enum class ConfigPrep { Ready, NoProfile, Failed }
+
     /** Ensure `hysteria.yaml` exists, rebuilding it from the selected profile if missing. */
-    private suspend fun ensureConfigFile(configFile: File): Boolean {
-        if (configFile.exists()) return true
+    private suspend fun ensureConfigFile(configFile: File): ConfigPrep {
+        if (configFile.exists()) return ConfigPrep.Ready
         val store = ProfileStore(applicationContext)
         val profiles = try {
             store.profiles.first()
         } catch (_: Exception) {
             emptyList()
         }
-        if (profiles.isEmpty()) return false
+        if (profiles.isEmpty()) return ConfigPrep.NoProfile
         val selectedId = try {
             store.selectedId.first()
         } catch (_: Exception) {
@@ -365,9 +383,9 @@ class Hysteria2VpnService : VpnService() {
             configFile.writeText(
                 HysteriaConfigBuilder.build(profile, disablePathMtuDiscovery = pmtudDisabled),
             )
-            true
+            ConfigPrep.Ready
         } catch (_: Exception) {
-            false
+            ConfigPrep.Failed
         }
     }
 
