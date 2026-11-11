@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import us.leaf3stones.hy2droid.data.BlockRule
 import us.leaf3stones.hy2droid.data.DEFAULT_BLOCK_RULES
+import us.leaf3stones.hy2droid.data.SettingsStore
 
 class Tun2socksConfigTest {
 
@@ -48,5 +49,19 @@ class Tun2socksConfigTest {
         )
 
         assertTrue(yaml.contains("misc:\n  block-tcp: '25,465,8000-8100'\n  block-udp: '443,8000-8100'\n"))
+    }
+
+    @Test
+    fun `the interface MTU defaults to the settings default`() {
+        val yaml = Tun2socksConfig.build(emptyList())
+
+        assertTrue(yaml.contains("mtu: ${SettingsStore.DEFAULT_MTU}"))
+    }
+
+    @Test
+    fun `a custom MTU is written into the tunnel section`() {
+        val yaml = Tun2socksConfig.build(emptyList(), mtu = 1380)
+
+        assertTrue(yaml.contains("mtu: 1380"))
     }
 }

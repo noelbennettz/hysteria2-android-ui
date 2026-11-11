@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -28,6 +29,7 @@ class SettingsStore(private val context: Context) {
     private val keyShowAddress = booleanPreferencesKey("show_server_address")
     private val keyAutoTestLatency = booleanPreferencesKey("auto_test_latency")
     private val keyDisablePmtud = booleanPreferencesKey("disable_path_mtu_discovery")
+    private val keyMtu = intPreferencesKey("tunnel_mtu")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -71,6 +73,14 @@ class SettingsStore(private val context: Context) {
     /** Whether local-network ranges bypass the tunnel. Default off; Android 13+. */
     val bypassLan: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyBypassLan] ?: false }
+
+    /**
+     * TUN interface MTU. 1450 leaves room for the QUIC/UDP/IP overhead inside a
+     * 1500-byte path; a smaller value is the usual fix for networks that stall on
+     * full-size packets (see also [disablePathMtuDiscovery]).
+     */
+    val mtu: Flow<Int> = context.settingsDataStore.data
+        .map { clampMtu(it[keyMtu] ?: DEFAULT_MTU) }
 
     /**
      * Traffic that is refused before it reaches the core. Defaults to QUIC
@@ -118,6 +128,10 @@ class SettingsStore(private val context: Context) {
         context.settingsDataStore.edit { it[keyBypassLan] = enabled }
     }
 
+    suspend fun setMtu(mtu: Int) {
+        context.settingsDataStore.edit { it[keyMtu] = clampMtu(mtu) }
+    }
+
     suspend fun setBlockRules(rules: List<BlockRule>) {
         context.settingsDataStore.edit { it[keyBlockRules] = encode(rules.encodeRules().toSet()) }
     }
@@ -141,5 +155,20 @@ class SettingsStore(private val context: Context) {
     companion object {
         /** Used when custom DNS is disabled. */
         const val DEFAULT_DNS = "1.0.0.1"
+
+        /**
+         * Default TUN MTU. 1450 keeps a full QUIC datagram inside a 1500-byte
+         * path, which avoids the fragmentation stalls seen at 1500.
+         */
+        const val DEFAULT_MTU = 1450
+
+        /** Smallest MTU still able to carry IPv6; below this nothing works. */
+        const val MIN_MTU = 1280
+
+        /** Largest MTU worth offering; the path itself is almost never bigger. */
+        const val MAX_MTU = 1500
+
+        /** Keep a user-supplied MTU inside [MIN_MTU]..[MAX_MTU]. */
+        fun clampMtu(value: Int): Int = value.coerceIn(MIN_MTU, MAX_MTU)
     }
 }

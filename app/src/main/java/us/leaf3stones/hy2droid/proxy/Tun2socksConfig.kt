@@ -1,6 +1,7 @@
 package us.leaf3stones.hy2droid.proxy
 
 import us.leaf3stones.hy2droid.data.BlockRule
+import us.leaf3stones.hy2droid.data.SettingsStore
 import us.leaf3stones.hy2droid.data.tcpPortSpec
 import us.leaf3stones.hy2droid.data.udpPortSpec
 
@@ -9,6 +10,8 @@ import us.leaf3stones.hy2droid.data.udpPortSpec
  * SOCKS5 listener. Kept compatible with what the bundled `libtun2socks.so`
  * (hev-socks5-tunnel, see `native/tun2socks/`) expects; the SOCKS5 port must
  * match [us.leaf3stones.hy2droid.data.HysteriaConfigBuilder.DEFAULT_SOCKS_PORT].
+ * The MTU is handed in from the settings, so the interface and this file can
+ * never disagree.
  *
  * Blocked traffic is emitted as `misc.block-tcp` / `misc.block-udp` (ports and
  * ranges, comma separated), which the patched tunnel refuses locally: a blocked
@@ -20,11 +23,14 @@ object Tun2socksConfig {
     const val FILE_NAME = "tun2socks.yaml"
 
     /** Render the YAML for [blockRules] (empty = no filtering at all). */
-    fun build(blockRules: List<BlockRule> = emptyList()): String {
+    fun build(
+        blockRules: List<BlockRule> = emptyList(),
+        mtu: Int = SettingsStore.DEFAULT_MTU,
+    ): String {
         val lines = mutableListOf(
             "tunnel:",
             "  name: tun0",
-            "  mtu: ${Tun.MTU}",
+            "  mtu: $mtu",
             "  multi-queue: false",
             "  ipv4: ${Tun.IPV4}",
             "  ipv6: '${Tun.IPV6}'",

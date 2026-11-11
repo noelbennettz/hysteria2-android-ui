@@ -9,7 +9,6 @@ import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
  * files with a "must match" comment, which fails silently when one drifts.
  */
 object Tun {
-    const val MTU = 1500
     const val IPV4 = "10.0.88.88"
     const val PREFIX4 = 16
     const val IPV6 = "fc00::1"

@@ -16,6 +16,7 @@ import android.net.VpnService
 import android.Manifest
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -29,10 +30,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import us.leaf3stones.hy2droid.BuildConfig
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
@@ -84,20 +88,32 @@ class Hysteria2VpnService : VpnService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /**
+     * Serialises "bring the tunnel up" against anything else. Without it a
+     * double tap (app + Quick Settings tile) let two starts run concurrently:
+     * the `tunInterface` guard is only set after `establish()`, so both would
+     * create a TUN and a core, and the loser's teardown left an orphaned core
+     * behind.
+     */
+    private val tunnelMutex = Mutex()
+
+    /** The start attempt in flight, so a stop can cancel it instead of racing it. */
+    private var startJob: Job? = null
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP_VPN -> {
                 // Also reached through startForegroundService (notification action,
                 // Quick Settings tile), so satisfy the foreground contract first.
                 startForegroundSafely(getString(R.string.status_disconnecting))
-                stopTunnel()
+                requestStop()
                 return START_NOT_STICKY
             }
 
             ACTION_START_VPN -> {
                 // An explicit start (app or tile).
                 startForegroundSafely()
-                serviceScope.launch { startTunnel() }
+                launchStart()
                 return START_STICKY
             }
 
@@ -107,7 +123,7 @@ class Hysteria2VpnService : VpnService() {
             // connected" and retry, so connect whenever a profile exists.
             SYS_SYSTEM_VPN, null -> {
                 startForegroundSafely()
-                serviceScope.launch { startTunnel() }
+                launchStart()
                 return START_STICKY
             }
 
@@ -118,8 +134,33 @@ class Hysteria2VpnService : VpnService() {
         }
     }
 
+    /** Begin a start attempt unless one is already running. */
+    private fun launchStart() {
+        if (startJob?.isActive == true) {
+            Log.d(TAG, "A start is already in flight; ignoring duplicate request")
+            return
+        }
+        startJob = serviceScope.launch { startTunnel() }
+    }
+
+    /**
+     * Cancel a start that has not finished yet, then tear down. Runs off the main
+     * thread: `teardown()` does JNI work and kills a process, which is not
+     * something to block `onStartCommand` with.
+     */
+    private fun requestStop() {
+        val pending = startJob
+        startJob = null
+        serviceScope.launch {
+            pending?.cancelAndJoin()
+            stopTunnel()
+        }
+    }
+
     /** Establish the tunnel, launch the core and start tun2socks. Runs on IO. */
-    private suspend fun startTunnel() {
+    private suspend fun startTunnel() = tunnelMutex.withLock { startTunnelLocked() }
+
+    private suspend fun startTunnelLocked() {
         if (tunInterface != null) {
             Log.d(TAG, "Tunnel already running; ignoring duplicate start")
             return
@@ -156,6 +197,12 @@ class Hysteria2VpnService : VpnService() {
             false
         }
 
+        val mtu = try {
+            settings.mtu.first()
+        } catch (_: Exception) {
+            SettingsStore.DEFAULT_MTU
+        }
+
         val blockRules = try {
             settings.blockRules.first()
         } catch (_: Exception) {
@@ -185,13 +232,23 @@ class Hysteria2VpnService : VpnService() {
 
         val tun2socksFile = File(filesDir, Tun2socksConfig.FILE_NAME)
         try {
-            tun2socksFile.writeText(Tun2socksConfig.build(blockRules))
+            tun2socksFile.writeText(Tun2socksConfig.build(blockRules, mtu))
         } catch (e: Exception) {
             fail(getString(R.string.error_tun2socks_config, e.message ?: ""))
             return
         }
 
-        val pfd = establishTunnel(excluded, dnsServers, bypassLan)
+        // A stop may have landed while we were reading settings; cancellation only
+        // takes effect at suspension points, so check explicitly before creating
+        // anything the user did not ask for any more.
+        if (shuttingDown) {
+            Log.i(TAG, "Stop requested before the interface came up; aborting")
+            stopForegroundSafely()
+            stopSelf()
+            return
+        }
+
+        val pfd = establishTunnel(excluded, dnsServers, bypassLan, mtu)
         if (pfd == null) {
             fail(getString(R.string.error_establish))
             return
@@ -222,9 +279,17 @@ class Hysteria2VpnService : VpnService() {
         }
 
         updateState(TunnelState.Connected)
+        TunnelStatus.setActiveProfile(activeProfileId())
         startStatsPolling()
         refreshNotification()
         Log.d(TAG, "Tunnel established")
+    }
+
+    /** The profile the running config was built for, for the UI's "in use" marker. */
+    private suspend fun activeProfileId(): String? = try {
+        ProfileStore(applicationContext).selectedId.first()
+    } catch (_: Exception) {
+        null
     }
 
     /** Set the tunnel state and ask the Quick Settings tile to refresh its appearance. */
@@ -248,9 +313,10 @@ class Hysteria2VpnService : VpnService() {
         excluded: Set<String>,
         dnsServers: List<String>,
         bypassLan: Boolean,
+        mtu: Int,
     ): ParcelFileDescriptor? = try {
         val builder = Builder()
-            .setMtu(Tun.MTU)
+            .setMtu(mtu)
             .addAddress(Tun.IPV4, Tun.PREFIX4)
             .addAddress(Tun.IPV6, Tun.PREFIX6)
         for (dns in dnsServers) {
@@ -449,6 +515,10 @@ class Hysteria2VpnService : VpnService() {
     private fun startStatsPolling() {
         statsJob?.cancel()
         statsJob = serviceScope.launch {
+            var ticks = 0
+            var lastTx = 0L
+            var lastRx = 0L
+            var lastAt = SystemClock.elapsedRealtime()
             while (isActive) {
                 val values = try {
                     getTun2socksStats()
@@ -458,6 +528,17 @@ class Hysteria2VpnService : VpnService() {
                 if (values != null && values.size >= 4) {
                     // [tx packets, tx bytes, rx packets, rx bytes]
                     TunnelStatus.setStats(tx = values[1], rx = values[3])
+                    if (++ticks >= NOTIFICATION_REFRESH_TICKS) {
+                        val now = SystemClock.elapsedRealtime()
+                        val seconds = ((now - lastAt) / 1000.0).coerceAtLeast(1.0)
+                        val txRate = ((values[1] - lastTx) / seconds).toLong().coerceAtLeast(0)
+                        val rxRate = ((values[3] - lastRx) / seconds).toLong().coerceAtLeast(0)
+                        lastTx = values[1]
+                        lastRx = values[3]
+                        lastAt = now
+                        ticks = 0
+                        refreshNotification(txRate, rxRate)
+                    }
                 }
                 delay(STATS_INTERVAL_MS)
             }
@@ -511,6 +592,7 @@ class Hysteria2VpnService : VpnService() {
         logDrainThread?.interrupt()
         logDrainThread = null
         TunnelStatus.resetStats()
+        TunnelStatus.setActiveProfile(null)
         // The config carries the auth secret and is rebuilt by the next connect
         // (MainViewModel writes it) or by ensureConfigFile on an always-on
         // restart, so it does not need to sit in filesDir while the tunnel is
@@ -524,7 +606,7 @@ class Hysteria2VpnService : VpnService() {
 
     override fun onRevoke() {
         shuttingDown = true
-        stopTunnel()
+        requestStop()
         super.onRevoke()
     }
 
@@ -589,8 +671,12 @@ class Hysteria2VpnService : VpnService() {
             .build()
     }
 
-    /** Update the ongoing notification with the current state / speed (no-op when idle). */
-    private fun refreshNotification() {
+    /**
+     * Update the ongoing notification with the current state, and — when the
+     * rates are known — the throughput. Updating at the 1 s stats cadence would
+     * make the notification shade flicker, so the caller throttles it.
+     */
+    private fun refreshNotification(txRate: Long = -1, rxRate: Long = -1) {
         if (shuttingDown) return
         // POST_NOTIFICATIONS is a runtime permission from Android 13: without the
         // explicit check the update would throw (and lint rightly complains).
@@ -601,7 +687,17 @@ class Hysteria2VpnService : VpnService() {
             return
         }
         val text = when (TunnelStatus.state.value) {
-            TunnelState.Connected -> getString(R.string.status_connected)
+            TunnelState.Connected -> if (txRate >= 0 && rxRate >= 0) {
+                getString(
+                    R.string.notification_with_speed,
+                    getString(R.string.status_connected),
+                    Formatter.formatShortFileSize(this, rxRate) + "/s",
+                    Formatter.formatShortFileSize(this, txRate) + "/s",
+                )
+            } else {
+                getString(R.string.status_connected)
+            }
+
             TunnelState.Connecting -> getString(R.string.status_connecting)
             TunnelState.Disconnecting -> getString(R.string.status_disconnecting)
             else -> return
@@ -625,6 +721,9 @@ class Hysteria2VpnService : VpnService() {
 
         private const val CORE_BINARY = "libhysteria.so"
         private const val STATS_INTERVAL_MS = 1000L
+
+        /** Stats ticks between two notification refreshes (5 s at 1 s cadence). */
+        private const val NOTIFICATION_REFRESH_TICKS = 5
         private const val CHANNEL_ID = "hy2droid_vpn"
         private const val NOTIFICATION_ID = 100
         private const val TAG = "Hysteria2VpnService"

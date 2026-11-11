@@ -38,8 +38,20 @@ object TunnelStatus {
     private val _stats = MutableStateFlow(TunnelStats())
     val stats: StateFlow<TunnelStats> = _stats.asStateFlow()
 
+    /**
+     * Id of the profile the current tunnel was built for, or `null` when no
+     * tunnel is up. The list keeps its own selection, so the UI needs this to
+     * tell "selected" apart from "actually in use".
+     */
+    private val _activeProfileId = MutableStateFlow<String?>(null)
+    val activeProfileId: StateFlow<String?> = _activeProfileId.asStateFlow()
+
     internal fun setState(state: TunnelState) {
         _state.value = state
+    }
+
+    internal fun setActiveProfile(id: String?) {
+        _activeProfileId.value = id
     }
 
     internal fun setStats(tx: Long, rx: Long) {
