@@ -18,8 +18,16 @@ private val Context.profileDataStore: DataStore<Preferences> by preferencesDataS
  * Preferences DataStore. Replaces the previous fragile `ObjectOutputStream`
  * cache: JSON is schema-tolerant across app versions and never throws on read
  * (a corrupt payload degrades to an empty list).
+ *
+ * The two secrets (`auth`, obfs password) are sealed with [CredentialCipher]
+ * before they are written, so the file on disk — and any backup of it — holds
+ * ciphertext. Values written by older versions are still readable and get
+ * rewritten in place by [encryptLegacyCredentials].
  */
-class ProfileStore(private val context: Context) {
+class ProfileStore(
+    private val context: Context,
+    private val cipher: CredentialCipher = CredentialCipher.withAndroidKeystore(),
+) {
     private val keyProfiles = stringPreferencesKey("profiles_json")
     private val keySelected = stringPreferencesKey("selected_id")
 
@@ -59,6 +67,32 @@ class ProfileStore(private val context: Context) {
         context.profileDataStore.edit { prefs -> prefs[keySelected] = id }
     }
 
+    /**
+     * Rewrite credentials stored in plaintext by an older version as ciphertext.
+     * Runs on every start and is a no-op once everything is sealed.
+     */
+    suspend fun encryptLegacyCredentials() {
+        context.profileDataStore.edit { prefs ->
+            val json = prefs[keyProfiles] ?: return@edit
+            if (!hasPlaintextCredential(json)) return@edit
+            prefs[keyProfiles] = encodeList(decodeList(json))
+        }
+    }
+
+    /** True when the stored JSON still carries an unsealed credential. */
+    private fun hasPlaintextCredential(json: String): Boolean = try {
+        val array = JSONArray(json)
+        (0 until array.length()).any { index ->
+            val item = array.getJSONObject(index)
+            CREDENTIAL_FIELDS.any { field ->
+                val raw = item.optString(field)
+                raw.isNotEmpty() && !cipher.isEncrypted(raw)
+            }
+        }
+    } catch (_: Exception) {
+        false
+    }
+
     private fun decodeList(json: String?): List<Profile> {
         if (json.isNullOrBlank()) return emptyList()
         return try {
@@ -79,9 +113,9 @@ class ProfileStore(private val context: Context) {
         put("id", p.id)
         put("name", p.name)
         put("server", p.server)
-        put("auth", p.auth)
+        put("auth", cipher.encrypt(p.auth))
         put("sni", p.sni)
-        put("obfsPassword", p.obfsPassword)
+        put("obfsPassword", cipher.encrypt(p.obfsPassword))
         put("insecure", p.insecure)
         put("txMbps", p.txMbps)
         put("rxMbps", p.rxMbps)
@@ -93,13 +127,20 @@ class ProfileStore(private val context: Context) {
         id = o.getString("id"),
         name = o.optString("name"),
         server = o.optString("server"),
-        auth = o.optString("auth"),
+        // `null` = sealed with a key this install no longer has (restored backup,
+        // cleared app data): keep the profile, make the user retype the secret.
+        auth = cipher.decrypt(o.optString("auth")).orEmpty(),
         sni = o.optString("sni"),
-        obfsPassword = o.optString("obfsPassword"),
+        obfsPassword = cipher.decrypt(o.optString("obfsPassword")).orEmpty(),
         insecure = o.optBoolean("insecure", false),
         txMbps = o.optInt("txMbps", 0),
         rxMbps = o.optInt("rxMbps", 0),
         fastOpen = o.optBoolean("fastOpen", false),
         port = o.optInt("port", 443),
     )
+
+    private companion object {
+        /** Fields that must never reach the DataStore in plaintext. */
+        val CREDENTIAL_FIELDS = listOf("auth", "obfsPassword")
+    }
 }

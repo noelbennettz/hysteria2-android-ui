@@ -402,6 +402,15 @@ class Hysteria2VpnService : VpnService() {
         logDrainThread?.interrupt()
         logDrainThread = null
         TunnelStatus.resetStats()
+        // The config carries the auth secret and is rebuilt by the next connect
+        // (MainViewModel writes it) or by ensureConfigFile on an always-on
+        // restart, so it does not need to sit in filesDir while the tunnel is
+        // down — nor be picked up by a cloud backup.
+        try {
+            File(filesDir, HYSTERIA_CONFIG_FILE).delete()
+        } catch (_: Throwable) {
+            // Nothing to clean up.
+        }
     }
 
     override fun onRevoke() {
