@@ -1,6 +1,7 @@
 package us.leaf3stones.hy2droid.proxy
 
 import android.app.PendingIntent
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.net.VpnService
@@ -76,6 +77,10 @@ class VpnTileService : TileService() {
     private fun TunnelState.isActive(): Boolean =
         this is TunnelState.Connected || this is TunnelState.Connecting || this is TunnelState.Disconnecting
 
+    // The Intent overload of startActivityAndCollapse() is deprecated on API 34 and
+    // the PendingIntent overload does not exist below it, so the pre-34 branch is
+    // the only option there — hence the lint suppression.
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     override fun onClick() {
         super.onClick()
         try {
