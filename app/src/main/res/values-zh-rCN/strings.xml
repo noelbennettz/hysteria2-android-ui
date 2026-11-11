@@ -73,7 +73,7 @@
     <string name="settings_section_appearance">外观</string>
     <string name="settings_section_network">网络</string>
     <string name="split_tunnel_summary">选择要绕过 VPN 的应用</string>
-    <string name="settings_custom_dns_summary">主 DNS 与可选的备用 DNS</string>
+    <string name="settings_custom_dns_summary">默认 %1$s，查询走隧道；可自订主要与次要 DNS</string>
     <string name="settings_dns_primary">主 DNS</string>
     <string name="settings_dns_secondary">备用 DNS（可选）</string>
     <string name="settings_dns_invalid">请输入有效的 IPv4 或 IPv6 地址</string>

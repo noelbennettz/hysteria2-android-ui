@@ -256,18 +256,24 @@ class Hysteria2VpnService : VpnService() {
             emptySet()
         }
         val dnsServers = try {
-            if (settings.customDnsEnabled.first()) {
+            val custom = if (settings.customDnsEnabled.first()) {
                 listOfNotNull(
                     settings.customDnsServer.first().takeIf { it.isNotBlank() },
                     settings.customDnsServer2.first().takeIf { it.isNotBlank() },
                 )
             } else {
-                // No custom DNS: don't inject a resolver, let DNS use the upstream
-                // (hysteria server egress) instead of a hardcoded public resolver.
                 emptyList()
             }
+            // Always push at least one resolver. Android has no "no DNS means use
+            // the tunnel" mode: with an empty DNS list the VPN network has no
+            // resolver at all, so resolution silently falls back to the underlying
+            // network's DNS (a leak — the queries leave over Wi-Fi, not through the
+            // server). The address itself is not special; what matters is that the
+            // query is routed into the tunnel and answered by whatever resolver the
+            // server's egress can reach.
+            custom.ifEmpty { listOf(SettingsStore.DEFAULT_DNS) }
         } catch (_: Exception) {
-            emptyList()
+            listOf(SettingsStore.DEFAULT_DNS)
         }
 
         val bypassLan = try {

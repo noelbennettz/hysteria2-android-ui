@@ -73,7 +73,7 @@
     <string name="settings_section_appearance">المظهر</string>
     <string name="settings_section_network">الشبكة</string>
     <string name="split_tunnel_summary">اختر التطبيقات التي تتجاوز VPN</string>
-    <string name="settings_custom_dns_summary">DNS أساسي وثانوي اختياري</string>
+    <string name="settings_custom_dns_summary">الافتراضي %1$s ويُمرَّر عبر النفق؛ عيّن خادمك الأساسي والثانوي</string>
     <string name="settings_dns_primary">DNS الأساسي</string>
     <string name="settings_dns_secondary">DNS الثانوي (اختياري)</string>
     <string name="settings_dns_invalid">أدخل عنوان IPv4 أو IPv6 صالحًا</string>

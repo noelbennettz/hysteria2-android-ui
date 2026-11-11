@@ -25,8 +25,12 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Salamander obfuscation, custom SNI, optional "allow insecure certificate"
 - Brutal congestion control via an upload/download bandwidth hint (0 = BBR)
 - `fastOpen` is **off** by default; `lazy` is always on
-- Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). When
-  disabled, no resolver is injected and DNS goes through the server egress
+- Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). The tunnel
+  always gets a resolver — by default `1.0.0.1` — because Android has no "no DNS
+  means use the tunnel" mode: with an empty DNS list it resolves through the
+  underlying network, i.e. the queries leave over Wi-Fi and never reach the
+  server. Any address works, the query is answered from the server's egress; the
+  custom switch replaces the default with your own
 - Split tunnelling: pick apps that bypass the VPN
 - **Blocked traffic**: refuse flows by protocol and port inside the tunnel —
   QUIC (UDP 443) is blocked by default, because Hysteria 2 cannot accelerate it

@@ -76,7 +76,7 @@
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_network">Network</string>
     <string name="split_tunnel_summary">Choose apps to bypass the VPN</string>
-    <string name="settings_custom_dns_summary">Primary and optional secondary DNS</string>
+    <string name="settings_custom_dns_summary">Default is %1$s, pushed into the tunnel; set your own primary and optional secondary</string>
     <string name="settings_dns_primary">Primary DNS</string>
     <string name="settings_dns_secondary">Secondary DNS (optional)</string>
     <string name="settings_dns_invalid">Enter a valid IPv4 or IPv6 address</string>

@@ -73,7 +73,7 @@
     <string name="settings_section_appearance">外觀</string>
     <string name="settings_section_network">網路</string>
     <string name="split_tunnel_summary">選擇要繞過 VPN 的應用程式</string>
-    <string name="settings_custom_dns_summary">主要 DNS 與選填的次要 DNS</string>
+    <string name="settings_custom_dns_summary">預設 %1$s，查詢走通道；可自訂主要與次要 DNS</string>
     <string name="settings_dns_primary">主要 DNS</string>
     <string name="settings_dns_secondary">次要 DNS（選填）</string>
     <string name="settings_dns_invalid">請輸入有效的 IPv4 或 IPv6 位址</string>

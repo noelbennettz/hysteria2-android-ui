@@ -166,7 +166,12 @@ class SettingsStore(private val context: Context) {
     }
 
     companion object {
-        /** Used when custom DNS is disabled. */
+        /**
+         * Resolver pushed into the tunnel when the custom DNS switch is off. Any
+         * address works — the query is routed into the VPN and answered from the
+         * server's egress — but Android needs one, otherwise it resolves through
+         * the underlying network and leaks DNS outside the tunnel.
+         */
         const val DEFAULT_DNS = "1.0.0.1"
 
         /**
