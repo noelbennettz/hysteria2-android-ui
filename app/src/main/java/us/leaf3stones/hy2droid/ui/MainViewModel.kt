@@ -218,6 +218,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         withContext(Dispatchers.IO) { ConfigFile.write(configFile, yaml) }
         val intent = Intent(getApplication<Application>(), Hysteria2VpnService::class.java)
             .setAction(Hysteria2VpnService.ACTION_START_VPN)
+            // Authoritative profile id: the selection can move between this write
+            // and the service reading it.
+            .putExtra(Hysteria2VpnService.EXTRA_PROFILE_ID, profile.id)
         ContextCompat.startForegroundService(getApplication<Application>(), intent)
     }
 

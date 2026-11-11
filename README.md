@@ -18,7 +18,9 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 
 - Full-tunnel `VpnService` backed by Hysteria 2, dual-stack (IPv4 + IPv6)
 - Multiple saved profiles; import by pasting a `hysteria2://` link or by
-  scanning a QR code (fully offline scanner, no Play Services needed)
+  scanning a QR code (fully offline scanner, no Play Services needed). Tapping a
+  profile while connected switches to it — the service tears the old tunnel down
+  and rebuilds it, no manual disconnect needed
 - Share a profile as a QR code
 - Salamander obfuscation, custom SNI, optional "allow insecure certificate"
 - Brutal congestion control via an upload/download bandwidth hint (0 = BBR)

@@ -147,6 +147,16 @@ private fun AppRoot(
         val profiles by vm.profiles.collectAsState()
         val editing = editingId?.let { id -> profiles.firstOrNull { it.id == id } }
 
+        // Restored from saved state after process death the id may resolve to
+        // nothing (still loading, or the profile was deleted meanwhile). Close the
+        // editor instead of letting it open a blank "new profile" form.
+        LaunchedEffect(editorOpen, editingId, profiles) {
+            if (editorOpen && editingId != null && editing == null && profiles.isNotEmpty()) {
+                editorOpen = false
+                editingId = null
+            }
+        }
+
         // Launcher / Quick Settings long-press: come back to the list, not to
         // whatever sub-screen happened to be open when the app went to background.
         val homeRequests by homeRequestsFlow.collectAsState()
@@ -206,18 +216,23 @@ private fun AppRoot(
                 },
                 onCancel = { scannerOpen = false },
             )
-            editorOpen -> EditProfileScreen(
-                initial = editing,
-                onSave = { profile ->
-                    vm.save(profile)
-                    editorOpen = false
-                    editingId = null
-                },
-                onBack = {
-                    editorOpen = false
-                    editingId = null
-                },
-            )
+            // While a restored id is still unresolved, render nothing: opening the
+            // editor with `initial == null` would snapshot a fresh id and turn an
+            // edit into a duplicate.
+            editorOpen -> if (editing != null || editingId == null) {
+                EditProfileScreen(
+                    initial = editing,
+                    onSave = { profile ->
+                        vm.save(profile)
+                        editorOpen = false
+                        editingId = null
+                    },
+                    onBack = {
+                        editorOpen = false
+                        editingId = null
+                    },
+                )
+            }
             splitTunnelOpen -> SplitTunnelScreen(
                 viewModel = vm,
                 onBack = { splitTunnelOpen = false },

@@ -13,9 +13,15 @@ import java.io.File
  */
 object ConfigFile {
 
+    /** Sibling name used while writing; also what a crash can leave behind. */
+    const val TEMP_SUFFIX = ".tmp"
+
+    /** The temp file [write] uses for [target]. */
+    fun tempFile(target: File): File = File(target.parentFile, target.name + TEMP_SUFFIX)
+
     /** Atomically replace [target] with [content]. Returns false on any IO error. */
     fun write(target: File, content: String): Boolean {
-        val temp = File(target.parentFile, target.name + ".tmp")
+        val temp = tempFile(target)
         return try {
             temp.writeText(content)
             if (!temp.renameTo(target)) {
@@ -28,6 +34,23 @@ object ConfigFile {
         } catch (_: Exception) {
             temp.delete()
             false
+        }
+    }
+
+    /**
+     * Delete [target] and any leftover temp file. The temp file carries the same
+     * auth secret, so it must not survive a crash — nor be picked up by a backup.
+     */
+    fun delete(target: File) {
+        try {
+            target.delete()
+        } catch (_: Throwable) {
+            // Nothing to clean up.
+        }
+        try {
+            tempFile(target).delete()
+        } catch (_: Throwable) {
+            // Nothing to clean up.
         }
     }
 }

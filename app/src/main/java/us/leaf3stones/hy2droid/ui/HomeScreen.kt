@@ -182,7 +182,16 @@ fun HomeScreen(
                             latencyMs = latency[profile.id],
                             latencyMeasured = latency.containsKey(profile.id),
                             latencyTesting = profile.id in latencyTesting,
-                            onClick = { viewModel.select(profile.id) },
+                            onClick = {
+                                // Tapping another node while connected switches to
+                                // it: the service tears the current tunnel down and
+                                // rebuilds it (no manual disconnect needed).
+                                if (active && activeProfileId != null && profile.id != activeProfileId) {
+                                    onConnect(profile)
+                                } else {
+                                    viewModel.select(profile.id)
+                                }
+                            },
                             onTestLatency = { viewModel.testLatency(profile) },
                             onEdit = { onEdit(profile) },
                             onShare = { shareProfile = profile },

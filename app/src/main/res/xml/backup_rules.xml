@@ -3,7 +3,9 @@
     <include domain="file" path="." />
     <include domain="file" path="datastore" />
     <!-- Never in a backup: the core config holds the auth secret in plaintext (it
-         is rebuilt on connect), and the core log is diagnostic noise. -->
+         is rebuilt on connect), the temp file it is written through carries the
+         same secret, and the core log is diagnostic noise. -->
     <exclude domain="file" path="hysteria.yaml" />
+    <exclude domain="file" path="hysteria.yaml.tmp" />
     <exclude domain="file" path="logs/" />
 </full-backup-content>

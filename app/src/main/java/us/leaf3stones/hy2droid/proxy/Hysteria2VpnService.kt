@@ -28,6 +28,7 @@ import android.text.format.Formatter
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -107,7 +108,29 @@ class Hysteria2VpnService : VpnService() {
         }
     }
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /**
+     * Profile id carried by the start intent. Authoritative over the stored
+     * selection: the user can tap another row in the moment between "config
+     * written" and "service starts", and the tunnel must report the profile it
+     * actually built.
+     */
+    @Volatile
+    private var requestedProfileId: String? = null
+
+    private val serviceScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, error ->
+            // SupervisorJob only keeps siblings alive; without this handler an
+            // unexpected exception (notification, JNI, DataStore) would take the
+            // whole app down instead of surfacing as a failed tunnel.
+            Log.e(TAG, "Unhandled error in the VPN service", error)
+            runCatching {
+                updateState(TunnelState.Error(error.message ?: getString(R.string.status_error)))
+            }
+            runCatching { teardown() }
+            runCatching { stopForegroundSafely() }
+            stopSelf()
+        },
+    )
 
     /**
      * Serialises "bring the tunnel up" against anything else. Without it a
@@ -132,7 +155,8 @@ class Hysteria2VpnService : VpnService() {
             }
 
             ACTION_START_VPN -> {
-                // An explicit start (app or tile).
+                // An explicit start (app or tile), possibly for a specific profile.
+                requestedProfileId = intent.getStringExtra(EXTRA_PROFILE_ID)
                 startForegroundSafely()
                 launchStart()
                 return START_STICKY
@@ -143,6 +167,8 @@ class Hysteria2VpnService : VpnService() {
             // to come up here only makes Android show "always-on VPN is not
             // connected" and retry, so connect whenever a profile exists.
             SYS_SYSTEM_VPN, null -> {
+                // No request to honour: whatever is selected is the answer.
+                requestedProfileId = null
                 startForegroundSafely()
                 launchStart()
                 return START_STICKY
@@ -174,7 +200,9 @@ class Hysteria2VpnService : VpnService() {
         startJob = null
         serviceScope.launch {
             pending?.cancelAndJoin()
-            stopTunnel()
+            // Same lock as the start: otherwise a stop can interleave with a switch
+            // and tear down the tunnel that start just created.
+            tunnelMutex.withLock { stopTunnel() }
         }
     }
 
@@ -182,15 +210,18 @@ class Hysteria2VpnService : VpnService() {
     private suspend fun startTunnel() = tunnelMutex.withLock { startTunnelLocked() }
 
     private suspend fun startTunnelLocked() {
+        // The profile this start is for: the one the app asked for (exact, even if
+        // the user moved the selection on in the meantime), else whatever is
+        // selected. Both the switch decision and the "in use" marker use it.
+        val target = requestedProfileId ?: activeProfileId()
         if (tunInterface != null) {
             // A second start while connected means "bring up the selected profile",
             // which is how a switched profile takes effect. Same profile: ignore.
-            val wanted = activeProfileId()
-            if (wanted == null || wanted == TunnelStatus.activeProfileId.value) {
+            if (target == null || target == TunnelStatus.activeProfileId.value) {
                 Log.d(TAG, "Tunnel already running; ignoring duplicate start")
                 return
             }
-            Log.i(TAG, "Selected profile changed; restarting the tunnel")
+            Log.i(TAG, "Switching profile; restarting the tunnel")
             // Tear down without stopSelf(): the service must stay alive to build
             // the new tunnel (and the foreground notification stays posted).
             teardownTunnel()
@@ -310,7 +341,7 @@ class Hysteria2VpnService : VpnService() {
         }
 
         updateState(TunnelState.Connected)
-        TunnelStatus.setActiveProfile(activeProfileId())
+        TunnelStatus.setActiveProfile(target)
         startStatsPolling()
         refreshNotification()
         Log.d(TAG, "Tunnel established")
@@ -551,32 +582,40 @@ class Hysteria2VpnService : VpnService() {
             var lastRx = 0L
             var lastAt = SystemClock.elapsedRealtime()
             while (isActive) {
-                val values = try {
-                    getTun2socksStats()
-                } catch (_: Throwable) {
-                    null
+                // Nothing displays the counters unless the user asked for them, so
+                // do not touch the native counters (nor wake the UI) at 1 Hz for
+                // nobody.
+                val showTraffic = try {
+                    SettingsStore(applicationContext).showTraffic.first()
+                } catch (_: Exception) {
+                    false
                 }
-                if (values != null && values.size >= 4) {
-                    // [tx packets, tx bytes, rx packets, rx bytes]
-                    TunnelStatus.setStats(tx = values[1], rx = values[3])
-                    if (++ticks >= NOTIFICATION_REFRESH_TICKS) {
-                        val now = SystemClock.elapsedRealtime()
-                        val seconds = ((now - lastAt) / 1000.0).coerceAtLeast(1.0)
-                        val txRate = ((values[1] - lastTx) / seconds).toLong().coerceAtLeast(0)
-                        val rxRate = ((values[3] - lastRx) / seconds).toLong().coerceAtLeast(0)
-                        lastTx = values[1]
-                        lastRx = values[3]
-                        lastAt = now
-                        ticks = 0
-                        // Live throughput is opt-in; without it the notification
-                        // keeps the plain status text (and never re-posts).
-                        val showTraffic = try {
-                            SettingsStore(applicationContext).showTraffic.first()
-                        } catch (_: Exception) {
-                            false
-                        }
-                        if (showTraffic) refreshNotification(txRate, rxRate)
+                if (showTraffic) {
+                    val values = try {
+                        getTun2socksStats()
+                    } catch (_: Throwable) {
+                        null
                     }
+                    if (values != null && values.size >= 4) {
+                        // [tx packets, tx bytes, rx packets, rx bytes]
+                        TunnelStatus.setStats(tx = values[1], rx = values[3])
+                        if (++ticks >= NOTIFICATION_REFRESH_TICKS) {
+                            val now = SystemClock.elapsedRealtime()
+                            val seconds = ((now - lastAt) / 1000.0).coerceAtLeast(1.0)
+                            val txRate = ((values[1] - lastTx) / seconds).toLong().coerceAtLeast(0)
+                            val rxRate = ((values[3] - lastRx) / seconds).toLong().coerceAtLeast(0)
+                            lastTx = values[1]
+                            lastRx = values[3]
+                            lastAt = now
+                            ticks = 0
+                            refreshNotification(txRate, rxRate)
+                        }
+                    }
+                } else {
+                    ticks = 0
+                    lastTx = 0
+                    lastRx = 0
+                    lastAt = SystemClock.elapsedRealtime()
                 }
                 delay(STATS_INTERVAL_MS)
             }
@@ -639,12 +678,9 @@ class Hysteria2VpnService : VpnService() {
         // The config carries the auth secret and is rebuilt by the next connect
         // (MainViewModel writes it) or by ensureConfigFile on an always-on
         // restart, so it does not need to sit in filesDir while the tunnel is
-        // down — nor be picked up by a cloud backup.
-        try {
-            File(filesDir, HYSTERIA_CONFIG_FILE).delete()
-        } catch (_: Throwable) {
-            // Nothing to clean up.
-        }
+        // down — nor be picked up by a cloud backup. The temp file from an
+        // interrupted atomic write holds the same secret, so it goes too.
+        ConfigFile.delete(File(filesDir, HYSTERIA_CONFIG_FILE))
     }
 
     override fun onRevoke() {
@@ -779,7 +815,12 @@ class Hysteria2VpnService : VpnService() {
             TunnelState.Disconnecting -> getString(R.string.status_disconnecting)
             else -> return
         }
-        NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, buildNotification(text))
+        try {
+            NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, buildNotification(text))
+        } catch (e: Throwable) {
+            // Channel disabled / blocked by policy: the tunnel is fine without it.
+            Log.w(TAG, "Could not update the notification", e)
+        }
     }
 
     companion object {
@@ -789,6 +830,9 @@ class Hysteria2VpnService : VpnService() {
 
         const val ACTION_START_VPN = "us.leaf3stones.hy2droid.proxy.ACTION_START_VPN"
         const val ACTION_STOP_VPN = "us.leaf3stones.hy2droid.proxy.ACTION_STOP_VPN"
+
+        /** Optional profile id on [ACTION_START_VPN]; falls back to the selection. */
+        const val EXTRA_PROFILE_ID = "us.leaf3stones.hy2droid.proxy.EXTRA_PROFILE_ID"
 
         /** Broadcast by the notification's delete intent when the user swipes it away. */
         private const val ACTION_NOTIFICATION_DISMISSED =

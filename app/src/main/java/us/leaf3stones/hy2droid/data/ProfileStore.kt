@@ -64,8 +64,23 @@ class ProfileStore(private val context: Context) {
         context.profileDataStore.edit { prefs ->
             val list = decodeList(prefs[keyProfiles]).toMutableList()
             val index = list.indexOfFirst { it.id == profile.id }
-            if (index >= 0) list[index] = profile else list.add(profile)
+            var hostChanged = false
+            if (index >= 0) {
+                val previous = list[index]
+                // A different host or port is a different measurement; keeping the
+                // old number would sort by a node that is no longer there.
+                hostChanged = previous.server != profile.server || previous.port != profile.port
+                list[index] = profile
+            } else {
+                list.add(profile)
+            }
             prefs[keyProfiles] = encodeList(list)
+            if (hostChanged) {
+                val entries = decodeLatencyEntries(prefs[keyLatency]).toMutableMap()
+                if (entries.remove(profile.id) != null) {
+                    prefs[keyLatency] = encodeLatencyEntries(entries)
+                }
+            }
             if (prefs[keySelected] == null) prefs[keySelected] = profile.id
         }
     }
