@@ -37,6 +37,9 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   TCP ping would be meaningless). Optional *Test latency on launch*
   (Settings → Network, off by default) measures every node when the app opens and
   then lists the fastest one first — it never switches the node for you
+- **Share-link deep link**: tapping a `hysteria2://` (or `hy2://`) link in a
+  browser opens the app and adds the profile straight away — no pasting, no
+  editor, no manual file
 - **Export logs** (Settings → Diagnostics): one zip with the app logcat buffer,
   the persisted Hysteria core log, a build/device summary and the running config
   with `auth` / obfs passwords masked — no storage permission needed

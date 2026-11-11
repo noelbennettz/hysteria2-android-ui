@@ -37,6 +37,17 @@ class HysteriaUriTest {
     }
 
     @Test
+    fun `parses the hy2 alias used by other clients`() {
+        val profile = HysteriaUri.parse("hy2://pass@alias.example:443/?sni=s#Alias")
+
+        requireNotNull(profile)
+        assertEquals("alias.example", profile.server)
+        assertEquals("pass", profile.auth)
+        assertEquals("s", profile.sni)
+        assertEquals("Alias", profile.name)
+    }
+
+    @Test
     fun `rejects non-hysteria schemes and garbage`() {
         assertNull(HysteriaUri.parse("https://example.com"))
         assertNull(HysteriaUri.parse("not a url at all"))

@@ -15,6 +15,9 @@ import java.util.UUID
  */
 object HysteriaUri {
     private const val SCHEME = "hysteria2"
+
+    /** `hy2://` is the short alias other clients emit for the same link. */
+    private val SCHEMES = setOf("hysteria2", "hy2")
     private const val DEFAULT_PORT = 443
 
     /** Parse a share link into a [Profile], or `null` if it is not a valid hysteria2 link. */
@@ -24,7 +27,7 @@ object HysteriaUri {
         } catch (_: Exception) {
             return null
         }
-        if (!SCHEME.equals(uri.scheme, ignoreCase = true)) return null
+        if (uri.scheme == null || uri.scheme.lowercase() !in SCHEMES) return null
         val host = uri.host ?: return null
         val port = if (uri.port > 0) uri.port else DEFAULT_PORT
         val auth = decode(uri.userInfo ?: "")
