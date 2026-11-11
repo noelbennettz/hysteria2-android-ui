@@ -75,6 +75,17 @@
     <string name="settings_bypass_lan_summary">局域网设备、投屏和路由器管理页面不走 VPN</string>
     <string name="settings_blocked_traffic">屏蔽流量</string>
     <string name="settings_blocked_traffic_summary">拒绝 QUIC（UDP 443）等流量</string>
+    <string name="settings_auto_test_latency">启动时测试延迟</string>
+    <string name="settings_auto_test_latency_summary">打开应用时测量所有节点，最快的排在最前</string>
+    <string name="settings_section_diagnostics">诊断</string>
+    <string name="settings_export_logs">导出日志</string>
+    <string name="settings_export_logs_summary">把应用日志和 Hysteria 核心日志保存为 zip 文件</string>
+    <string name="action_test_latency">测试延迟</string>
+    <string name="latency_testing">测试中…</string>
+    <string name="latency_ms">%1$d 毫秒</string>
+    <string name="latency_failed">失败</string>
+    <string name="export_success">日志已导出</string>
+    <string name="export_failed">无法导出日志</string>
 
     <!-- Blocked traffic -->
     <string name="block_title">屏蔽流量</string>

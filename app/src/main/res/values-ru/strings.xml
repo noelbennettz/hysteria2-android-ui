@@ -75,6 +75,17 @@
     <string name="settings_bypass_lan_summary">Устройства локальной сети, трансляция и страницы роутера вне VPN</string>
     <string name="settings_blocked_traffic">Заблокированный трафик</string>
     <string name="settings_blocked_traffic_summary">Отклонять трафик вроде QUIC (UDP 443)</string>
+    <string name="settings_auto_test_latency">Проверять задержку при запуске</string>
+    <string name="settings_auto_test_latency_summary">Измерять задержку всех узлов при открытии приложения и показывать самый быстрый первым</string>
+    <string name="settings_section_diagnostics">Диагностика</string>
+    <string name="settings_export_logs">Экспорт журналов</string>
+    <string name="settings_export_logs_summary">Сохраняет журналы приложения и ядра Hysteria в zip-файл</string>
+    <string name="action_test_latency">Проверить задержку</string>
+    <string name="latency_testing">Проверка…</string>
+    <string name="latency_ms">%1$d мс</string>
+    <string name="latency_failed">Ошибка</string>
+    <string name="export_success">Журналы экспортированы</string>
+    <string name="export_failed">Не удалось экспортировать журналы</string>
 
     <!-- Blocked traffic -->
     <string name="block_title">Заблокированный трафик</string>

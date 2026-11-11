@@ -31,6 +31,7 @@ import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
 import us.leaf3stones.hy2droid.data.LanRanges
 import us.leaf3stones.hy2droid.data.ProfileStore
+import us.leaf3stones.hy2droid.data.Redact
 import us.leaf3stones.hy2droid.data.SettingsStore
 import us.leaf3stones.hy2droid.ui.MainActivity
 import java.io.File
@@ -289,23 +290,30 @@ class Hysteria2VpnService : VpnService() {
             .redirectErrorStream(true)
             .start()
         logDrainThread = Thread {
+            // The core log is what the diagnostics export ships; without it a
+            // failed handshake leaves no trace once logcat rolls over.
+            val coreLog = try {
+                CoreLog(applicationContext)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not open the core log file", e)
+                null
+            }
             try {
                 process.inputStream.use { input ->
                     val scanner = Scanner(input)
                     while (!shuttingDown && scanner.hasNextLine()) {
                         val line = scanner.nextLine()
                         // The core prints a share URI containing the auth + obfs
-                        // password; never let that reach logcat.
-                        val safe = if (line.contains("hysteria2://") || line.contains("obfs-password")) {
-                            "[core log line redacted: contains credentials]"
-                        } else {
-                            line
-                        }
+                        // password; never let that reach logcat or the log file.
+                        val safe = Redact.logLine(line)
                         Log.v(CORE_TAG, safe)
+                        coreLog?.write(safe)
                     }
                 }
             } catch (_: Exception) {
                 // Reading from a closed pipe during shutdown is expected.
+            } finally {
+                coreLog?.close()
             }
         }.apply {
             isDaemon = true

@@ -45,13 +45,17 @@ import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.HysteriaUri
 import us.leaf3stones.hy2droid.data.Profile
 
-/** A single profile row with an overflow menu (edit / share / delete). */
+/** A single profile row with an overflow menu (test latency / edit / share / delete). */
 @Composable
 fun ProfileRow(
     profile: Profile,
     selected: Boolean,
     showAddress: Boolean,
+    latencyMs: Int?,
+    latencyMeasured: Boolean,
+    latencyTesting: Boolean,
     onClick: () -> Unit,
+    onTestLatency: () -> Unit,
     onEdit: () -> Unit,
     onShare: () -> Unit,
     onDelete: () -> Unit,
@@ -84,6 +88,30 @@ fun ProfileRow(
                     )
                 }
             }
+            // The measured latency sits on the same row as the menu that starts
+            // the test, so the number and the action stay together.
+            when {
+                latencyTesting -> Text(
+                    text = stringResource(R.string.latency_testing),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 4.dp),
+                )
+
+                latencyMeasured && latencyMs != null -> Text(
+                    text = stringResource(R.string.latency_ms, latencyMs),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 4.dp),
+                )
+
+                latencyMeasured -> Text(
+                    text = stringResource(R.string.latency_failed),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(end = 4.dp),
+                )
+            }
             Box {
                 IconButton(onClick = { menuOpen = true }) {
                     Icon(
@@ -97,6 +125,13 @@ fun ProfileRow(
                         onClick = {
                             menuOpen = false
                             onEdit()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_test_latency)) },
+                        onClick = {
+                            menuOpen = false
+                            onTestLatency()
                         },
                     )
                     DropdownMenuItem(

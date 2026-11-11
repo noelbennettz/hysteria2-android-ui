@@ -75,6 +75,17 @@
     <string name="settings_bypass_lan_summary">Garder les appareils du réseau local, la diffusion et les pages du routeur hors du VPN</string>
     <string name="settings_blocked_traffic">Trafic bloqué</string>
     <string name="settings_blocked_traffic_summary">Refuser le trafic comme QUIC (UDP 443)</string>
+    <string name="settings_auto_test_latency">Tester la latence au démarrage</string>
+    <string name="settings_auto_test_latency_summary">Mesure chaque nœud à l\'ouverture de l\'app et place le plus rapide en premier</string>
+    <string name="settings_section_diagnostics">Diagnostic</string>
+    <string name="settings_export_logs">Exporter les journaux</string>
+    <string name="settings_export_logs_summary">Enregistre les journaux de l\'app et du cœur Hysteria dans un zip</string>
+    <string name="action_test_latency">Tester la latence</string>
+    <string name="latency_testing">Test en cours…</string>
+    <string name="latency_ms">%1$d ms</string>
+    <string name="latency_failed">Échec</string>
+    <string name="export_success">Journaux exportés</string>
+    <string name="export_failed">Impossible d\'exporter les journaux</string>
 
     <!-- Blocked traffic -->
     <string name="block_title">Trafic bloqué</string>

@@ -23,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.Profile
+import us.leaf3stones.hy2droid.data.ProfileOrdering
 import us.leaf3stones.hy2droid.proxy.TunnelState
 
 /** The main screen: status card, profile list and the single connect/disconnect + add controls. */
@@ -53,7 +55,22 @@ fun HomeScreen(
     val tunnelState by viewModel.tunnelState.collectAsState()
     val stats by viewModel.stats.collectAsState()
     val showServerAddress by viewModel.showServerAddress.collectAsState()
+    val autoTestLatency by viewModel.autoTestLatency.collectAsState()
+    val latency by viewModel.latency.collectAsState()
+    val latencyTesting by viewModel.latencyTesting.collectAsState()
     var shareProfile by remember { mutableStateOf<Profile?>(null) }
+
+    // Settings → Network: measure every node once per app start. The ViewModel
+    // guards against repeating it on recomposition.
+    LaunchedEffect(autoTestLatency) {
+        viewModel.maybeAutoTestLatency(autoTestLatency)
+    }
+
+    // Only reorder when the user opted in: without latency numbers the stored
+    // order is the order they arranged themselves.
+    val orderedProfiles = remember(profiles, latency, autoTestLatency) {
+        if (autoTestLatency) ProfileOrdering.byLatency(profiles, latency) else profiles
+    }
 
     // The first profile is treated as selected when nothing explicit is stored.
     val selectedProfile = profiles.firstOrNull { it.id == selectedId } ?: profiles.firstOrNull()
@@ -140,12 +157,16 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(profiles, key = { it.id }) { profile ->
+                    items(orderedProfiles, key = { it.id }) { profile ->
                         ProfileRow(
                             profile = profile,
                             selected = profile.id == selectedProfile?.id,
                             showAddress = showServerAddress,
+                            latencyMs = latency[profile.id],
+                            latencyMeasured = latency.containsKey(profile.id),
+                            latencyTesting = profile.id in latencyTesting,
                             onClick = { viewModel.select(profile.id) },
+                            onTestLatency = { viewModel.testLatency(profile) },
                             onEdit = { onEdit(profile) },
                             onShare = { shareProfile = profile },
                             onDelete = { viewModel.delete(profile.id) },

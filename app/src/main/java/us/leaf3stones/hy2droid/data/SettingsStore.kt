@@ -27,6 +27,7 @@ class SettingsStore(private val context: Context) {
     private val keyBypassLan = booleanPreferencesKey("bypass_lan")
     private val keyBlockRules = stringPreferencesKey("block_rules")
     private val keyShowAddress = booleanPreferencesKey("show_server_address")
+    private val keyAutoTestLatency = booleanPreferencesKey("auto_test_latency")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -39,6 +40,13 @@ class SettingsStore(private val context: Context) {
     /** Whether the profile cards show the server address. Default off (less noise). */
     val showServerAddress: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyShowAddress] ?: false }
+
+    /**
+     * Whether node latency is measured when the app opens (and the list is then
+     * ordered fastest first). Default off: it costs a QUIC handshake per node.
+     */
+    val autoTestLatency: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyAutoTestLatency] ?: false }
 
     /** Whether a custom upstream DNS server (pushed to the TUN) is used. Default off. */
     val customDnsEnabled: Flow<Boolean> = context.settingsDataStore.data
@@ -80,6 +88,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setShowServerAddress(enabled: Boolean) {
         context.settingsDataStore.edit { it[keyShowAddress] = enabled }
+    }
+
+    suspend fun setAutoTestLatency(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyAutoTestLatency] = enabled }
     }
 
     suspend fun setCustomDnsEnabled(enabled: Boolean) {

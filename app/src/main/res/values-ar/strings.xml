@@ -75,6 +75,17 @@
     <string name="settings_bypass_lan_summary">إبقاء أجهزة الشبكة المحلية والبث وصفحات الموجّه خارج VPN</string>
     <string name="settings_blocked_traffic">حركة المرور المحظورة</string>
     <string name="settings_blocked_traffic_summary">رفض حركة مثل QUIC (UDP 443)</string>
+    <string name="settings_auto_test_latency">اختبار زمن الاستجابة عند التشغيل</string>
+    <string name="settings_auto_test_latency_summary">قياس زمن استجابة كل عقدة عند فتح التطبيق وعرض الأسرع أولاً</string>
+    <string name="settings_section_diagnostics">التشخيص</string>
+    <string name="settings_export_logs">تصدير السجلات</string>
+    <string name="settings_export_logs_summary">حفظ سجلات التطبيق ونواة Hysteria في ملف zip</string>
+    <string name="action_test_latency">اختبار زمن الاستجابة</string>
+    <string name="latency_testing">جارٍ الاختبار…</string>
+    <string name="latency_ms">%1$d مللي ثانية</string>
+    <string name="latency_failed">فشل</string>
+    <string name="export_success">تم تصدير السجلات</string>
+    <string name="export_failed">تعذر تصدير السجلات</string>
 
     <!-- Blocked traffic -->
     <string name="block_title">حركة المرور المحظورة</string>

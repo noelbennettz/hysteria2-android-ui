@@ -32,6 +32,14 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   link-local, CGNAT and multicast (mDNS/SSDP) — stays outside the VPN, so NAS
   boxes, printers, router admin pages and casting keep working
 - Quick Settings tile to connect/disconnect, kept in sync with the tunnel state
+- **Latency test** per node from the profile menu, measured by a real request
+  through a throwaway core instance (a Hysteria 2 server only answers UDP, so a
+  TCP ping would be meaningless). Optional *Test latency on launch*
+  (Settings → Network, off by default) measures every node when the app opens and
+  then lists the fastest one first — it never switches the node for you
+- **Export logs** (Settings → Diagnostics): one zip with the app logcat buffer,
+  the persisted Hysteria core log, a build/device summary and the running config
+  with `auth` / obfs passwords masked — no storage permission needed
 - Always-on VPN support (handles the system-initiated start)
 - Live throughput in the UI; the notification is intentionally minimal (status
   plus a Disconnect action)
@@ -118,8 +126,8 @@ connection. With no rules the config carries no `misc:` section at all.
 | Path | Contents |
 | --- | --- |
 | `app/src/main/java/.../ui` | Compose UI (home, profile editor, settings, split tunnel, blocked traffic, QR scanner) |
-| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `BlockRule`, `HysteriaConfigBuilder`, `HysteriaUri` |
-| `app/src/main/java/.../proxy` | `Hysteria2VpnService`, `VpnTileService`, `TunnelStatus`, `Tun2socksConfig` |
+| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `BlockRule`, `HysteriaConfigBuilder`, `HysteriaUri`, `ProfileOrdering`, `Redact`, `DiagnosticsExporter` |
+| `app/src/main/java/.../proxy` | `Hysteria2VpnService`, `VpnTileService`, `TunnelStatus`, `Tun2socksConfig`, `LatencyProbe`, `CoreLog` |
 | `app/src/main/jniLibs` | `libtun2socks.so` (committed, see `native/tun2socks/`); `libhysteria.so` is downloaded at build time |
 | `native/tun2socks` | Patches applied on top of hev-socks5-tunnel (blocked-port rules, JNI names) |
 | `core/core.properties` | Pinned Hysteria core version + per-ABI checksums |
@@ -235,8 +243,13 @@ point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
 
 ## Troubleshooting
 
+- Settings → Diagnostics → *Export logs* writes a zip the user picks in the system
+  file picker: `app-info.txt`, `logcat.txt`, `hysteria.log` (plus the rotated
+  `hysteria.1.log`), and `hysteria.config.redacted.yaml`. Attach that to a bug
+  report instead of pasting logcat.
 - The core logs to logcat under the `hysteria` tag (lines containing a share URI
-  or the obfs password are redacted).
+  or the obfs password are redacted). The same lines are appended to
+  `filesDir/logs/hysteria.log` so they survive a reboot or an app crash.
 - The service logs to the `Hysteria2VpnService` tag, including the bundled core
   version at every connect: `adb logcat -s Hysteria2VpnService | grep 'Hysteria core'`.
 - If a newly released core breaks connectivity, pin the previous one via the

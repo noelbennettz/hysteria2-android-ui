@@ -2,6 +2,9 @@ package us.leaf3stones.hy2droid.ui
 
 import android.net.InetAddresses
 import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,11 +21,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -46,10 +51,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.DiagnosticsExporter
 import us.leaf3stones.hy2droid.data.LanRanges
 
 /** Returns true when [value] is a numeric IPv4 or IPv6 address. */
@@ -77,6 +84,24 @@ fun SettingsScreen(
     val dns1 by viewModel.customDnsServer.collectAsState()
     val dns2 by viewModel.customDnsServer2.collectAsState()
     val bypassLan by viewModel.bypassLan.collectAsState()
+    val autoTestLatency by viewModel.autoTestLatency.collectAsState()
+
+    // SAF: the user picks where the zip goes, so there is no storage permission
+    // to ask for and no FileProvider to declare.
+    val context = LocalContext.current
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip"),
+    ) { uri ->
+        if (uri != null) {
+            viewModel.exportDiagnostics(uri) { ok ->
+                Toast.makeText(
+                    context,
+                    if (ok) R.string.export_success else R.string.export_failed,
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+    }
 
     var dns1Text by remember { mutableStateOf("") }
     var dns2Text by remember { mutableStateOf("") }
@@ -225,6 +250,22 @@ fun SettingsScreen(
                     Spacer(Modifier.height(8.dp))
                 }
             }
+            HorizontalDivider()
+            SwitchRow(
+                icon = Icons.Filled.Speed,
+                title = stringResource(R.string.settings_auto_test_latency),
+                subtitle = stringResource(R.string.settings_auto_test_latency_summary),
+                checked = autoTestLatency,
+                onCheckedChange = viewModel::setAutoTestLatency,
+            )
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.settings_section_diagnostics))
+            ClickRow(
+                icon = Icons.Filled.BugReport,
+                title = stringResource(R.string.settings_export_logs),
+                subtitle = stringResource(R.string.settings_export_logs_summary),
+                onClick = { exportLauncher.launch(DiagnosticsExporter.suggestedFileName()) },
+            )
             HorizontalDivider()
         }
     }
