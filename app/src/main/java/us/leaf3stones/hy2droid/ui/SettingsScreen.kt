@@ -252,7 +252,11 @@ fun SettingsScreen(
             SwitchRow(
                 icon = Icons.Filled.Dns,
                 title = stringResource(R.string.settings_custom_dns),
-                subtitle = stringResource(R.string.settings_custom_dns_summary, SettingsStore.DEFAULT_DNS),
+                subtitle = stringResource(
+                    R.string.settings_custom_dns_summary,
+                    SettingsStore.DEFAULT_DNS_PRIMARY,
+                    SettingsStore.DEFAULT_DNS_SECONDARY,
+                ),
                 checked = dnsEnabled,
                 onCheckedChange = viewModel::setCustomDnsEnabled,
             )

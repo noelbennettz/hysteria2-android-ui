@@ -73,7 +73,7 @@
     <string name="settings_section_appearance">Оформление</string>
     <string name="settings_section_network">Сеть</string>
     <string name="split_tunnel_summary">Выберите приложения в обход VPN</string>
-    <string name="settings_custom_dns_summary">По умолчанию %1$s, запросы идут через туннель; укажите свой основной и дополнительный</string>
+    <string name="settings_custom_dns_summary">По умолчанию %1$s, резервный %2$s, запросы идут через туннель; укажите свой основной и дополнительный</string>
     <string name="settings_dns_primary">Основной DNS</string>
     <string name="settings_dns_secondary">Дополнительный DNS (необязательно)</string>
     <string name="settings_dns_invalid">Введите корректный адрес IPv4 или IPv6</string>

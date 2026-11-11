@@ -73,7 +73,7 @@ class SettingsStore(private val context: Context) {
 
     /** The custom DNS server address. */
     val customDnsServer: Flow<String> = context.settingsDataStore.data
-        .map { it[keyDnsServer] ?: DEFAULT_DNS }
+        .map { it[keyDnsServer] ?: DEFAULT_DNS_PRIMARY }
 
     /** The optional secondary DNS server address ("" when unset). */
     val customDnsServer2: Flow<String> = context.settingsDataStore.data
@@ -167,12 +167,19 @@ class SettingsStore(private val context: Context) {
 
     companion object {
         /**
-         * Resolver pushed into the tunnel when the custom DNS switch is off. Any
-         * address works — the query is routed into the VPN and answered from the
-         * server's egress — but Android needs one, otherwise it resolves through
-         * the underlying network and leaks DNS outside the tunnel.
+         * Resolvers pushed into the tunnel when the custom DNS switch is off: Quad9
+         * first, Cloudflare as the backup. Any address works — the query is routed
+         * into the VPN and answered from the server's egress — but Android needs at
+         * least one, otherwise it resolves through the underlying network and leaks
+         * DNS outside the tunnel.
          */
-        const val DEFAULT_DNS = "1.0.0.1"
+        const val DEFAULT_DNS_PRIMARY = "9.9.9.9"
+
+        /** Backup resolver, used when the primary does not answer. */
+        const val DEFAULT_DNS_SECONDARY = "1.1.1.1"
+
+        /** The two addresses above, in the order they are pushed to the tun. */
+        val DEFAULT_DNS_SERVERS: List<String> = listOf(DEFAULT_DNS_PRIMARY, DEFAULT_DNS_SECONDARY)
 
         /**
          * Default TUN MTU. 1450 keeps a full QUIC datagram inside a 1500-byte

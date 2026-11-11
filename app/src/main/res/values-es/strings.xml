@@ -73,7 +73,7 @@
     <string name="settings_section_appearance">Apariencia</string>
     <string name="settings_section_network">Red</string>
     <string name="split_tunnel_summary">Elige apps que se saltan la VPN</string>
-    <string name="settings_custom_dns_summary">Por defecto %1$s, dentro del túnel; configura tu primario y secundario</string>
+    <string name="settings_custom_dns_summary">Por defecto %1$s con %2$s de respaldo, dentro del túnel; configura tu primario y el secundario opcional</string>
     <string name="settings_dns_primary">DNS principal</string>
     <string name="settings_dns_secondary">DNS secundario (opcional)</string>
     <string name="settings_dns_invalid">Introduce una dirección IPv4 o IPv6 válida</string>

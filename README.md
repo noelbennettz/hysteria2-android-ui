@@ -26,11 +26,12 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Brutal congestion control via an upload/download bandwidth hint (0 = BBR)
 - `fastOpen` is **off** by default; `lazy` is always on
 - Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). The tunnel
-  always gets a resolver — by default `1.0.0.1` — because Android has no "no DNS
-  means use the tunnel" mode: with an empty DNS list it resolves through the
-  underlying network, i.e. the queries leave over Wi-Fi and never reach the
-  server. Any address works, the query is answered from the server's egress; the
-  custom switch replaces the default with your own
+  always gets resolvers — Quad9 (`9.9.9.9`) with Cloudflare (`1.1.1.1`) as the
+  backup — because Android has no "no DNS means use the tunnel" mode: with an
+  empty DNS list it resolves through the underlying network, i.e. the queries
+  leave over Wi-Fi and never reach the server. Any address works, the queries are
+  answered from the server's egress; the custom switch replaces the defaults with
+  your own
 - Split tunnelling: pick apps that bypass the VPN
 - **Blocked traffic**: refuse flows by protocol and port inside the tunnel —
   QUIC (UDP 443) is blocked by default, because Hysteria 2 cannot accelerate it
@@ -52,14 +53,18 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   TCP ping would be meaningless). Optional *Test latency on launch*
   (Settings → Network, off by default) measures the nodes that have no result
   yet and then lists the fastest one first — it never switches the node for you,
-  and the numbers survive a restart
+  and the numbers survive a restart (they expire after 24 h, so the list is never
+  sorted by yesterday's numbers)
 - **Share-link deep link**: tapping a `hysteria2://` (or `hy2://`) link in a
   browser opens the app and adds the profile straight away — no pasting, no
   editor, no manual file
 - **Export logs** (Settings → Diagnostics): one zip with the app logcat buffer,
   the persisted Hysteria core log, a build/device summary and the running config
   with `auth` / obfs passwords masked — no storage permission needed
-- Always-on VPN support (handles the system-initiated start)
+- Always-on VPN support: a system-initiated start connects normally instead of
+  refusing (refusing only makes Android report "always-on VPN is not connected"
+  and retry), and disconnecting while it is on explains that Android will start
+  the tunnel again
 - Optional **live traffic** (Settings → Appearance, off by default): throughput on
   the status card and in the notification, refreshed every 5 s. Off by default
   because on Android 14 the ongoing notification can be swiped away, and a
@@ -101,7 +106,8 @@ UI (Compose / Material 3)
                                        ▼
                      Hysteria2VpnService (VpnService)
                         ├─ VpnService.Builder → TUN fd
-                        │    IPv4 10.0.88.88/16, IPv6 fc00::1/64, MTU 1500
+                        │    IPv4 10.0.88.88/16, IPv6 fc00::1/64,
+                        │    MTU from Settings (default 1450)
                         ├─ exec libhysteria.so -c hysteria.yaml
                         │    → 127.0.0.1:1080 (SOCKS5) + :1081 (HTTP)
                         └─ libtun2socks.so (JNI): TUN fd → SOCKS5
@@ -111,6 +117,14 @@ The core runs as a child process exposing a local SOCKS5 listener;
 `libtun2socks.so` (hev-socks5-tunnel plus the patches in `native/tun2socks/`)
 bridges the TUN device to it. The service monitors the child process and tears
 the tunnel down if it exits.
+
+The app's own UID is excluded from the tunnel
+(`VpnService.Builder.addDisallowedApplication(packageName)`), so the core child
+process — same UID — reaches the server over the underlying network and resolves
+the profile's hostname with the system resolver. If that resolver is broken the
+connect fails; there is deliberately no fallback (no hardcoded resolver, no DoH
+retry) on that path. DNS *inside* the tunnel is separate: the tun always gets
+resolvers (see Features), so app lookups go through the server.
 
 `libtun2socks.so` binds its JNI symbols to the **exact** class
 `us.leaf3stones.hy2droid.proxy.Hysteria2VpnService` and to the signatures of
@@ -150,15 +164,15 @@ connection. With no rules the config carries no `misc:` section at all.
 | Path | Contents |
 | --- | --- |
 | `app/src/main/java/.../ui` | Compose UI (home, profile editor, settings, split tunnel, blocked traffic, QR scanner) |
-| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `BlockRule`, `HysteriaConfigBuilder`, `HysteriaUri`, `ProfileOrdering`, `Redact`, `DiagnosticsExporter` |
-| `app/src/main/java/.../proxy` | `Hysteria2VpnService`, `VpnTileService`, `TunnelStatus`, `Tun2socksConfig`, `LatencyProbe`, `CoreLog` |
+| `app/src/main/java/.../data` | `Profile`, `ProfileStore`, `SettingsStore`, `BlockRule`, `HysteriaConfigBuilder`, `HysteriaUri`, `ProfileOrdering`, `Redact`, `DiagnosticsExporter`, `ConfigFile` |
+| `app/src/main/java/.../proxy` | `Hysteria2VpnService`, `VpnTileService`, `TunnelStatus`, `Tun`, `Tun2socksConfig`, `LatencyProbe`, `CoreLog` |
 | `app/src/main/jniLibs` | `libtun2socks.so` (committed, see `native/tun2socks/`); `libhysteria.so` is downloaded at build time |
 | `native/tun2socks` | Patches applied on top of hev-socks5-tunnel (blocked-port rules, JNI names) |
 | `core/core.properties` | Pinned Hysteria core version + per-ABI checksums |
 | `scripts/core.sh` | Fetch / verify / upgrade the core |
 | `scripts/tun2socks.sh` | Rebuild `libtun2socks.so` from the pinned upstream tag + patches |
 | `scripts/prune-runs.sh` | Delete all but the newest three runs of the workflow calling it |
-| `.github/workflows` | `build.yml` (debug) and `release.yml` (signed release) |
+| `.github/workflows` | `build.yml` (debug), `release.yml` (signed release), `native.yml` (rebuild `libtun2socks.so`) |
 
 ## Building
 
@@ -211,6 +225,7 @@ the binary with `-c <config>`; if a release changes the YAML schema,
 | --- | --- | --- |
 | `.github/workflows/build.yml` | push to `main`, or manual | debug APK as a workflow artifact (unit tests + `lintDebug` gate) |
 | `.github/workflows/release.yml` | pushing a `v*` tag, or manual with a version | signed release APKs + a GitHub Release |
+| `.github/workflows/native.yml` | manual | rebuilt `libtun2socks.so` for all four ABIs, as an artifact |
 
 Both verify the bundled core before building; the release workflow additionally
 runs the unit tests, and a tag build ships the core **pinned in
@@ -283,10 +298,11 @@ point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
   mode `0700`, owned by the app UID). No other app can read them — that is
   enforced by the per-app UID, not by our code. The app writes nothing to shared
   storage, declares no `FileProvider`, and no exported component hands out data.
-- **Screens and clipboard**: the share dialog sets `FLAG_SECURE` while it is
-  open, so the QR and the link cannot be captured by screenshots, screen
-  recordings or the recents thumbnail; copying the link marks the clip
-  `EXTRA_IS_SENSITIVE` (Android 13+), which hides previews and shortens its life.
+- **Screens and clipboard**: the share dialog and the profile editor set
+  `FLAG_SECURE` while they are open, so the QR, the link and the passwords cannot
+  be captured by screenshots, screen recordings or the recents thumbnail; copying
+  the link marks the clip `EXTRA_IS_SENSITIVE` (Android 13+), which hides
+  previews and shortens its life.
 - **What this does not cover, on purpose**: a rooted device or `adb` on a
   debuggable build can read the private directory, and Android's own backup can
   carry the file (Auto Backup is end-to-end encrypted with the device lock on
@@ -294,13 +310,15 @@ point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
   phone, and it is why there is no Keystore wrapper: the encryption bought little
   against those two paths and cost a restore that silently lost every password.
 - The YAML the core reads (`files/hysteria.yaml`) is written for the session and
-  deleted when the tunnel stops; it and the core log are excluded from backups.
+  deleted when the tunnel stops; it, the `.tmp` file an interrupted atomic write
+  would leave behind, and the core log are all excluded from backups.
 - Exported diagnostics mask `auth` / obfs `password` and drop core log lines that
   carry a share link. Nothing else in the app writes the secret anywhere (not the
   notification, not logcat, not files outside the private dir).
 - Any app on the device can hand us a `hysteria2://` link — that is the deep-link
-  feature. An imported profile is never auto-selected nor auto-connected, so the
-  user still has to choose it and press connect.
+  feature. An imported profile becomes the selected one (so the power button and
+  the Quick Settings tile use it) but is never connected automatically: the user
+  still has to press connect.
 
 ## Troubleshooting
 

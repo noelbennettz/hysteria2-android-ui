@@ -66,7 +66,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val customDnsServer: StateFlow<String> = settings.customDnsServer
-        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsStore.DEFAULT_DNS)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsStore.DEFAULT_DNS_PRIMARY)
 
     val customDnsServer2: StateFlow<String> = settings.customDnsServer2
         .stateIn(viewModelScope, SharingStarted.Eagerly, "")

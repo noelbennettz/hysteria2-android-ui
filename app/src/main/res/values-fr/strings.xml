@@ -73,7 +73,7 @@
     <string name="settings_section_appearance">Apparence</string>
     <string name="settings_section_network">Réseau</string>
     <string name="split_tunnel_summary">Choisir les applications à exclure du VPN</string>
-    <string name="settings_custom_dns_summary">Par défaut %1$s, envoyé dans le tunnel ; choisissez votre primaire et un secondaire</string>
+    <string name="settings_custom_dns_summary">Par défaut %1$s, avec %2$s en secours, envoyés dans le tunnel ; choisissez votre primaire et un secondaire</string>
     <string name="settings_dns_primary">DNS principal</string>
     <string name="settings_dns_secondary">DNS secondaire (facultatif)</string>
     <string name="settings_dns_invalid">Saisissez une adresse IPv4 ou IPv6 valide</string>

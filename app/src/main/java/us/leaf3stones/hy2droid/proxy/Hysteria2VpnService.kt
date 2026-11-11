@@ -268,12 +268,12 @@ class Hysteria2VpnService : VpnService() {
             // the tunnel" mode: with an empty DNS list the VPN network has no
             // resolver at all, so resolution silently falls back to the underlying
             // network's DNS (a leak — the queries leave over Wi-Fi, not through the
-            // server). The address itself is not special; what matters is that the
-            // query is routed into the tunnel and answered by whatever resolver the
-            // server's egress can reach.
-            custom.ifEmpty { listOf(SettingsStore.DEFAULT_DNS) }
+            // server). The addresses are not special; what matters is that the
+            // queries are routed into the tunnel and answered by whatever resolver
+            // the server's egress can reach.
+            custom.ifEmpty { SettingsStore.DEFAULT_DNS_SERVERS }
         } catch (_: Exception) {
-            listOf(SettingsStore.DEFAULT_DNS)
+            SettingsStore.DEFAULT_DNS_SERVERS
         }
 
         val bypassLan = try {
