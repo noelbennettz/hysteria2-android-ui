@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
 import android.net.IpPrefix
@@ -12,6 +13,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.VpnService
+import android.Manifest
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.service.quicksettings.TileService
@@ -21,6 +23,7 @@ import android.app.Notification
 import android.text.format.Formatter
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -593,6 +596,14 @@ class Hysteria2VpnService : VpnService() {
     /** Update the ongoing notification with the current state / speed (no-op when idle). */
     private fun refreshNotification() {
         if (shuttingDown) return
+        // POST_NOTIFICATIONS is a runtime permission from Android 13: without the
+        // explicit check the update would throw (and lint rightly complains).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         val text = when (TunnelStatus.state.value) {
             TunnelState.Connected -> getString(R.string.status_connected)
             TunnelState.Connecting -> getString(R.string.status_connecting)

@@ -1,8 +1,11 @@
 package us.leaf3stones.hy2droid.ui
 
 import android.app.Activity
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -18,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import us.leaf3stones.hy2droid.R
@@ -26,6 +30,14 @@ import us.leaf3stones.hy2droid.data.Profile
 import us.leaf3stones.hy2droid.ui.theme.Hy2droidTheme
 
 class MainActivity : ComponentActivity() {
+
+    /**
+     * The ongoing tunnel notification (with its Disconnect action) needs this
+     * permission on Android 13+; the VPN itself works either way.
+     */
+    private val notificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* Denied is fine: the tunnel still runs, only the notification is hidden. */ }
 
     /**
      * A `hysteria2://` link that arrived through the VIEW intent filter and has
@@ -40,6 +52,7 @@ class MainActivity : ComponentActivity() {
         // Only on a cold start: a configuration change must not re-import the
         // link the activity was originally launched with.
         if (savedInstanceState == null) incomingLink.value = intent?.dataString
+        requestNotificationPermissionIfNeeded()
         setContent {
             AppRoot(incomingLink)
         }
@@ -49,6 +62,14 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         intent.dataString?.let { incomingLink.value = it }
+    }
+
+    /** Ask for POST_NOTIFICATIONS once on Android 13+; silent elsewhere. */
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 }
 
