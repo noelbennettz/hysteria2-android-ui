@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -174,6 +175,7 @@ private fun CameraPreview(onResult: (String) -> Unit, modifier: Modifier = Modif
 }
 
 /** Decode the Y (luma) plane of one frame; invokes [onText] on the first QR payload. */
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
 private fun decodeFrame(imageProxy: ImageProxy, onText: (String) -> Unit) {
     try {
         val image = imageProxy.image ?: return
