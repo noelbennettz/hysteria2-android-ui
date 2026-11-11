@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The legacy launcher artwork inset into the adaptive-icon safe zone: the
+     bitmap spans almost the full square, so it has to be scaled down before the
+     system masks it into a circle/squircle. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_launcher"
+    android:inset="22%" />

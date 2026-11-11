@@ -38,6 +38,7 @@
     <string name="field_name">الاسم</string>
     <string name="field_server">الخادم (المضيف)</string>
     <string name="field_port">المنفذ</string>
+    <string name="field_port_invalid">أدخل منفذًا بين 1 و65535</string>
     <string name="field_auth">المصادقة / كلمة المرور</string>
     <string name="field_sni">SNI (اختياري)</string>
     <string name="field_obfs">كلمة مرور التمويه (اختياري)</string>
@@ -51,7 +52,6 @@
     <string name="notification_channel_name">VPN</string>
     <string name="notification_channel_description">حالة نفق Hysteria 2</string>
     <string name="notification_title">Hy2droid يعمل</string>
-    <string name="notification_text">اتصالك محمي.</string>
 
     <string name="split_tunnel_title">النفق المنفصل</string>
     <string name="split_tunnel_hint">فعّل تطبيقًا ليمر خارج VPN (تجاوز).</string>
@@ -62,8 +62,6 @@
     <string name="settings_show_address">عرض عنوان الخادم</string>
     <string name="settings_show_address_summary">إظهار المضيف والمنفذ على بطاقات الملفات الشخصية</string>
     <string name="settings_custom_dns">خادم DNS مخصص</string>
-    <string name="settings_dns_server">عنوان IP لخادم DNS</string>
-    <string name="settings_dns_note">يُستخدم كخادم DNS للـ VPN (DNS عادي عبر النفق).</string>
     <string name="settings_section_appearance">المظهر</string>
     <string name="settings_section_network">الشبكة</string>
     <string name="split_tunnel_summary">اختر التطبيقات التي تتجاوز VPN</string>
@@ -73,6 +71,7 @@
     <string name="settings_dns_invalid">أدخل عنوان IPv4 أو IPv6 صالحًا</string>
     <string name="settings_bypass_lan">تجاوز الشبكة المحلية</string>
     <string name="settings_bypass_lan_summary">إبقاء أجهزة الشبكة المحلية والبث وصفحات الموجّه خارج VPN</string>
+    <string name="settings_requires_android_13">يتطلب Android 13 أو أحدث</string>
     <string name="settings_blocked_traffic">حركة المرور المحظورة</string>
     <string name="settings_blocked_traffic_summary">رفض حركة مثل QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">اختبار زمن الاستجابة عند التشغيل</string>

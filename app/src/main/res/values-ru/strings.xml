@@ -38,6 +38,7 @@
     <string name="field_name">Название</string>
     <string name="field_server">Сервер (хост)</string>
     <string name="field_port">Порт</string>
+    <string name="field_port_invalid">Укажите порт от 1 до 65535</string>
     <string name="field_auth">Аутентификация / пароль</string>
     <string name="field_sni">SNI (необязательно)</string>
     <string name="field_obfs">Пароль обфускации (необязательно)</string>
@@ -51,7 +52,6 @@
     <string name="notification_channel_name">VPN</string>
     <string name="notification_channel_description">Состояние туннеля Hysteria 2</string>
     <string name="notification_title">Hy2droid работает</string>
-    <string name="notification_text">Ваше соединение защищено.</string>
 
     <string name="split_tunnel_title">Раздельное туннелирование</string>
     <string name="split_tunnel_hint">Включите приложение, чтобы оно работало ВНЕ VPN (в обход).</string>
@@ -62,8 +62,6 @@
     <string name="settings_show_address">Показывать адрес сервера</string>
     <string name="settings_show_address_summary">Показывать хост и порт на карточках профилей</string>
     <string name="settings_custom_dns">Свой DNS-сервер</string>
-    <string name="settings_dns_server">IP-адрес DNS-сервера</string>
-    <string name="settings_dns_note">Используется как DNS-сервер VPN (обычный DNS через туннель).</string>
     <string name="settings_section_appearance">Оформление</string>
     <string name="settings_section_network">Сеть</string>
     <string name="split_tunnel_summary">Выберите приложения в обход VPN</string>
@@ -73,6 +71,7 @@
     <string name="settings_dns_invalid">Введите корректный адрес IPv4 или IPv6</string>
     <string name="settings_bypass_lan">Обход локальной сети</string>
     <string name="settings_bypass_lan_summary">Устройства локальной сети, трансляция и страницы роутера вне VPN</string>
+    <string name="settings_requires_android_13">Требуется Android 13 или новее</string>
     <string name="settings_blocked_traffic">Заблокированный трафик</string>
     <string name="settings_blocked_traffic_summary">Отклонять трафик вроде QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Проверять задержку при запуске</string>

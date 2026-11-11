@@ -40,6 +40,7 @@
     <string name="field_name">Name</string>
     <string name="field_server">Server (host)</string>
     <string name="field_port">Port</string>
+    <string name="field_port_invalid">Enter a port between 1 and 65535</string>
     <string name="field_auth">Auth / password</string>
     <string name="field_sni">SNI (optional)</string>
     <string name="field_obfs">Obfuscation password (optional)</string>
@@ -53,7 +54,6 @@
     <string name="notification_channel_name">VPN</string>
     <string name="notification_channel_description">Hysteria 2 tunnel status</string>
     <string name="notification_title">Hy2droid running</string>
-    <string name="notification_text">Your connection is protected.</string>
 
     <string name="split_tunnel_title">Split tunneling</string>
     <string name="split_tunnel_hint">Turn on an app to route it OUTSIDE the VPN (bypass).</string>
@@ -64,8 +64,6 @@
     <string name="settings_show_address">Show server address</string>
     <string name="settings_show_address_summary">Show host and port on the profile cards</string>
     <string name="settings_custom_dns">Custom DNS server</string>
-    <string name="settings_dns_server">DNS server IP</string>
-    <string name="settings_dns_note">Used as the VPN DNS server (plain DNS through the tunnel).</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_network">Network</string>
     <string name="split_tunnel_summary">Choose apps to bypass the VPN</string>
@@ -75,6 +73,7 @@
     <string name="settings_dns_invalid">Enter a valid IPv4 or IPv6 address</string>
     <string name="settings_bypass_lan">Bypass local network</string>
     <string name="settings_bypass_lan_summary">Keep LAN devices, casting and router pages outside the VPN</string>
+    <string name="settings_requires_android_13">Needs Android 13 or newer</string>
     <string name="settings_blocked_traffic">Blocked traffic</string>
     <string name="settings_blocked_traffic_summary">Refuse flows such as QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Test latency on launch</string>

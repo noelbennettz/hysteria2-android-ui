@@ -38,6 +38,7 @@
     <string name="field_name">Nom</string>
     <string name="field_server">Serveur (hôte)</string>
     <string name="field_port">Port</string>
+    <string name="field_port_invalid">Saisissez un port entre 1 et 65535</string>
     <string name="field_auth">Authentification / mot de passe</string>
     <string name="field_sni">SNI (facultatif)</string>
     <string name="field_obfs">Mot de passe d\'obfuscation (facultatif)</string>
@@ -51,7 +52,6 @@
     <string name="notification_channel_name">VPN</string>
     <string name="notification_channel_description">État du tunnel Hysteria 2</string>
     <string name="notification_title">Hy2droid actif</string>
-    <string name="notification_text">Votre connexion est protégée.</string>
 
     <string name="split_tunnel_title">Tunnel fractionné</string>
     <string name="split_tunnel_hint">Activez une application pour la faire passer HORS du VPN (contournement).</string>
@@ -62,8 +62,6 @@
     <string name="settings_show_address">Afficher l\'adresse du serveur</string>
     <string name="settings_show_address_summary">Afficher l\'hôte et le port sur les cartes de profil</string>
     <string name="settings_custom_dns">Serveur DNS personnalisé</string>
-    <string name="settings_dns_server">IP du serveur DNS</string>
-    <string name="settings_dns_note">Utilisé comme serveur DNS du VPN (DNS en clair via le tunnel).</string>
     <string name="settings_section_appearance">Apparence</string>
     <string name="settings_section_network">Réseau</string>
     <string name="split_tunnel_summary">Choisir les applications à exclure du VPN</string>
@@ -73,6 +71,7 @@
     <string name="settings_dns_invalid">Saisissez une adresse IPv4 ou IPv6 valide</string>
     <string name="settings_bypass_lan">Contourner le réseau local</string>
     <string name="settings_bypass_lan_summary">Garder les appareils du réseau local, la diffusion et les pages du routeur hors du VPN</string>
+    <string name="settings_requires_android_13">Nécessite Android 13 ou plus récent</string>
     <string name="settings_blocked_traffic">Trafic bloqué</string>
     <string name="settings_blocked_traffic_summary">Refuser le trafic comme QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Tester la latence au démarrage</string>

@@ -38,6 +38,7 @@
     <string name="field_name">名称</string>
     <string name="field_server">服务器（主机）</string>
     <string name="field_port">端口</string>
+    <string name="field_port_invalid">请输入 1–65535 之间的端口</string>
     <string name="field_auth">认证 / 密码</string>
     <string name="field_sni">SNI（可选）</string>
     <string name="field_obfs">混淆密码（可选）</string>
@@ -51,7 +52,6 @@
     <string name="notification_channel_name">VPN</string>
     <string name="notification_channel_description">Hysteria 2 隧道状态</string>
     <string name="notification_title">Hy2droid 正在运行</string>
-    <string name="notification_text">你的连接已受保护。</string>
 
     <string name="split_tunnel_title">分流</string>
     <string name="split_tunnel_hint">开启某个应用表示让它绕过 VPN（不走 VPN）。</string>
@@ -62,8 +62,6 @@
     <string name="settings_show_address">显示服务器地址</string>
     <string name="settings_show_address_summary">在配置卡片上显示主机和端口</string>
     <string name="settings_custom_dns">自定义 DNS 服务器</string>
-    <string name="settings_dns_server">DNS 服务器 IP</string>
-    <string name="settings_dns_note">作为 VPN 的 DNS 服务器（通过隧道的明文 DNS）。</string>
     <string name="settings_section_appearance">外观</string>
     <string name="settings_section_network">网络</string>
     <string name="split_tunnel_summary">选择要绕过 VPN 的应用</string>
@@ -73,6 +71,7 @@
     <string name="settings_dns_invalid">请输入有效的 IPv4 或 IPv6 地址</string>
     <string name="settings_bypass_lan">绕过局域网</string>
     <string name="settings_bypass_lan_summary">局域网设备、投屏和路由器管理页面不走 VPN</string>
+    <string name="settings_requires_android_13">需要 Android 13 或更高版本</string>
     <string name="settings_blocked_traffic">屏蔽流量</string>
     <string name="settings_blocked_traffic_summary">拒绝 QUIC（UDP 443）等流量</string>
     <string name="settings_auto_test_latency">启动时测试延迟</string>
