@@ -24,7 +24,11 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Share a profile as a QR code
 - Salamander obfuscation, custom SNI, optional "allow insecure certificate"
 - Brutal congestion control via an upload/download bandwidth hint (0 = BBR)
-- `fastOpen` is **off** by default; `lazy` is always on
+- `fastOpen` is **off** by default; `lazy` is always on (it only defers the
+  *first* connection — upstream: "the client will not connect until the first
+  call to TCP() or UDP()" — after that the session is held open), with a 10 s
+  QUIC keepalive against the 30 s idle timeout so a lost heartbeat does not cost
+  a reconnect
 - Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). The tunnel
   always gets resolvers — Quad9 (`9.9.9.9`) with Cloudflare (`1.1.1.1`) as the
   backup — because Android has no "no DNS means use the tunnel" mode: with an

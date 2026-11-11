@@ -18,15 +18,24 @@ object HysteriaConfigBuilder {
     /** Local HTTP proxy port the core listens on. */
     const val DEFAULT_HTTP_PORT = 1081
 
+    /**
+     * QUIC heartbeat interval. Between 2 s and 60 s (upstream validates that), and
+     * comfortably below the 30 s idle timeout so a dropped keepalive does not cost
+     * a reconnect.
+     */
+    const val KEEP_ALIVE = "10s"
+
     /** Build the full YAML config for [profile]. */
     fun build(
         profile: Profile,
         socksPort: Int = DEFAULT_SOCKS_PORT,
         httpPort: Int = DEFAULT_HTTP_PORT,
         /**
-         * `lazy: true` lets the core dial on demand instead of holding a session
-         * open. It stays on for both the real tunnel and the latency probe: a
-         * flapping network must not leave a hot reconnect loop running.
+         * `lazy: true` only defers the **first** connection: upstream is explicit
+         * that "the client will not connect until the first call to TCP() or
+         * UDP()". Once the tunnel is up it stays up, and [KEEP_ALIVE] keeps it that
+         * way. It stays on because paying a handshake at app start, with no traffic
+         * yet, is wasted on a phone.
          */
         lazy: Boolean = true,
         /**
@@ -74,7 +83,10 @@ object HysteriaConfigBuilder {
         sb.append("lazy: ").append(lazy).append('\n')
         sb.append("quic:\n")
         sb.append("  maxIdleTimeout: 30s\n")
-        sb.append("  keepAlivePeriod: 20s\n")
+        // Heartbeat. 10 s is upstream's own default and, against a 30 s idle
+        // timeout, it means a single lost keepalive no longer lets the session
+        // idle out — which would turn the next request into a cold reconnect.
+        sb.append("  keepAlivePeriod: ").append(KEEP_ALIVE).append('\n')
         if (disablePathMtuDiscovery) {
             sb.append("  disablePathMTUDiscovery: true\n")
         }
