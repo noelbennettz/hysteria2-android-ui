@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -86,6 +87,7 @@ fun SettingsScreen(
     val dns2 by viewModel.customDnsServer2.collectAsState()
     val bypassLan by viewModel.bypassLan.collectAsState()
     val autoTestLatency by viewModel.autoTestLatency.collectAsState()
+    val disablePmtud by viewModel.disablePathMtuDiscovery.collectAsState()
 
     // SAF: the user picks where the zip goes, so there is no storage permission
     // to ask for and no FileProvider to declare.
@@ -201,6 +203,14 @@ fun SettingsScreen(
                 checked = lanSupported && bypassLan,
                 enabled = lanSupported,
                 onCheckedChange = viewModel::setBypassLan,
+            )
+            HorizontalDivider()
+            SwitchRow(
+                icon = Icons.Filled.SettingsEthernet,
+                title = stringResource(R.string.settings_disable_pmtud),
+                subtitle = stringResource(R.string.settings_disable_pmtud_summary),
+                checked = disablePmtud,
+                onCheckedChange = viewModel::setDisablePathMtuDiscovery,
             )
             HorizontalDivider()
             SwitchRow(

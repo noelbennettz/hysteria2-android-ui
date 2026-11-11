@@ -90,39 +90,24 @@ class Hysteria2VpnService : VpnService() {
                 // Also reached through startForegroundService (notification action,
                 // Quick Settings tile), so satisfy the foreground contract first.
                 startForegroundSafely(getString(R.string.status_disconnecting))
-                persistDesiredConnected(false)
                 stopTunnel()
                 return START_NOT_STICKY
             }
 
             ACTION_START_VPN -> {
-                // An explicit start (app or tile): the user wants the tunnel up.
-                persistDesiredConnected(true)
+                // An explicit start (app or tile).
                 startForegroundSafely()
                 serviceScope.launch { startTunnel() }
                 return START_STICKY
             }
 
             // System-initiated start: always-on VPN, or a restart after the process
-            // was killed. Honour what the user left behind instead of blindly
-            // coming back up after they pressed Disconnect.
+            // was killed. Always-on means the system owns the lifecycle — refusing
+            // to come up here only makes Android show "always-on VPN is not
+            // connected" and retry, so connect whenever a profile exists.
             SYS_SYSTEM_VPN, null -> {
                 startForegroundSafely()
-                serviceScope.launch {
-                    val wanted = try {
-                        SettingsStore(applicationContext).desiredConnected.first()
-                    } catch (_: Exception) {
-                        false
-                    }
-                    if (wanted) {
-                        startTunnel()
-                    } else {
-                        Log.i(TAG, "System start ignored: the user had disconnected")
-                        updateState(TunnelState.Idle)
-                        stopForegroundSafely()
-                        stopSelf()
-                    }
-                }
+                serviceScope.launch { startTunnel() }
                 return START_STICKY
             }
 
@@ -130,19 +115,6 @@ class Hysteria2VpnService : VpnService() {
                 Log.w(TAG, "Unrecognized intent action: ${intent.action}")
                 return START_NOT_STICKY
             }
-        }
-    }
-
-    /** Record whether the user wants the tunnel up, so a restart can respect it. */
-    private fun persistDesiredConnected(desired: Boolean) {
-        try {
-            // SettingsStore uses a process-wide DataStore; the write is quick but
-            // must not run on the main thread.
-            CoroutineScope(Dispatchers.IO).launch {
-                SettingsStore(applicationContext).setDesiredConnected(desired)
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not persist the connection preference: ${e.message}")
         }
     }
 
@@ -384,8 +356,15 @@ class Hysteria2VpnService : VpnService() {
             null
         }
         val profile = profiles.firstOrNull { it.id == selectedId } ?: profiles.first()
+        val pmtudDisabled = try {
+            SettingsStore(applicationContext).disablePathMtuDiscovery.first()
+        } catch (_: Exception) {
+            false
+        }
         return try {
-            configFile.writeText(HysteriaConfigBuilder.build(profile))
+            configFile.writeText(
+                HysteriaConfigBuilder.build(profile, disablePathMtuDiscovery = pmtudDisabled),
+            )
             true
         } catch (_: Exception) {
             false
@@ -527,7 +506,6 @@ class Hysteria2VpnService : VpnService() {
 
     override fun onRevoke() {
         shuttingDown = true
-        persistDesiredConnected(false)
         stopTunnel()
         super.onRevoke()
     }

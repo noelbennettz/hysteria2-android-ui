@@ -31,6 +31,10 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Optional **LAN bypass** (Android 13+): local-network traffic — RFC1918,
   link-local, CGNAT and multicast (mDNS/SSDP) — stays outside the VPN, so NAS
   boxes, printers, router admin pages and casting keep working
+- **Disable path MTU discovery** (Settings → Network, off by default): emits
+  `quic.disablePathMTUDiscovery: true`, the standard workaround for networks
+  that silently drop large QUIC packets (MTU black holes), where connections
+  otherwise stall
 - Quick Settings tile to connect/disconnect, kept in sync with the tunnel state
 - **Latency test** per node from the profile menu, measured by a real request
   through a throwaway core instance (a Hysteria 2 server only answers UDP, so a

@@ -72,6 +72,8 @@
     <string name="settings_bypass_lan">绕过局域网</string>
     <string name="settings_bypass_lan_summary">局域网设备、投屏和路由器管理页面不走 VPN</string>
     <string name="settings_requires_android_13">需要 Android 13 或更高版本</string>
+    <string name="settings_disable_pmtud">关闭路径 MTU 发现</string>
+    <string name="settings_disable_pmtud_summary">针对会丢弃大包 QUIC 数据的网络（MTU 黑洞）的变通方法；更改在下次连接时生效</string>
     <string name="settings_blocked_traffic">屏蔽流量</string>
     <string name="settings_blocked_traffic_summary">拒绝 QUIC（UDP 443）等流量</string>
     <string name="settings_auto_test_latency">启动时测试延迟</string>

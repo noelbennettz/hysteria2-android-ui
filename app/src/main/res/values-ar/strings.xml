@@ -72,6 +72,8 @@
     <string name="settings_bypass_lan">تجاوز الشبكة المحلية</string>
     <string name="settings_bypass_lan_summary">إبقاء أجهزة الشبكة المحلية والبث وصفحات الموجّه خارج VPN</string>
     <string name="settings_requires_android_13">يتطلب Android 13 أو أحدث</string>
+    <string name="settings_disable_pmtud">تعطيل اكتشاف MTU للمسار</string>
+    <string name="settings_disable_pmtud_summary">حل بديل للشبكات التي تُسقط حزم QUIC الكبيرة (ثقوب MTU السوداء)؛ يُطبَّق عند الاتصال التالي</string>
     <string name="settings_blocked_traffic">حركة المرور المحظورة</string>
     <string name="settings_blocked_traffic_summary">رفض حركة مثل QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">اختبار زمن الاستجابة عند التشغيل</string>

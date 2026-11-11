@@ -72,6 +72,8 @@
     <string name="settings_bypass_lan">Обход локальной сети</string>
     <string name="settings_bypass_lan_summary">Устройства локальной сети, трансляция и страницы роутера вне VPN</string>
     <string name="settings_requires_android_13">Требуется Android 13 или новее</string>
+    <string name="settings_disable_pmtud">Отключить обнаружение MTU пути</string>
+    <string name="settings_disable_pmtud_summary">Обход для сетей, отбрасывающих крупные QUIC-пакеты (чёрные дыры MTU); применяется при следующем подключении</string>
     <string name="settings_blocked_traffic">Заблокированный трафик</string>
     <string name="settings_blocked_traffic_summary">Отклонять трафик вроде QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Проверять задержку при запуске</string>

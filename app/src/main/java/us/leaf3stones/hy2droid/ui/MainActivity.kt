@@ -46,6 +46,14 @@ class MainActivity : ComponentActivity() {
      */
     private val incomingLink = MutableStateFlow<String?>(null)
 
+    /**
+     * Bumped when the activity is brought to the front by its launcher intent (the
+     * Quick Settings long-press, the launcher icon). Compose then returns to the
+     * home screen instead of resuming whatever page was open — the tile's
+     * long-press is documented to open the *app*, so landing on Settings is wrong.
+     */
+    private val homeRequests = MutableStateFlow(0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -54,14 +62,19 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) incomingLink.value = intent?.dataString
         requestNotificationPermissionIfNeeded()
         setContent {
-            AppRoot(incomingLink)
+            AppRoot(incomingLink, homeRequests)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intent.dataString?.let { incomingLink.value = it }
+        val link = intent.dataString
+        if (link != null) {
+            incomingLink.value = link
+        } else if (intent.action == Intent.ACTION_MAIN) {
+            homeRequests.value += 1
+        }
     }
 
     /** Ask for POST_NOTIFICATIONS once on Android 13+; silent elsewhere. */
@@ -77,6 +90,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppRoot(
     incomingLink: MutableStateFlow<String?>,
+    homeRequestsFlow: MutableStateFlow<Int>,
     vm: MainViewModel = viewModel(),
 ) {
     val dynamicColor by vm.dynamicColor.collectAsState()
@@ -111,6 +125,19 @@ private fun AppRoot(
         var blockRulesOpen by remember { mutableStateOf(false) }
         var settingsOpen by remember { mutableStateOf(false) }
         var scannerOpen by remember { mutableStateOf(false) }
+
+        // Launcher / Quick Settings long-press: come back to the list, not to
+        // whatever sub-screen happened to be open when the app went to background.
+        val homeRequests by homeRequestsFlow.collectAsState()
+        LaunchedEffect(homeRequests) {
+            if (homeRequests == 0) return@LaunchedEffect
+            editorOpen = false
+            editing = null
+            splitTunnelOpen = false
+            blockRulesOpen = false
+            settingsOpen = false
+            scannerOpen = false
+        }
 
         val vpnPermissionLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.StartActivityForResult(),

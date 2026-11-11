@@ -23,11 +23,11 @@ class SettingsStore(private val context: Context) {
     private val keyDnsEnabled = booleanPreferencesKey("custom_dns_enabled")
     private val keyDnsServer = stringPreferencesKey("custom_dns_server")
     private val keyDnsServer2 = stringPreferencesKey("custom_dns_server2")
-    private val keyDesired = booleanPreferencesKey("desired_connected")
     private val keyBypassLan = booleanPreferencesKey("bypass_lan")
     private val keyBlockRules = stringPreferencesKey("block_rules")
     private val keyShowAddress = booleanPreferencesKey("show_server_address")
     private val keyAutoTestLatency = booleanPreferencesKey("auto_test_latency")
+    private val keyDisablePmtud = booleanPreferencesKey("disable_path_mtu_discovery")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -48,6 +48,14 @@ class SettingsStore(private val context: Context) {
     val autoTestLatency: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyAutoTestLatency] ?: false }
 
+    /**
+     * Turns off QUIC path-MTU discovery (`quic.disablePathMTUDiscovery`). Off by
+     * default; a workaround for networks that silently drop large QUIC packets,
+     * where connections stall until the peer gives up.
+     */
+    val disablePathMtuDiscovery: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyDisablePmtud] ?: false }
+
     /** Whether a custom upstream DNS server (pushed to the TUN) is used. Default off. */
     val customDnsEnabled: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyDnsEnabled] ?: false }
@@ -59,10 +67,6 @@ class SettingsStore(private val context: Context) {
     /** The optional secondary DNS server address ("" when unset). */
     val customDnsServer2: Flow<String> = context.settingsDataStore.data
         .map { it[keyDnsServer2] ?: "" }
-
-    /** Whether the tunnel should be up (drives always-on / process-death resume). */
-    val desiredConnected: Flow<Boolean> = context.settingsDataStore.data
-        .map { it[keyDesired] ?: false }
 
     /** Whether local-network ranges bypass the tunnel. Default off; Android 13+. */
     val bypassLan: Flow<Boolean> = context.settingsDataStore.data
@@ -94,6 +98,10 @@ class SettingsStore(private val context: Context) {
         context.settingsDataStore.edit { it[keyAutoTestLatency] = enabled }
     }
 
+    suspend fun setDisablePathMtuDiscovery(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyDisablePmtud] = enabled }
+    }
+
     suspend fun setCustomDnsEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[keyDnsEnabled] = enabled }
     }
@@ -104,10 +112,6 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setCustomDnsServer2(server: String) {
         context.settingsDataStore.edit { it[keyDnsServer2] = server }
-    }
-
-    suspend fun setDesiredConnected(desired: Boolean) {
-        context.settingsDataStore.edit { it[keyDesired] = desired }
     }
 
     suspend fun setBypassLan(enabled: Boolean) {

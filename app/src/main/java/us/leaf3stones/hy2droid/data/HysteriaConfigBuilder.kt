@@ -29,6 +29,11 @@ object HysteriaConfigBuilder {
          * flapping network must not leave a hot reconnect loop running.
          */
         lazy: Boolean = true,
+        /**
+         * Workaround for MTU black holes (some mobile networks drop QUIC packets
+         * above a certain size): emits `quic.disablePathMTUDiscovery: true`.
+         */
+        disablePathMtuDiscovery: Boolean = false,
     ): String {
         val sb = StringBuilder()
         sb.append("server: ").append(quote(profile.authority)).append('\n')
@@ -70,6 +75,9 @@ object HysteriaConfigBuilder {
         sb.append("quic:\n")
         sb.append("  maxIdleTimeout: 30s\n")
         sb.append("  keepAlivePeriod: 20s\n")
+        if (disablePathMtuDiscovery) {
+            sb.append("  disablePathMTUDiscovery: true\n")
+        }
         return sb.toString()
     }
 

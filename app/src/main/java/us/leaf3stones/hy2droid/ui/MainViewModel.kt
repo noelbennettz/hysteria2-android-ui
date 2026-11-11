@@ -55,6 +55,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val autoTestLatency: StateFlow<Boolean> = settings.autoTestLatency
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val disablePathMtuDiscovery: StateFlow<Boolean> = settings.disablePathMtuDiscovery
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     val customDnsEnabled: StateFlow<Boolean> = settings.customDnsEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
@@ -123,6 +126,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setAutoTestLatency(enabled) }
     }
 
+    fun setDisablePathMtuDiscovery(enabled: Boolean) {
+        viewModelScope.launch { settings.setDisablePathMtuDiscovery(enabled) }
+    }
+
     fun setCustomDnsEnabled(enabled: Boolean) {
         viewModelScope.launch { settings.setCustomDnsEnabled(enabled) }
     }
@@ -147,8 +154,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun connect(profile: Profile) {
         viewModelScope.launch {
             store.select(profile.id)
-            settings.setDesiredConnected(true)
-            val yaml = HysteriaConfigBuilder.build(profile)
+            val yaml = HysteriaConfigBuilder.build(
+                profile,
+                disablePathMtuDiscovery = settings.disablePathMtuDiscovery.first(),
+            )
             withContext(Dispatchers.IO) { configFile.writeText(yaml) }
             val intent = Intent(getApplication<Application>(), Hysteria2VpnService::class.java)
                 .setAction(Hysteria2VpnService.ACTION_START_VPN)
@@ -158,7 +167,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Ask the running service to tear the tunnel down. */
     fun disconnect() {
-        viewModelScope.launch { settings.setDesiredConnected(false) }
         val intent = Intent(getApplication<Application>(), Hysteria2VpnService::class.java)
             .setAction(Hysteria2VpnService.ACTION_STOP_VPN)
         getApplication<Application>().startService(intent)
@@ -195,7 +203,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (profile.id in _latencyTesting.value) return
         _latencyTesting.update { it + profile.id }
         try {
-            val millis = LatencyProbe(getApplication<Application>()).measure(profile)
+            val millis = LatencyProbe(getApplication<Application>()).measure(
+                profile,
+                disablePathMtuDiscovery = settings.disablePathMtuDiscovery.first(),
+            )
             _latency.update { it + (profile.id to millis) }
         } finally {
             _latencyTesting.update { it - profile.id }

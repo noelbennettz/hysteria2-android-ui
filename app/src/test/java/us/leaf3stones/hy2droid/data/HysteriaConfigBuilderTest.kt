@@ -65,6 +65,17 @@ class HysteriaConfigBuilderTest {
     }
 
     @Test
+    fun `path MTU discovery stays on unless it is turned off`() {
+        val profile = Profile(id = "4", name = "n", server = "h:443", auth = "a")
+
+        assertFalse(HysteriaConfigBuilder.build(profile).contains("disablePathMTUDiscovery"))
+        assertTrue(
+            HysteriaConfigBuilder.build(profile, disablePathMtuDiscovery = true)
+                .contains("quic:\n  maxIdleTimeout: 30s\n  keepAlivePeriod: 20s\n  disablePathMTUDiscovery: true\n"),
+        )
+    }
+
+    @Test
     fun `escapes special characters so values cannot break the document`() {
         val quoted = HysteriaConfigBuilder.quote("a\"b\\c:d#e")
 

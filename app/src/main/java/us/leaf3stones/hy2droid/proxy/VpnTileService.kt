@@ -95,7 +95,10 @@ class VpnTileService : TileService() {
                 )
             } else if (VpnService.prepare(this) != null) {
                 // VPN permission not granted yet: open the app so the user can grant it.
+                // A launcher intent so the app lands on its home screen.
                 val intent = Intent(this, MainActivity::class.java)
+                    .setAction(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_LAUNCHER)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     val pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)

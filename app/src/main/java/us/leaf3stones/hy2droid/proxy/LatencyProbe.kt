@@ -30,7 +30,10 @@ import java.util.concurrent.TimeUnit
 class LatencyProbe(private val context: Context) {
 
     /** Returns the measured latency in milliseconds, or `null` when the probe failed. */
-    suspend fun measure(profile: Profile): Int? = withContext(Dispatchers.IO) {
+    suspend fun measure(
+        profile: Profile,
+        disablePathMtuDiscovery: Boolean = false,
+    ): Int? = withContext(Dispatchers.IO) {
         if (profile.server.isBlank()) return@withContext null
         // A crash or a force-stop mid-probe can leave a config (with the auth
         // secret) in the cache dir; every probe clears out the previous ones.
@@ -42,7 +45,13 @@ class LatencyProbe(private val context: Context) {
             // eager core a flaky network turns into a reconnect loop while we are
             // only waiting for one request.
             configFile.writeText(
-                HysteriaConfigBuilder.build(profile, socksPort, httpPort, lazy = true),
+                HysteriaConfigBuilder.build(
+                    profile,
+                    socksPort,
+                    httpPort,
+                    lazy = true,
+                    disablePathMtuDiscovery = disablePathMtuDiscovery,
+                ),
             )
             val core = startCore(configFile) ?: return@withContext null
             try {

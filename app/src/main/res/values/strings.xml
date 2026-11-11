@@ -74,6 +74,8 @@
     <string name="settings_bypass_lan">Bypass local network</string>
     <string name="settings_bypass_lan_summary">Keep LAN devices, casting and router pages outside the VPN</string>
     <string name="settings_requires_android_13">Needs Android 13 or newer</string>
+    <string name="settings_disable_pmtud">Disable path MTU discovery</string>
+    <string name="settings_disable_pmtud_summary">Workaround for networks that drop large QUIC packets (MTU black holes); applies on the next connect</string>
     <string name="settings_blocked_traffic">Blocked traffic</string>
     <string name="settings_blocked_traffic_summary">Refuse flows such as QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Test latency on launch</string>
