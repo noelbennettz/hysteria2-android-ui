@@ -54,8 +54,10 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   the persisted Hysteria core log, a build/device summary and the running config
   with `auth` / obfs passwords masked — no storage permission needed
 - Always-on VPN support (handles the system-initiated start)
-- Live throughput in the UI and in the notification; the notification keeps the
-  Disconnect action
+- Optional **live traffic** (Settings → Appearance, off by default): throughput on
+  the status card and in the notification, refreshed every 5 s. Off by default
+  because on Android 14 the ongoing notification can be swiped away, and a
+  throughput update would immediately bring it back
 - Dynamic colour (Material You) toggle, custom DNS, split tunnelling in Settings
 - Profile cards show only the profile name by default; the server address is one
   switch away (Settings → Appearance → *Show server address*)
