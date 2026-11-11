@@ -54,9 +54,10 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 
 ## Languages
 
-The UI is translated into the six official languages of the United Nations, and
-Android's per-app language picker (`Settings → Apps → Hy2droid → Language`) is
-wired up through `res/xml/locales_config.xml`:
+The UI is translated into the six official languages of the United Nations plus
+Traditional Chinese, and Android's per-app language picker
+(`Settings → Apps → Hy2droid → Language`) is wired up through
+`res/xml/locales_config.xml`:
 
 | Locale | Resource folder |
 | --- | --- |
@@ -66,6 +67,7 @@ wired up through `res/xml/locales_config.xml`:
 | French | `values-fr/` |
 | Russian | `values-ru/` |
 | Chinese (Simplified) | `values-zh-rCN/` |
+| Chinese (Traditional) | `values-zh-rTW/` |
 
 All user-visible text lives in `strings.xml`; adding a language means copying
 `values/strings.xml` into a new `values-<qualifier>/` folder and translating the
@@ -188,12 +190,16 @@ the binary with `-c <config>`; if a release changes the YAML schema,
 
 | Workflow | Trigger | Output |
 | --- | --- | --- |
-| `.github/workflows/build.yml` | push to `main`, or manual | debug APK as a workflow artifact |
+| `.github/workflows/build.yml` | push to `main`, or manual | debug APK as a workflow artifact (unit tests + `lintDebug` gate) |
 | `.github/workflows/release.yml` | pushing a `v*` tag, or manual with a version | signed release APKs + a GitHub Release |
 
-Both fetch the newest core, verify it, and build. The release workflow signs with
-a keystore taken from repository secrets, verifies the signature with
-`apksigner`, and publishes `app-universal-release.apk` plus the four ABI splits.
+Both verify the bundled core before building; the release workflow additionally
+runs the unit tests, and a tag build ships the core **pinned in
+`core/core.properties`** so rebuilding a tag yields the same binaries (only a
+manual run with an explicit `core_tag` moves it). The debug workflow follows the
+newest upstream core, which is the point of it. Signing uses a keystore from
+repository secrets, verified with `apksigner`; the release publishes
+`app-universal-release.apk` plus the four ABI splits.
 
 ### Setting up signing
 
@@ -284,6 +290,16 @@ point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
   version at every connect: `adb logcat -s Hysteria2VpnService | grep 'Hysteria core'`.
 - If a newly released core breaks connectivity, pin the previous one via the
   `core_tag` input or `HY2_CORE_TAG` and open an issue.
+
+## License
+
+Hy2droid is released under the **GNU Affero General Public License v3.0**
+(AGPL-3.0). The full text is in [LICENSE](LICENSE); the project notice and the
+third-party (MIT) notices are in [NOTICE](NOTICE).
+
+It is a network application, so section 13 applies: if you run a modified version
+and let other people use it over a network, you must offer them the corresponding
+source code.
 
 ## Credits
 
