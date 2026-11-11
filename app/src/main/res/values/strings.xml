@@ -9,6 +9,10 @@
     <string name="action_edit">Edit</string>
     <string name="action_share">Share</string>
     <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="delete_profile_title">Delete profile?</string>
+    <string name="delete_profile_message">“%1$s” and its password will be removed. This cannot be undone.</string>
+    <string name="profile_in_use">In use</string>
     <string name="action_disconnect">Disconnect</string>
     <string name="action_connect">Connect</string>
     <string name="action_scan_import">Scan</string>
@@ -59,6 +63,7 @@
 
     <string name="split_tunnel_title">Split tunneling</string>
     <string name="split_tunnel_hint">Turn on an app to route it OUTSIDE the VPN (bypass).</string>
+    <string name="split_tunnel_visibility_hint">Only apps with a launcher icon can be listed here.</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -78,13 +83,21 @@
     <string name="settings_requires_android_13">Needs Android 13 or newer</string>
     <string name="settings_disable_pmtud">Disable path MTU discovery</string>
     <string name="settings_disable_pmtud_summary">Workaround for networks that drop large QUIC packets (MTU black holes); applies on the next connect</string>
+    <string name="settings_mtu">Tunnel MTU</string>
+    <string name="settings_mtu_summary">%1$d bytes; lower it if large packets stall</string>
+    <string name="settings_mtu_hint">1280 – 1500 — applies on the next connect</string>
     <string name="settings_blocked_traffic">Blocked traffic</string>
     <string name="settings_blocked_traffic_summary">Refuse flows such as QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Test latency on launch</string>
-    <string name="settings_auto_test_latency_summary">Measure every node when the app opens and list the fastest one first</string>
+    <string name="settings_auto_test_latency_summary">Measure the nodes that have no result yet when the app opens and list the fastest one first</string>
     <string name="settings_section_diagnostics">Diagnostics</string>
     <string name="settings_export_logs">Export logs</string>
     <string name="settings_export_logs_summary">Save the app and Hysteria core logs as a zip file</string>
+
+    <!-- Always-on VPN -->
+    <string name="always_on_title">Always-on VPN is on</string>
+    <string name="always_on_message">Android starts this profile again right after you disconnect. To stop it for good, turn off Always-on VPN in the system settings.</string>
+    <string name="action_disconnect_anyway">Disconnect anyway</string>
 
     <!-- Latency -->
     <string name="action_test_latency">Test latency</string>

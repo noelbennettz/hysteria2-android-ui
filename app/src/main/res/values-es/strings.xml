@@ -7,6 +7,10 @@
     <string name="action_edit">Editar</string>
     <string name="action_share">Compartir</string>
     <string name="action_delete">Eliminar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="delete_profile_title">¿Eliminar el perfil?</string>
+    <string name="delete_profile_message">Se eliminará «%1$s» y su contraseña. Esta acción no se puede deshacer.</string>
+    <string name="profile_in_use">En uso</string>
     <string name="action_disconnect">Desconectar</string>
     <string name="action_connect">Conectar</string>
     <string name="action_scan_import">Escanear</string>
@@ -52,9 +56,11 @@
     <string name="notification_channel_name">VPN</string>
     <string name="notification_channel_description">Estado del túnel Hysteria 2</string>
     <string name="notification_title">Hy2droid en ejecución</string>
+    <string name="notification_with_speed">%1$s · ↓%2$s ↑%3$s</string>
 
     <string name="split_tunnel_title">Túnel dividido</string>
     <string name="split_tunnel_hint">Activa una app para que vaya FUERA de la VPN (excluida).</string>
+    <string name="split_tunnel_visibility_hint">Solo se listan las apps con icono en el lanzador.</string>
 
     <!-- Settings -->
     <string name="settings_title">Ajustes</string>
@@ -74,13 +80,19 @@
     <string name="settings_requires_android_13">Requiere Android 13 o posterior</string>
     <string name="settings_disable_pmtud">Desactivar el descubrimiento de MTU de ruta</string>
     <string name="settings_disable_pmtud_summary">Solución para redes que descartan paquetes QUIC grandes (agujeros negros de MTU); se aplica en la próxima conexión</string>
+    <string name="settings_mtu">MTU del túnel</string>
+    <string name="settings_mtu_summary">%1$d bytes; redúcelo si los paquetes grandes se atascan</string>
+    <string name="settings_mtu_hint">1280 – 1500; se aplica en la próxima conexión</string>
     <string name="settings_blocked_traffic">Tráfico bloqueado</string>
     <string name="settings_blocked_traffic_summary">Rechazar tráfico como QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Probar latencia al abrir</string>
-    <string name="settings_auto_test_latency_summary">Mide cada nodo al abrir la app y lista el más rápido primero</string>
+    <string name="settings_auto_test_latency_summary">Mide solo los nodos sin resultado al abrir la app y muestra primero el más rápido</string>
     <string name="settings_section_diagnostics">Diagnóstico</string>
     <string name="settings_export_logs">Exportar registros</string>
     <string name="settings_export_logs_summary">Guarda los registros de la app y del núcleo Hysteria en un zip</string>
+    <string name="always_on_title">La VPN siempre activa está encendida</string>
+    <string name="always_on_message">Android vuelve a iniciar este perfil justo después de desconectarte. Para detenerlo del todo, desactiva la VPN siempre activa en los ajustes del sistema.</string>
+    <string name="action_disconnect_anyway">Desconectar igualmente</string>
     <string name="action_test_latency">Probar latencia</string>
     <string name="latency_testing">Probando…</string>
     <string name="latency_ms">%1$d ms</string>

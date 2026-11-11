@@ -35,6 +35,7 @@ internal fun successorAfterRemoval(remaining: List<Profile>, removedIndex: Int):
 class ProfileStore(private val context: Context) {
     private val keyProfiles = stringPreferencesKey("profiles_json")
     private val keySelected = stringPreferencesKey("selected_id")
+    private val keyLatency = stringPreferencesKey("latencies_json")
 
     /** All stored profiles, in insertion order. */
     val profiles: Flow<List<Profile>> = context.profileDataStore.data
@@ -43,6 +44,14 @@ class ProfileStore(private val context: Context) {
     /** The id of the currently selected profile, or `null`. */
     val selectedId: Flow<String?> = context.profileDataStore.data
         .map { it[keySelected] }
+
+    /**
+     * The last measured latency per profile id, in milliseconds. Persisted so a
+     * relaunch does not have to re-handshake every node; failed probes are not
+     * stored (they would be stale the moment the network changed).
+     */
+    val latencies: Flow<Map<String, Int>> = context.profileDataStore.data
+        .map { decodeLatencies(it[keyLatency]) }
 
     /** Insert or replace [profile] by id. Selects it if nothing is selected yet. */
     suspend fun upsert(profile: Profile) {
@@ -67,10 +76,24 @@ class ProfileStore(private val context: Context) {
             val removedIndex = current.indexOfFirst { it.id == id }
             val list = current.filterNot { it.id == id }
             prefs[keyProfiles] = encodeList(list)
+            // The cached latency of a deleted node is dead weight.
+            val latencies = decodeLatencies(prefs[keyLatency]).toMutableMap()
+            if (latencies.remove(id) != null) {
+                prefs[keyLatency] = JSONObject(latencies as Map<*, *>).toString()
+            }
             if (prefs[keySelected] == id) {
                 val next = successorAfterRemoval(list, removedIndex)
                 if (next == null) prefs.remove(keySelected) else prefs[keySelected] = next
             }
+        }
+    }
+
+    /** Store (or, with `null`, forget) the measured latency of [id]. */
+    suspend fun setLatency(id: String, millis: Int?) {
+        context.profileDataStore.edit { prefs ->
+            val latencies = decodeLatencies(prefs[keyLatency]).toMutableMap()
+            if (millis == null) latencies.remove(id) else latencies[id] = millis
+            prefs[keyLatency] = JSONObject(latencies as Map<*, *>).toString()
         }
     }
 
@@ -86,6 +109,22 @@ class ProfileStore(private val context: Context) {
             List(array.length()) { i -> decode(array.getJSONObject(i)) }
         } catch (_: Exception) {
             emptyList()
+        }
+    }
+
+    /** Decode the latency map; unknown shapes degrade to "nothing measured yet". */
+    private fun decodeLatencies(json: String?): Map<String, Int> {
+        if (json.isNullOrBlank()) return emptyMap()
+        return try {
+            val obj = JSONObject(json)
+            buildMap {
+                for (key in obj.keys()) {
+                    val millis = obj.optInt(key, -1)
+                    if (millis > 0) put(key, millis)
+                }
+            }
+        } catch (_: Exception) {
+            emptyMap()
         }
     }
 

@@ -5,8 +5,10 @@ import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -70,12 +74,22 @@ fun SplitTunnelScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         } else {
             LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
                 item {
-                    Text(
-                        text = stringResource(R.string.split_tunnel_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp),
-                    )
+                    Column(Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.split_tunnel_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        // PackageManager only reveals apps with a launcher entry to
+                        // us (see <queries> in the manifest); saying so is better
+                        // than an empty list that looks broken.
+                        Text(
+                            text = stringResource(R.string.split_tunnel_visibility_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 items(apps, key = { it.packageName }) { app ->
                     val bypass = app.packageName in excluded
@@ -103,6 +117,8 @@ fun SplitTunnelScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 }
                                 viewModel.setExcluded(newSet)
                             },
+                            // TalkBack otherwise announces only "on/off".
+                            modifier = Modifier.semantics { contentDescription = app.label },
                         )
                     }
                 }

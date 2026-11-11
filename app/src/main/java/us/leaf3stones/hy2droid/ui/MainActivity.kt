@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -14,6 +15,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -97,6 +102,13 @@ private fun AppRoot(
     val dynamicColor by vm.dynamicColor.collectAsState()
     val pendingLink by incomingLink.collectAsState()
     val context = LocalContext.current
+
+    // Always-on VPN is a system setting the app cannot turn off; when it is on,
+    // Android brings the tunnel straight back and "Disconnect" looks broken.
+    val alwaysOnVpn = remember {
+        Settings.Secure.getString(context.contentResolver, ALWAYS_ON_VPN_APP) == context.packageName
+    }
+    var alwaysOnWarning by remember { mutableStateOf(false) }
 
     // Shared by the QR scanner and the VIEW intent filter: one code path, one
     // message, so a deep link behaves exactly like a scanned code.
@@ -221,10 +233,38 @@ private fun AppRoot(
                     editorOpen = true
                 },
                 onConnect = ::requestConnect,
-                onDisconnect = vm::disconnect,
+                onDisconnect = {
+                    if (alwaysOnVpn) alwaysOnWarning = true else vm.disconnect()
+                },
                 onOpenSettings = { settingsOpen = true },
                 onScan = { scannerOpen = true },
             )
         }
+
+        if (alwaysOnWarning) {
+            AlertDialog(
+                onDismissRequest = { alwaysOnWarning = false },
+                title = { Text(stringResource(R.string.always_on_title)) },
+                text = { Text(stringResource(R.string.always_on_message)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            alwaysOnWarning = false
+                            vm.disconnect()
+                        },
+                    ) {
+                        Text(stringResource(R.string.action_disconnect_anyway))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { alwaysOnWarning = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                },
+            )
+        }
     }
 }
+
+/** `Settings.Secure` key naming the package always-on VPN is configured for. */
+private const val ALWAYS_ON_VPN_APP = "always_on_vpn_app"

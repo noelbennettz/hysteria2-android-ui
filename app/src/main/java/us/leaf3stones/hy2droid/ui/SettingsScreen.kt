@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -39,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -60,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.DiagnosticsExporter
 import us.leaf3stones.hy2droid.data.LanRanges
+import us.leaf3stones.hy2droid.data.SettingsStore
+import us.leaf3stones.hy2droid.proxy.TunnelState
 
 /** Returns true when [value] is a numeric IPv4 or IPv6 address. */
 private fun isValidIp(value: String): Boolean {
@@ -88,6 +93,10 @@ fun SettingsScreen(
     val bypassLan by viewModel.bypassLan.collectAsState()
     val autoTestLatency by viewModel.autoTestLatency.collectAsState()
     val disablePmtud by viewModel.disablePathMtuDiscovery.collectAsState()
+    val mtu by viewModel.mtu.collectAsState()
+    val tunnelState by viewModel.tunnelState.collectAsState()
+    val active = tunnelState is TunnelState.Connected || tunnelState is TunnelState.Connecting
+    var mtuDialogOpen by remember { mutableStateOf(false) }
 
     // SAF: the user picks where the zip goes, so there is no storage permission
     // to ask for and no FileProvider to declare.
@@ -174,6 +183,16 @@ fun SettingsScreen(
             )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_network))
+            // Everything below is read when the interface is created, so while a
+            // tunnel is up the switches look applied but are not.
+            if (active) {
+                Text(
+                    text = stringResource(R.string.block_applies_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                )
+            }
             ClickRow(
                 icon = Icons.Filled.Apps,
                 title = stringResource(R.string.split_tunnel_title),
@@ -203,6 +222,13 @@ fun SettingsScreen(
                 checked = lanSupported && bypassLan,
                 enabled = lanSupported,
                 onCheckedChange = viewModel::setBypassLan,
+            )
+            HorizontalDivider()
+            ClickRow(
+                icon = Icons.Filled.Straighten,
+                title = stringResource(R.string.settings_mtu),
+                subtitle = stringResource(R.string.settings_mtu_summary, mtu),
+                onClick = { mtuDialogOpen = true },
             )
             HorizontalDivider()
             SwitchRow(
@@ -292,6 +318,43 @@ fun SettingsScreen(
             )
             HorizontalDivider()
         }
+    }
+
+    if (mtuDialogOpen) {
+        var mtuText by remember { mutableStateOf(mtu.toString()) }
+        val parsed = mtuText.trim().toIntOrNull()
+        val mtuValid = parsed != null && parsed in SettingsStore.MIN_MTU..SettingsStore.MAX_MTU
+        AlertDialog(
+            onDismissRequest = { mtuDialogOpen = false },
+            title = { Text(stringResource(R.string.settings_mtu)) },
+            text = {
+                OutlinedTextField(
+                    value = mtuText,
+                    onValueChange = { mtuText = it.filter(Char::isDigit).take(4) },
+                    label = { Text(stringResource(R.string.settings_mtu)) },
+                    singleLine = true,
+                    isError = !mtuValid,
+                    supportingText = { Text(stringResource(R.string.settings_mtu_hint)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        parsed?.let(viewModel::setMtu)
+                        mtuDialogOpen = false
+                    },
+                    enabled = mtuValid,
+                ) {
+                    Text(stringResource(R.string.action_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mtuDialogOpen = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 }
 

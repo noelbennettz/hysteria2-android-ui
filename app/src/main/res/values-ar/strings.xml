@@ -7,6 +7,10 @@
     <string name="action_edit">تعديل</string>
     <string name="action_share">مشاركة</string>
     <string name="action_delete">حذف</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="delete_profile_title">حذف الملف؟</string>
+    <string name="delete_profile_message">سيتم حذف «%1$s» وكلمة مروره. لا يمكن التراجع عن ذلك.</string>
+    <string name="profile_in_use">قيد الاستخدام</string>
     <string name="action_disconnect">قطع الاتصال</string>
     <string name="action_connect">اتصال</string>
     <string name="action_scan_import">مسح</string>
@@ -52,9 +56,11 @@
     <string name="notification_channel_name">VPN</string>
     <string name="notification_channel_description">حالة نفق Hysteria 2</string>
     <string name="notification_title">Hy2droid يعمل</string>
+    <string name="notification_with_speed">%1$s · ↓%2$s ↑%3$s</string>
 
     <string name="split_tunnel_title">النفق المنفصل</string>
     <string name="split_tunnel_hint">فعّل تطبيقًا ليمر خارج VPN (تجاوز).</string>
+    <string name="split_tunnel_visibility_hint">تُعرض التطبيقات التي لها أيقونة في المشغّل فقط.</string>
 
     <!-- Settings -->
     <string name="settings_title">الإعدادات</string>
@@ -74,13 +80,19 @@
     <string name="settings_requires_android_13">يتطلب Android 13 أو أحدث</string>
     <string name="settings_disable_pmtud">تعطيل اكتشاف MTU للمسار</string>
     <string name="settings_disable_pmtud_summary">حل بديل للشبكات التي تُسقط حزم QUIC الكبيرة (ثقوب MTU السوداء)؛ يُطبَّق عند الاتصال التالي</string>
+    <string name="settings_mtu">MTU النفق</string>
+    <string name="settings_mtu_summary">%1$d بايت؛ اخفضها إذا تعطلت الحزم الكبيرة</string>
+    <string name="settings_mtu_hint">1280 – 1500 — تُطبَّق عند الاتصال التالي</string>
     <string name="settings_blocked_traffic">حركة المرور المحظورة</string>
     <string name="settings_blocked_traffic_summary">رفض حركة مثل QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">اختبار زمن الاستجابة عند التشغيل</string>
-    <string name="settings_auto_test_latency_summary">قياس زمن استجابة كل عقدة عند فتح التطبيق وعرض الأسرع أولاً</string>
+    <string name="settings_auto_test_latency_summary">يقيس عند الفتح العقد التي ليس لها نتيجة بعد ويعرض الأسرع أولًا</string>
     <string name="settings_section_diagnostics">التشخيص</string>
     <string name="settings_export_logs">تصدير السجلات</string>
     <string name="settings_export_logs_summary">حفظ سجلات التطبيق ونواة Hysteria في ملف zip</string>
+    <string name="always_on_title">VPN الدائم مفعّل</string>
+    <string name="always_on_message">سيعيد Android تشغيل هذا الملف فور قطع الاتصال. لإيقافه نهائيًا، أوقف VPN الدائم من إعدادات النظام.</string>
+    <string name="action_disconnect_anyway">قطع الاتصال على أي حال</string>
     <string name="action_test_latency">اختبار زمن الاستجابة</string>
     <string name="latency_testing">جارٍ الاختبار…</string>
     <string name="latency_ms">%1$d مللي ثانية</string>

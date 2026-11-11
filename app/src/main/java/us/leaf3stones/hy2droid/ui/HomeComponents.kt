@@ -30,6 +30,7 @@ import us.leaf3stones.hy2droid.proxy.TunnelStats
 fun ConnectionCard(
     state: TunnelState,
     stats: TunnelStats,
+    profileName: String? = null,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp)) {
@@ -42,6 +43,17 @@ fun ConnectionCard(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(text = statusLabel(state), style = MaterialTheme.typography.titleLarge)
+            }
+
+            // Which node is actually up. The list keeps its own selection, so this
+            // is the only place that answers "am I on the profile I just tapped?".
+            if (profileName != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = profileName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             if (state is TunnelState.Connected) {

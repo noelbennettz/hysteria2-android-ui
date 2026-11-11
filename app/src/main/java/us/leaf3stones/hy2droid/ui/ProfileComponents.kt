@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -49,6 +50,7 @@ import us.leaf3stones.hy2droid.data.Profile
 fun ProfileRow(
     profile: Profile,
     selected: Boolean,
+    inUse: Boolean,
     showAddress: Boolean,
     latencyMs: Int?,
     latencyMeasured: Boolean,
@@ -76,7 +78,17 @@ fun ProfileRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(text = profile.name, style = MaterialTheme.typography.titleMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = profile.name, style = MaterialTheme.typography.titleMedium)
+                    if (inUse) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.profile_in_use),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
                 // Hidden by default: most people never need to read the IP, and
                 // it is the noisiest line on the screen (Settings → Appearance).
                 if (showAddress) {

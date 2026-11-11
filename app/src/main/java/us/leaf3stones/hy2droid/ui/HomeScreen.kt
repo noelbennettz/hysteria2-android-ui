@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.QrCode
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -21,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,7 +60,9 @@ fun HomeScreen(
     val autoTestLatency by viewModel.autoTestLatency.collectAsState()
     val latency by viewModel.latency.collectAsState()
     val latencyTesting by viewModel.latencyTesting.collectAsState()
+    val activeProfileId by viewModel.activeProfileId.collectAsState()
     var shareProfile by remember { mutableStateOf<Profile?>(null) }
+    var pendingDelete by remember { mutableStateOf<Profile?>(null) }
 
     // Settings → Network: measure every node once per app start. The ViewModel
     // guards against repeating it on recomposition.
@@ -74,6 +78,9 @@ fun HomeScreen(
 
     // The first profile is treated as selected when nothing explicit is stored.
     val selectedProfile = profiles.firstOrNull { it.id == selectedId } ?: profiles.firstOrNull()
+    // What is actually up right now, which is not necessarily the selection: a tap
+    // on another row only moves the selection.
+    val activeProfile = profiles.firstOrNull { it.id == activeProfileId }
     val active = tunnelState is TunnelState.Connected ||
         tunnelState is TunnelState.Connecting ||
         tunnelState is TunnelState.Disconnecting
@@ -143,7 +150,11 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
         ) {
             Spacer(Modifier.height(8.dp))
-            ConnectionCard(state = tunnelState, stats = stats)
+            ConnectionCard(
+                state = tunnelState,
+                stats = stats,
+                profileName = activeProfile?.let { it.name.ifBlank { it.authority } },
+            )
             Spacer(Modifier.height(20.dp))
             Text(
                 text = stringResource(R.string.profiles_title),
@@ -161,6 +172,7 @@ fun HomeScreen(
                         ProfileRow(
                             profile = profile,
                             selected = profile.id == selectedProfile?.id,
+                            inUse = active && profile.id == activeProfileId,
                             showAddress = showServerAddress,
                             latencyMs = latency[profile.id],
                             latencyMeasured = latency.containsKey(profile.id),
@@ -169,7 +181,7 @@ fun HomeScreen(
                             onTestLatency = { viewModel.testLatency(profile) },
                             onEdit = { onEdit(profile) },
                             onShare = { shareProfile = profile },
-                            onDelete = { viewModel.delete(profile.id) },
+                            onDelete = { pendingDelete = profile },
                         )
                     }
                     item { Spacer(Modifier.height(96.dp)) }
@@ -180,5 +192,36 @@ fun HomeScreen(
 
     shareProfile?.let { profile ->
         ShareDialog(profile = profile, onDismiss = { shareProfile = null })
+    }
+
+    // Deleting throws the auth secret away with no way back, so ask first.
+    pendingDelete?.let { profile ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text(stringResource(R.string.delete_profile_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.delete_profile_message,
+                        profile.name.ifBlank { profile.authority },
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.delete(profile.id)
+                        pendingDelete = null
+                    },
+                ) {
+                    Text(stringResource(R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 }

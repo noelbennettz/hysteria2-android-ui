@@ -7,6 +7,10 @@
     <string name="action_edit">编辑</string>
     <string name="action_share">分享</string>
     <string name="action_delete">删除</string>
+    <string name="action_cancel">取消</string>
+    <string name="delete_profile_title">删除节点？</string>
+    <string name="delete_profile_message">“%1$s”及其密码将被删除，且无法恢复。</string>
+    <string name="profile_in_use">使用中</string>
     <string name="action_disconnect">断开连接</string>
     <string name="action_connect">连接</string>
     <string name="action_scan_import">扫码</string>
@@ -52,9 +56,11 @@
     <string name="notification_channel_name">VPN</string>
     <string name="notification_channel_description">Hysteria 2 隧道状态</string>
     <string name="notification_title">Hy2droid 正在运行</string>
+    <string name="notification_with_speed">%1$s · ↓%2$s ↑%3$s</string>
 
     <string name="split_tunnel_title">分流</string>
     <string name="split_tunnel_hint">开启某个应用表示让它绕过 VPN（不走 VPN）。</string>
+    <string name="split_tunnel_visibility_hint">这里只列出有桌面图标的应用程序。</string>
 
     <!-- Settings -->
     <string name="settings_title">设置</string>
@@ -74,13 +80,19 @@
     <string name="settings_requires_android_13">需要 Android 13 或更高版本</string>
     <string name="settings_disable_pmtud">关闭路径 MTU 发现</string>
     <string name="settings_disable_pmtud_summary">针对会丢弃大包 QUIC 数据的网络（MTU 黑洞）的变通方法；更改在下次连接时生效</string>
+    <string name="settings_mtu">隧道 MTU</string>
+    <string name="settings_mtu_summary">%1$d 字节；大包卡住时可以调低</string>
+    <string name="settings_mtu_hint">1280 – 1500，下次连接时生效</string>
     <string name="settings_blocked_traffic">屏蔽流量</string>
     <string name="settings_blocked_traffic_summary">拒绝 QUIC（UDP 443）等流量</string>
     <string name="settings_auto_test_latency">启动时测试延迟</string>
-    <string name="settings_auto_test_latency_summary">打开应用时测量所有节点，最快的排在最前</string>
+    <string name="settings_auto_test_latency_summary">打开应用时只测量还没有结果的节点，并把最快的排在前面</string>
     <string name="settings_section_diagnostics">诊断</string>
     <string name="settings_export_logs">导出日志</string>
     <string name="settings_export_logs_summary">把应用日志和 Hysteria 核心日志保存为 zip 文件</string>
+    <string name="always_on_title">已开启始终开启的 VPN</string>
+    <string name="always_on_message">断开后 Android 会立刻重新启动这个节点。要彻底停止，请在系统设置中关闭“始终开启的 VPN”。</string>
+    <string name="action_disconnect_anyway">仍然断开</string>
     <string name="action_test_latency">测试延迟</string>
     <string name="latency_testing">测试中…</string>
     <string name="latency_ms">%1$d 毫秒</string>
