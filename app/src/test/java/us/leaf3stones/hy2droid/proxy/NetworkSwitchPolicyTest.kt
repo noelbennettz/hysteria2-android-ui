@@ -55,9 +55,20 @@ class NetworkSwitchPolicyTest {
         policy.onCurrent("2:wlan0")
 
         assertEquals(NetworkAction.Ignore, policy.onCurrent(null))
-        // The core is still bound to Wi-Fi; when the network comes back the token
-        // comparison must not treat it as a new transport.
+        // The core is still bound to Wi-Fi; the token itself did not change.
         assertEquals("2:wlan0", policy.adopted)
+    }
+
+    @Test
+    fun `a network that comes back on the same transport restarts the core`() {
+        val policy = NetworkSwitchPolicy()
+        policy.onCurrent("2:wlan0")
+        policy.onCurrent(null)
+
+        // Airplane mode off, or a Wi-Fi re-association: the QUIC session did not
+        // survive the gap even though the token is identical, so waiting for the
+        // idle timeout would leave a 30 s hole.
+        assertEquals(NetworkAction.Restart, policy.onCurrent("2:wlan0"))
         assertEquals(NetworkAction.Ignore, policy.onCurrent("2:wlan0"))
     }
 
@@ -70,7 +81,10 @@ class NetworkSwitchPolicyTest {
         assertEquals(NetworkAction.Restart, policy.onCurrent("1:rmnet_data0"))
         assertEquals(NetworkAction.Ignore, policy.onCurrent("1:rmnet_data0"))
 
+        // A second gap is a second dead path, so it restarts again on the way back.
+        assertEquals(NetworkAction.Ignore, policy.onCurrent(null))
         assertEquals(NetworkAction.Restart, policy.onCurrent("2:wlan0"))
+        assertEquals(NetworkAction.Ignore, policy.onCurrent("2:wlan0"))
     }
 
     @Test

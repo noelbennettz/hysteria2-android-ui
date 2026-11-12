@@ -41,26 +41,39 @@ class NetworkSwitchPolicy {
     var adopted: String? = null
         private set
 
+    /** True between "no usable network" and the network coming back. */
+    private var lost = false
+
     /** Feed the current snapshot (null = nothing usable). */
     fun onCurrent(token: String?): NetworkAction {
         // No network at all: keep what we had. The next usable network is
         // adopted (or restarted on) when it shows up, and tearing the core down
         // here would only make the recovery slower.
-        if (token == null) return NetworkAction.Ignore
+        if (token == null) {
+            lost = true
+            return NetworkAction.Ignore
+        }
 
         val previous = adopted ?: run {
             adopted = token
+            lost = false
             return NetworkAction.Adopt
         }
-        if (previous == token) return NetworkAction.Ignore
+        if (previous == token && !lost) return NetworkAction.Ignore
 
+        // Either the transports changed, or the path died and came back on the
+        // same one (airplane mode off, Wi-Fi re-association): the QUIC session
+        // did not survive the gap even though the token looks identical.
         adopted = token
+        lost = false
         return NetworkAction.Restart
     }
 
     fun reset() {
         adopted = null
+        lost = false
     }
+
 
     companion object {
         /** Fold `NetworkCapabilities.transportTypes` into a stable bitmask. */
