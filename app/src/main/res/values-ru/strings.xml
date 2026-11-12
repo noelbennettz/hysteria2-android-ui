@@ -46,11 +46,12 @@
     <string name="field_auth">Аутентификация / пароль</string>
     <string name="field_sni">SNI (необязательно)</string>
     <string name="field_obfs">Пароль обфускации (необязательно)</string>
+    <string name="field_brutal">Управление перегрузкой Brutal</string>
     <string name="field_tx">Исходящая (Мбит/с)</string>
     <string name="field_rx">Входящая (Мбит/с)</string>
     <string name="field_insecure">Разрешить небезопасный сертификат</string>
     <string name="field_fast_open">QUIC fast open</string>
-    <string name="bandwidth_hint">Оставьте 0, чтобы использовать BBR; укажите реальные Мбит/с, чтобы включить управление перегрузкой Brutal.</string>
+    <string name="bandwidth_hint">Brutal отправляет ровно с этими скоростями, поэтому указывайте около 80 процентов измеренной. В нестабильной сети (мобильный интернет, публичный Wi-Fi) выключите: BBR подстраивается сам.</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">VPN</string>

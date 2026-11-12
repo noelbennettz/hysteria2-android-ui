@@ -54,6 +54,7 @@ fun EditProfileScreen(
     var auth by remember { mutableStateOf(initial?.auth.orEmpty()) }
     var sni by remember { mutableStateOf(initial?.sni.orEmpty()) }
     var obfs by remember { mutableStateOf(initial?.obfsPassword.orEmpty()) }
+    var brutal by remember { mutableStateOf(initial?.brutal ?: false) }
     var tx by remember { mutableStateOf(initial?.txMbps?.takeIf { it > 0 }?.toString().orEmpty()) }
     var rx by remember { mutableStateOf(initial?.rxMbps?.takeIf { it > 0 }?.toString().orEmpty()) }
     var insecure by remember { mutableStateOf(initial?.insecure ?: false) }
@@ -184,12 +185,18 @@ fun EditProfileScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            SwitchRow(
+                label = stringResource(R.string.field_brutal),
+                checked = brutal,
+                onCheckedChange = { brutal = it },
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = tx,
                     onValueChange = { tx = it.filter(Char::isDigit) },
                     label = { Text(stringResource(R.string.field_tx)) },
                     singleLine = true,
+                    enabled = brutal,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                 )
@@ -198,6 +205,7 @@ fun EditProfileScreen(
                     onValueChange = { rx = it.filter(Char::isDigit) },
                     label = { Text(stringResource(R.string.field_rx)) },
                     singleLine = true,
+                    enabled = brutal,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                 )
@@ -229,6 +237,7 @@ fun EditProfileScreen(
                             sni = sni.trim(),
                             obfsPassword = obfs.trim(),
                             insecure = insecure,
+                            brutal = brutal,
                             txMbps = tx.toIntOrNull() ?: 0,
                             rxMbps = rx.toIntOrNull() ?: 0,
                             fastOpen = fastOpen,

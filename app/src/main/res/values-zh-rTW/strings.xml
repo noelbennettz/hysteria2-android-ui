@@ -46,11 +46,12 @@
     <string name="field_auth">驗證／密碼</string>
     <string name="field_sni">SNI（選填）</string>
     <string name="field_obfs">混淆密碼（選填）</string>
+    <string name="field_brutal">Brutal 壅塞控制</string>
     <string name="field_tx">上傳 Mbps</string>
     <string name="field_rx">下載 Mbps</string>
     <string name="field_insecure">允許不安全的憑證</string>
     <string name="field_fast_open">QUIC fast open</string>
-    <string name="bandwidth_hint">頻寬留 0 會使用 BBR；填上實際的 Mbps 可啟用 Brutal 壅塞控制。</string>
+    <string name="bandwidth_hint">Brutal 會嚴格照這個速率送封包，建議填約實測速度的八成。網路不穩時（行動數據、公共 Wi-Fi）請關掉：BBR 會自己適應。</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">VPN</string>

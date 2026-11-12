@@ -26,6 +26,19 @@ class ProfileMergeTest {
     )
 
     @Test
+    fun `a re-import never silently flips the Brutal switch`() {
+        // Share links carry no Brutal state, so importing one must keep whatever
+        // the stored profile had instead of turning it off (or on).
+        val stored = profile("a").copy(brutal = true, txMbps = 100, rxMbps = 100)
+        val incoming = profile("b")
+
+        val merged = ProfileMerge.merge(stored, incoming)
+
+        assertTrue(merged.brutal)
+        assertEquals(100, merged.txMbps)
+    }
+
+    @Test
     fun `same node ignores host case but not port`() {
         assertTrue(ProfileMerge.sameNode(profile("a"), profile("b", server = "EXAMPLE.com")))
         assertFalse(ProfileMerge.sameNode(profile("a"), profile("b", port = 8443)))

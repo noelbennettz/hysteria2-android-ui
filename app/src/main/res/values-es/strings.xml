@@ -46,11 +46,12 @@
     <string name="field_auth">Autenticación / contraseña</string>
     <string name="field_sni">SNI (opcional)</string>
     <string name="field_obfs">Contraseña de ofuscación (opcional)</string>
+    <string name="field_brutal">Control de congestión Brutal</string>
     <string name="field_tx">Subida (Mbps)</string>
     <string name="field_rx">Bajada (Mbps)</string>
     <string name="field_insecure">Permitir certificado no seguro</string>
     <string name="field_fast_open">QUIC fast open</string>
-    <string name="bandwidth_hint">Deja el ancho de banda en 0 para usar BBR; indica tus Mbps reales para activar el control de congestión Brutal.</string>
+    <string name="bandwidth_hint">Brutal envia exactamente a estas tasas, asi que usa cerca del 80 por ciento de tu velocidad medida. En una red inestable (datos moviles, Wi-Fi publico) dejalo apagado: BBR se adapta solo.</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">VPN</string>

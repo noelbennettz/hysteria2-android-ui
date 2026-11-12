@@ -18,6 +18,7 @@ class HysteriaConfigBuilderTest {
             sni = "sni.example.com",
             obfsPassword = "obfspass",
             insecure = true,
+            brutal = true,
             txMbps = 100,
             rxMbps = 50,
             fastOpen = false,
@@ -35,6 +36,38 @@ class HysteriaConfigBuilderTest {
         assertTrue(yaml.contains("down: 50 mbps"))
         assertTrue(yaml.contains("fastOpen: false"))
         assertTrue(yaml.contains("listen: 127.0.0.1:1080"))
+    }
+
+    @Test
+    fun `rates without the Brutal switch are not sent to the core`() {
+        // A typed-in number must not silently opt a profile into a fixed-rate
+        // congestion control that ignores loss.
+        val profile = Profile(
+            id = "3",
+            name = "n",
+            server = "h:443",
+            auth = "a",
+            txMbps = 100,
+            rxMbps = 100,
+        )
+
+        val yaml = HysteriaConfigBuilder.build(profile)
+
+        assertFalse(yaml.contains("bandwidth:"))
+        assertFalse(yaml.contains("mbps"))
+    }
+
+    @Test
+    fun `the Brutal switch alone does nothing without rates`() {
+        val profile = Profile(
+            id = "4",
+            name = "n",
+            server = "h:443",
+            auth = "a",
+            brutal = true,
+        )
+
+        assertFalse(HysteriaConfigBuilder.build(profile).contains("bandwidth:"))
     }
 
     @Test

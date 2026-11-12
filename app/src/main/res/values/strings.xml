@@ -48,11 +48,12 @@
     <string name="field_auth">Auth / password</string>
     <string name="field_sni">SNI (optional)</string>
     <string name="field_obfs">Obfuscation password (optional)</string>
+    <string name="field_brutal">Brutal congestion control</string>
     <string name="field_tx">Upload Mbps</string>
     <string name="field_rx">Download Mbps</string>
     <string name="field_insecure">Allow insecure certificate</string>
     <string name="field_fast_open">QUIC fast open</string>
-    <string name="bandwidth_hint">Leave bandwidth at 0 to use BBR; set your real Mbps to enable Brutal congestion control.</string>
+    <string name="bandwidth_hint">Brutal paces at exactly these rates, so use about 80 percent of your measured speed. On an unstable network (mobile data, public Wi-Fi) leave it off: BBR adapts by itself.</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">VPN</string>

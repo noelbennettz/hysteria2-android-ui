@@ -65,7 +65,7 @@ object HysteriaConfigBuilder {
             }
         }
 
-        if (profile.hasBandwidth) {
+        if (profile.usesBrutal) {
             sb.append("bandwidth:\n")
             if (profile.txMbps > 0) {
                 sb.append("  up: ").append(profile.txMbps).append(" mbps\n")

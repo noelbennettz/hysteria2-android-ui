@@ -46,11 +46,12 @@
     <string name="field_auth">المصادقة / كلمة المرور</string>
     <string name="field_sni">SNI (اختياري)</string>
     <string name="field_obfs">كلمة مرور التمويه (اختياري)</string>
+    <string name="field_brutal">تحكم الازدحام Brutal</string>
     <string name="field_tx">الرفع (ميغابت/ث)</string>
     <string name="field_rx">التنزيل (ميغابت/ث)</string>
     <string name="field_insecure">السماح بشهادة غير آمنة</string>
     <string name="field_fast_open">QUIC fast open</string>
-    <string name="bandwidth_hint">اترك عرض النطاق 0 لاستخدام BBR؛ أدخل سرعتك الحقيقية بالميغابت لتفعيل التحكم بالازدحام Brutal.</string>
+    <string name="bandwidth_hint">يرسل Brutal بهذه السرعات بالضبط، لذا استخدم نحو 80 بالمئة من السرعة المقاسة. في شبكة غير مستقرة (بيانات الجوال أو Wi-Fi عام) اتركه مغلقًا: يتكيّف BBR تلقائيًا.</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">VPN</string>

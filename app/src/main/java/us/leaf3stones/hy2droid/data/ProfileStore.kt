@@ -182,6 +182,7 @@ class ProfileStore(private val context: Context) {
         put("sni", p.sni)
         put("obfsPassword", p.obfsPassword)
         put("insecure", p.insecure)
+        put("brutal", p.brutal)
         put("txMbps", p.txMbps)
         put("rxMbps", p.rxMbps)
         put("fastOpen", p.fastOpen)
@@ -191,19 +192,26 @@ class ProfileStore(private val context: Context) {
     /** One cached measurement: the value and when it was taken. */
     private data class LatencyEntry(val millis: Int, val measuredAt: Long)
 
-    private fun decode(o: JSONObject): Profile = Profile(
-        id = o.getString("id"),
-        name = o.optString("name"),
-        server = o.optString("server"),
-        auth = usable(o.optString("auth")),
-        sni = o.optString("sni"),
-        obfsPassword = usable(o.optString("obfsPassword")),
-        insecure = o.optBoolean("insecure", false),
-        txMbps = o.optInt("txMbps", 0),
-        rxMbps = o.optInt("rxMbps", 0),
-        fastOpen = o.optBoolean("fastOpen", false),
-        port = o.optInt("port", 443),
-    )
+    private fun decode(o: JSONObject): Profile {
+        val tx = o.optInt("txMbps", 0)
+        val rx = o.optInt("rxMbps", 0)
+        return Profile(
+            id = o.getString("id"),
+            name = o.optString("name"),
+            server = o.optString("server"),
+            auth = usable(o.optString("auth")),
+            sni = o.optString("sni"),
+            obfsPassword = usable(o.optString("obfsPassword")),
+            insecure = o.optBoolean("insecure", false),
+            // Profiles written before the switch existed always sent their rates
+            // to the core, i.e. they were on Brutal; keep them that way.
+            brutal = o.optBoolean("brutal", tx > 0 || rx > 0),
+            txMbps = tx,
+            rxMbps = rx,
+            fastOpen = o.optBoolean("fastOpen", false),
+            port = o.optInt("port", 443),
+        )
+    }
 
     /**
      * A short-lived build sealed secrets with a Keystore key that no longer

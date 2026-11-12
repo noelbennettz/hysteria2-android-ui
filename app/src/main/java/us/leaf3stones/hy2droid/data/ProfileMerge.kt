@@ -27,6 +27,11 @@ object ProfileMerge {
         auth = incoming.auth.ifBlank { existing.auth },
         sni = incoming.sni.ifBlank { existing.sni },
         obfsPassword = incoming.obfsPassword.ifBlank { existing.obfsPassword },
+        // A share link never carries the switch or the rates, so importing one
+        // must not turn Brutal off (or on) and must not wipe the numbers.
+        brutal = incoming.brutal || existing.brutal,
+        txMbps = if (incoming.txMbps > 0) incoming.txMbps else existing.txMbps,
+        rxMbps = if (incoming.rxMbps > 0) incoming.rxMbps else existing.rxMbps,
     )
 
     /** The profile to store for [incoming] given the [existing] list. */

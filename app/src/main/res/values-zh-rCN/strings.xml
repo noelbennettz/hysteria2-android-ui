@@ -46,11 +46,12 @@
     <string name="field_auth">认证 / 密码</string>
     <string name="field_sni">SNI（可选）</string>
     <string name="field_obfs">混淆密码（可选）</string>
+    <string name="field_brutal">Brutal 拥塞控制</string>
     <string name="field_tx">上传 Mbps</string>
     <string name="field_rx">下载 Mbps</string>
     <string name="field_insecure">允许不安全的证书</string>
     <string name="field_fast_open">QUIC fast open</string>
-    <string name="bandwidth_hint">带宽留 0 使用 BBR；填入实际 Mbps 可启用 Brutal 拥塞控制。</string>
+    <string name="bandwidth_hint">Brutal 会严格按这个速率发包，建议填约实测速度的八成。网络不稳定时（移动数据、公共 Wi-Fi）请关掉：BBR 会自己适应。</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">VPN</string>
