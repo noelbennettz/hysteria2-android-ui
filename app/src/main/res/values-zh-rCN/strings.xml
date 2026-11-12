@@ -98,7 +98,7 @@
     <string name="settings_mtu_summary">%1$d 字节；大包卡住时可以调低</string>
     <string name="settings_mtu_hint">1280 – 1500，下次连接时生效</string>
     <string name="settings_tcp_buffer">TCP 连接缓冲</string>
-    <string name="settings_tcp_buffer_summary">每条连接的发送缓冲：%1$d KB；高延迟隧道下调大能提升单连接速度，代价是每条连接多占内存</string>
+    <string name="settings_tcp_buffer_summary">%1$d KB／每條連線。用途是在 app 讀得慢時吸收突發；它不決定鏈路速度。調大每條連線會多佔記憶體。</string>
     <string name="settings_tcp_buffer_option">%1$d KB</string>
     <string name="settings_blocked_traffic">屏蔽流量</string>
     <string name="settings_blocked_traffic_summary">拒绝 QUIC（UDP 443）等流量</string>

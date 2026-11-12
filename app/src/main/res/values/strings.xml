@@ -102,7 +102,7 @@
     <string name="settings_mtu_summary" tools:ignore="PluralsCandidate">%1$d bytes; lower it if large packets stall</string>
     <string name="settings_mtu_hint">1280 – 1500 — applies on the next connect</string>
     <string name="settings_tcp_buffer">TCP buffer per connection</string>
-    <string name="settings_tcp_buffer_summary">%1$d KB; a bigger buffer speeds up a single connection on a high-latency tunnel, at the cost of memory per connection</string>
+    <string name="settings_tcp_buffer_summary">%1$d KB per connection. Absorbs bursts while an app is slow to read; it does not set the speed of the link. Bigger costs memory per open connection.</string>
     <string name="settings_tcp_buffer_option">%1$d KB</string>
     <string name="settings_blocked_traffic">Blocked traffic</string>
     <string name="settings_blocked_traffic_summary">Refuse flows such as QUIC (UDP 443)</string>

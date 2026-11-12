@@ -98,7 +98,7 @@
     <string name="settings_mtu_summary">%1$d بايت؛ اخفضها إذا تعطلت الحزم الكبيرة</string>
     <string name="settings_mtu_hint">1280 – 1500 — تُطبَّق عند الاتصال التالي</string>
     <string name="settings_tcp_buffer">مخزن TCP لكل اتصال</string>
-    <string name="settings_tcp_buffer_summary">%1$d كيلوبايت؛ زيادة المخزن ترفع سرعة الاتصال الواحد في الأنفاق بطيئة الاستجابة مقابل ذاكرة أكبر لكل اتصال</string>
+    <string name="settings_tcp_buffer_summary">%1$d كيلوبايت لكل اتصال. يمتص الدفعات عندما يقرأ التطبيق ببطء؛ ولا يحدد سرعة الرابط. الأكبر يستهلك ذاكرة أكبر لكل اتصال.</string>
     <string name="settings_tcp_buffer_option">%1$d كيلوبايت</string>
     <string name="settings_blocked_traffic">حركة المرور المحظورة</string>
     <string name="settings_blocked_traffic_summary">رفض حركة مثل QUIC (UDP 443)</string>
