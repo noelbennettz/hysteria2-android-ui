@@ -88,6 +88,13 @@ cmd_info() {
       echo "  $abi (missing)"
     fi
   done
+  # The bundled Go core is downloaded, not built here: report its page alignment
+  # so a bump that breaks 16 KB kernels is visible immediately.
+  local core="$LIBDIR/arm64-v8a/libhysteria.so"
+  if [[ -f "$core" ]] && command -v readelf >/dev/null; then
+    echo "core LOAD alignment: $(readelf -lW "$core" | awk '$1 == "LOAD" {print $NF}' | sort -u | tr '
+' ' ')"
+  fi
 }
 
 cmd_verify() {
@@ -103,6 +110,14 @@ cmd_verify() {
       # grep -c (not -q) so readelf is never killed by SIGPIPE under pipefail.
       if [[ "$(readelf -sW "$so" | grep -Ec 'JNI_OnLoad|Java_')" -eq 0 ]]; then
         echo "tun2socks: $so exports no JNI entry point" >&2
+        missing=1
+      fi
+      # Android 15+ maps native libraries on 16 KB-page kernels; a LOAD segment
+      # aligned to 4 KB cannot be mapped there.
+      local worst
+      worst="$(readelf -lW "$so" | awk '$1 == "LOAD" {print $NF}' | sort -u | head -1)"
+      if [[ "$worst" != "0x4000" && "$worst" != "0x10000" ]]; then
+        echo "tun2socks: $so LOAD segments are aligned to $worst, need 0x4000" >&2
         missing=1
       fi
     fi
@@ -147,6 +162,7 @@ cmd_build() {
       NDK_APPLICATION_MK="$src/Application.mk" \
       APP_ABI="$abi_list" \
       APP_CFLAGS="-O3 -DPKGNAME=$JNI_PKGNAME -DCLSNAME=$JNI_CLSNAME" \
+      APP_LDFLAGS="-Wl,-z,max-page-size=16384" \
       NDK_OUT="$work/obj" \
       NDK_LIBS_OUT="$work/libs" ) >&2
 

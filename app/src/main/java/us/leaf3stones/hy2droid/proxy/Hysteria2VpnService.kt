@@ -98,9 +98,6 @@ class Hysteria2VpnService : VpnService() {
      */
     private var hysteriaConfigFile: File? = null
 
-    /** The in-tunnel DNS cache/resolver, when the tunnel was started with one. */
-    private var localDns: LocalDns? = null
-
 
     /** Live, usable (non-VPN) transports; the value is a [NetworkSwitchPolicy] token. */
     private val networkTokenCache = ConcurrentHashMap<Network, String>()
@@ -288,25 +285,11 @@ class Hysteria2VpnService : VpnService() {
         val mode = try {
             dnsMode(
                 customEnabled = settings.customDnsEnabled.first(),
-                cacheEnabled = settings.dnsCacheEnabled.first(),
+                localAnswers = settings.localDnsEnabled.first(),
             )
         } catch (_: Exception) {
             DnsMode.Forwarded
         }
-        // Claim port 53 *before* the interface exists: the TUN address cannot be
-        // bound yet, and a device that refuses the port has to fall back to plain
-        // forwarding before the resolver list is baked into the tunnel.
-        val cache = if (mode == DnsMode.Cache) {
-            LocalDns(SettingsStore.DEFAULT_DNS_SERVERS, Tun.SOCKS_PORT)
-                .takeIf { it.bind() }
-                ?: run {
-                    Log.w(TAG, "Local DNS cache unavailable; forwarding queries instead")
-                    null
-                }
-        } else {
-            null
-        }
-        localDns = cache
         val dnsServers = try {
             // Always at least one resolver. Android has no "no DNS means use the
             // tunnel" mode: with an empty list the VPN network has no resolver at
@@ -316,7 +299,6 @@ class Hysteria2VpnService : VpnService() {
                 mode,
                 settings.customDnsServer.first(),
                 settings.customDnsServer2.first(),
-                cacheAvailable = cache != null,
             )
         } catch (_: Exception) {
             SettingsStore.DEFAULT_DNS_SERVERS
@@ -379,7 +361,15 @@ class Hysteria2VpnService : VpnService() {
 
         val tun2socksFile = File(filesDir, Tun2socksConfig.FILE_NAME)
         try {
-            tun2socksFile.writeText(Tun2socksConfig.build(blockRules, mtu, tcpBufferKb, fakeIcmp))
+            tun2socksFile.writeText(
+                Tun2socksConfig.build(
+                    blockRules = blockRules,
+                    mtu = mtu,
+                    tcpBufferKb = tcpBufferKb,
+                    fakeIcmp = fakeIcmp,
+                    mapDns = mode == DnsMode.Local,
+                ),
+            )
         } catch (e: Exception) {
             fail(getString(R.string.error_tun2socks_config, e.message ?: ""))
             return
@@ -402,8 +392,6 @@ class Hysteria2VpnService : VpnService() {
             return
         }
         tunInterface = pfd
-        // The resolver may only claim its address now that the interface is up.
-        localDns?.attach(Tun.CACHE_DNS)
         registerNetworkTracking()
         startNetworkTracking()
 
@@ -431,9 +419,6 @@ class Hysteria2VpnService : VpnService() {
 
         updateState(TunnelState.Connected)
         TunnelStatus.setActiveProfile(target)
-        // The resolver answers on the TUN address, which only exists now, and its
-        // upstream needs the core's SOCKS port — so start it last.
-        localDns?.start(serviceScope)
         startStatsPolling()
         refreshNotification()
         Log.d(TAG, "Tunnel established")
@@ -952,10 +937,6 @@ class Hysteria2VpnService : VpnService() {
         statsJob = null
         monitorJob?.cancel()
         monitorJob = null
-        // The resolver outlives the interface only as a bound socket; closing it
-        // first keeps a reconnect from finding port 53 still held.
-        localDns?.stop()
-        localDns = null
 
         // Mark the core exit as expected *before* killing it, so monitorCore does
         // not overwrite the real error message (or the Idle state) afterwards.

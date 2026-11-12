@@ -34,6 +34,8 @@ object Tun2socksConfig {
         tcpBufferKb: Int = SettingsStore.DEFAULT_TCP_BUFFER_KB,
         /** Answer ICMP echo locally (`tunnel.icmp: reply`); off by default. */
         fakeIcmp: Boolean = false,
+        /** Answer A queries inside the tunnel (hev `mapdns`) instead of forwarding them. */
+        mapDns: Boolean = true,
     ): String {
         val lines = mutableListOf(
             "tunnel:",
@@ -43,6 +45,18 @@ object Tun2socksConfig {
             "  ipv4: ${Tun.IPV4}",
             "  ipv6: '${Tun.IPV6}'",
         )
+        if (mapDns) {
+            // A top-level key (sibling of tunnel/socks5/misc): the engine's config
+            // parser only walks the root mapping, so an indented block is ignored.
+            lines += listOf(
+                "mapdns:",
+                "  address: ${Tun.MAPPED_DNS}",
+                "  port: ${Tun.MAPPED_DNS_PORT}",
+                "  network: ${Tun.MAPPED_DNS_POOL}",
+                "  netmask: ${Tun.MAPPED_DNS_NETMASK}",
+                "  cache-size: ${Tun.MAPPED_DNS_CACHE_SIZE}",
+            )
+        }
         // `tunnel.icmp: reply` answers echo locally: Hysteria carries TCP and UDP
         // only, so a real ping cannot cross it. Off unless the user asks for it,
         // because a fake reply makes ping useless as a diagnostic.
@@ -59,7 +73,11 @@ object Tun2socksConfig {
         )
 
         val tcp = blockRules.tcpPortSpec()
-        val udp = blockRules.udpPortSpec()
+        // Never block the port the tunnel answers DNS on, or DNS dies in a way
+        // nobody can diagnose from the UI.
+        val udp = blockRules.udpPortSpec(
+            excludingPort = if (mapDns) Tun.MAPPED_DNS_PORT else null,
+        )
         if (tcp.isNotEmpty()) lines += "  block-tcp: '$tcp'"
         if (udp.isNotEmpty()) lines += "  block-udp: '$udp'"
         return lines.joinToString("\n", postfix = "\n")

@@ -93,7 +93,46 @@ class Tun2socksConfigTest {
         val yaml = Tun2socksConfig.build(emptyList(), fakeIcmp = true)
 
         // hev parses `tunnel.icmp` as a string and only enables the flag for "reply".
-        assertTrue(yaml.contains("  ipv6: 'fc00::1'\n  icmp: reply\n"))
+        assertTrue(
+            yaml.contains(
+                "mapdns:\n" +
+                    "  address: ${Tun.MAPPED_DNS}\n" +
+                    "  port: ${Tun.MAPPED_DNS_PORT}\n" +
+                    "  network: ${Tun.MAPPED_DNS_POOL}\n" +
+                    "  netmask: ${Tun.MAPPED_DNS_NETMASK}\n" +
+                    "  cache-size: ${Tun.MAPPED_DNS_CACHE_SIZE}\n",
+            ),
+        )
+    }
+
+    @Test
+    fun `forwarded DNS emits no mapdns block`() {
+        val yaml = Tun2socksConfig.build(emptyList(), mapDns = false)
+
+        assertFalse(yaml.contains("mapdns"))
+    }
+
+    @Test
+    fun `blocking port 53 does not break in-tunnel DNS`() {
+        val yaml = Tun2socksConfig.build(
+            listOf(BlockRule(tcp = false, udp = true, portFrom = 1, portTo = 1024)),
+        )
+
+        // 53 is carved out of the range, the rest of the rule still blocks.
+        assertTrue(yaml.contains("block-udp: '1-52,54-1024'"))
+    }
+
+    @Test
+    fun `port 53 is blocked normally when DNS is forwarded`() {
+        val rule = BlockRule(tcp = false, udp = true, portFrom = 53)
+
+        assertTrue(
+            Tun2socksConfig.build(listOf(rule), mapDns = false)
+                .contains("block-udp: '53'"),
+        )
+        assertFalse(
+            Tun2socksConfig.build(listOf(rule)).contains("block-udp"),
+        )
     }
 
     @Test

@@ -79,8 +79,8 @@
     <string name="settings_fake_icmp">Отвечать на ping локально</string>
     <string name="settings_fake_icmp_summary">Hysteria передаёт только TCP и UDP, поэтому ICMP не проходит. Если включить, туннель отвечает на ping сам: приложения и игры, проверяющие связь, не ругаются, но ping больше ничего не говорит о пути.</string>
     <string name="settings_private_dns_hint">Системный Private DNS включён, встроенный DNS-кеш не используется.</string>
-    <string name="settings_dns_cache">Кешировать ответы DNS</string>
-    <string name="settings_dns_cache_summary">Повторные запросы отвечаются внутри туннеля вместо лишнего круга; промахи всё равно уходят на сервер. Не действует, если задан свой DNS.</string>
+    <string name="settings_dns_cache">Отвечать на DNS в туннеле</string>
+    <string name="settings_dns_cache_summary">Туннель сам отвечает на имена и передаёт имя, поэтому разрешает сервер: без DNS-раунда. Нужен рабочий резолвер на сервере. Не действует, если задан свой DNS.</string>
     <string name="settings_custom_dns">Свой DNS-сервер</string>
     <string name="settings_section_appearance">Оформление</string>
     <string name="settings_section_network">Сеть</string>
@@ -106,7 +106,6 @@
     <string name="settings_auto_test_latency_summary">При запуске измеряются только узлы без результата, самый быстрый показывается первым</string>
     <string name="settings_section_diagnostics">Диагностика</string>
     <string name="test_tunnel_direct">Загрузка напрямую (без туннеля)</string>
-    <string name="settings_dns_cache_unavailable">Недоступно на этом устройстве: Android резервирует порт 53, запросы идут через туннель.</string>
     <string name="settings_test_tunnel">Проверить туннель</string>
     <string name="settings_test_tunnel_summary">Измеряет DNS, соединение и загрузку через работающий туннель</string>
     <string name="test_tunnel_dns">DNS (кеш туннеля)</string>
@@ -114,7 +113,7 @@
     <string name="test_tunnel_warm">Второе соединение (тёплое)</string>
     <string name="test_tunnel_ttfb">Первый байт (HTTPS)</string>
     <string name="test_tunnel_speed">Загрузка (5 МБ)</string>
-    <string name="test_tunnel_running">Измерение...</string>
+    <string name="test_tunnel_running">Измерение…</string>
     <string name="test_tunnel_run">Ещё раз</string>
     <string name="test_tunnel_offline">Сначала подключите туннель.</string>
     <string name="settings_export_logs">Экспорт журналов</string>

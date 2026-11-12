@@ -40,7 +40,11 @@ The app exposes this in Settings → Blocked traffic.
 `Hysteria2VpnService` declares (`startTun2socks`, `stopTun2socks`,
 `getTun2socksStats`) and drops the unused `isRunning` binding.
 
-## Mapped DNS (`mapdns`): available upstream, deliberately unused
+## Mapped DNS (`mapdns`): what the app uses for DNS
+
+> A resolver bound to port 53 inside the app is impossible on Android
+> (`ip_unprivileged_port_start` is 1024, so `bind()` fails with EACCES), which is
+> why DNS is answered here instead of in Kotlin.
 
 2.19.3 already answers DNS locally when the YAML has a top-level `mapdns` block,
 and it converts a mapped address back to a **name** before dialling
@@ -48,19 +52,25 @@ and it converts a mapped address back to a **name** before dialling
 `hev_mapped_dns_lookup()` → `ATYP_DOMAIN`, on both the TCP and the UDP session
 path). It is not used by this app.
 
-Its answers are *fake* addresses out of a reserved pool (`network | index`, TTL
-1 second). That breaks the two things users notice most: an app that resolves a
-name and connects minutes later reaches a pool address that no longer maps to
-anything, and an AAAA query is answered with "no records", so IPv6-only
-destinations stop resolving. Fake-IP is a memory-saving trick for proxies that
-cannot cache; this app has real answers to cache instead.
+The answers are *fake* addresses out of a reserved pool (`network | index`, TTL
+1 second). Two things follow, and Settings says so: an app that resolves a name
+and connects much later can reach a pool address that no longer maps to
+anything, and AAAA is answered with "no records", so IPv6-only destinations do
+not resolve in this mode. The switch (Settings -> Network -> "Answer DNS in the
+tunnel") turns the block off and falls back to forwarded resolvers.
 
-`proxy/LocalDns.kt` + `data/DnsMessage.kt` implement a plain DNS cache: the VPN
-pushes the TUN's own address as the resolver, the kernel delivers those queries
-to the app's socket, a hit is answered from memory with TTLs aged, and a miss is
-sent through the core (DNS over TCP inside the core's SOCKS5 listener). Nothing
-of that lives in `libtun2socks.so`, so `scripts/tun2socks.sh` still applies
-exactly the two patches above, and the `.so` files need no rebuild.
+The app renders the block from `proxy/Tun2socksConfig.kt` (`mapDns = true`) and
+pushes `Tun.MAPPED_DNS` as the only resolver; port 53 is carved out of
+`misc.block-udp` so a user rule cannot shadow it. All of that is configuration,
+so `scripts/tun2socks.sh` still applies exactly the two patches above.
+
+## 16 KB page size
+
+`libtun2socks.so` is linked with `-Wl,-z,max-page-size=16384`, and
+`scripts/tun2socks.sh verify` fails when a LOAD segment is aligned below that
+(Android 15+ maps libraries on 16 KB kernels). The bundled Hysteria core is an
+upstream prebuilt and is still 4 KB aligned; `scripts/tun2socks.sh info` prints
+its alignment so a future bump is visible.
 
 ## Testing the rule parser without a device
 

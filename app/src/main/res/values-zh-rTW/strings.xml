@@ -79,8 +79,8 @@
     <string name="settings_fake_icmp">本機回應 ping</string>
     <string name="settings_fake_icmp_summary">Hysteria 只承載 TCP 與 UDP，ICMP 無法通過。開啟後隧道自行回應 ping：靠 ping 判斷連線的應用與遊戲不會誤判，但 ping 從此不能用來診斷鏈路。</string>
     <string name="settings_private_dns_hint">系統的 Private DNS 已開啟，內建 DNS 快取不會生效。</string>
-    <string name="settings_dns_cache">快取 DNS 解析結果</string>
-    <string name="settings_dns_cache_summary">重複的網域查詢在隧道內直接命中，省下一次往返；未命中仍經伺服器解析。設定自訂 DNS 時不生效。</string>
+    <string name="settings_dns_cache">在隧道內應答 DNS</string>
+    <string name="settings_dns_cache_summary">隧道自行應答網域並轉送網域，由伺服器解析：沒有 DNS 往返。需要伺服器端 DNS 可用；設定自訂 DNS 時不生效。</string>
     <string name="settings_custom_dns">自訂 DNS 伺服器</string>
     <string name="settings_section_appearance">外觀</string>
     <string name="settings_section_network">網路</string>
@@ -106,7 +106,6 @@
     <string name="settings_auto_test_latency_summary">開啟 App 時只量測還沒有結果的節點，並把最快的排在最前面</string>
     <string name="settings_section_diagnostics">診斷</string>
     <string name="test_tunnel_direct">下載（直連，不經隧道）</string>
-    <string name="settings_dns_cache_unavailable">此裝置無法使用：Android 保留 port 53，查詢改為經隧道轉送。</string>
     <string name="settings_test_tunnel">測試隧道</string>
     <string name="settings_test_tunnel_summary">透過正在運作的隧道量測 DNS、連線與下載</string>
     <string name="test_tunnel_dns">DNS（隧道內快取）</string>

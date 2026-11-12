@@ -43,8 +43,8 @@ data class BenchResult(
 class TunnelProbe(
     private val socksPort: Int = Tun.SOCKS_PORT,
     private val httpPort: Int = HysteriaConfigBuilder.DEFAULT_HTTP_PORT,
-    private val dnsServer: String = Tun.CACHE_DNS,
-    private val dnsPort: Int = Tun.CACHE_DNS_PORT,
+    private val dnsServer: String = Tun.MAPPED_DNS,
+    private val dnsPort: Int = Tun.MAPPED_DNS_PORT,
 ) {
 
     suspend fun run(onStep: (BenchResult) -> Unit): List<BenchResult> =
@@ -78,9 +78,6 @@ class TunnelProbe(
 
     /** One query straight at the in-tunnel cache; throws when nothing answers. */
     private fun dnsLookup(name: String) {
-        // Say *why* instead of letting it look like a timeout: Android reserves
-        // port 53, so on a normal phone this step can never pass.
-        if (!LocalDns.available) throw IOException("cache not running: port 53 is reserved")
         val query = dnsQuery(name)
         DatagramSocket().use { socket ->
             socket.soTimeout = TIMEOUT_MS

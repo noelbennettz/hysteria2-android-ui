@@ -82,8 +82,8 @@
     <string name="settings_fake_icmp">Answer ping locally</string>
     <string name="settings_fake_icmp_summary">Hysteria carries TCP and UDP only, so ICMP cannot pass. On, the tunnel answers ping itself: apps and games that check connectivity stay happy, but ping no longer tells you anything about the path.</string>
     <string name="settings_private_dns_hint">System Private DNS is on, so the built-in DNS cache is bypassed.</string>
-    <string name="settings_dns_cache">Cache DNS answers</string>
-    <string name="settings_dns_cache_summary">Repeated lookups are answered inside the tunnel instead of paying a round trip; misses still go through the server. Ignored while a custom DNS server is set.</string>
+    <string name="settings_dns_cache">Answer DNS in the tunnel</string>
+    <string name="settings_dns_cache_summary">The tunnel answers names itself and forwards the name, so the server resolves it: no DNS round trip. Needs a working resolver on the server. Ignored while a custom DNS server is set.</string>
     <string name="settings_custom_dns">Custom DNS server</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_network">Network</string>
@@ -110,7 +110,6 @@
     <string name="settings_auto_test_latency_summary">Measure the nodes that have no result yet when the app opens and list the fastest one first</string>
     <string name="settings_section_diagnostics">Diagnostics</string>
     <string name="test_tunnel_direct">Download, direct (no tunnel)</string>
-    <string name="settings_dns_cache_unavailable">Not available on this device: Android reserves port 53, so queries are forwarded through the tunnel instead.</string>
     <string name="settings_test_tunnel">Test tunnel</string>
     <string name="settings_test_tunnel_summary">Measure DNS, connect and download through the running tunnel</string>
     <string name="test_tunnel_dns">DNS (in-tunnel cache)</string>

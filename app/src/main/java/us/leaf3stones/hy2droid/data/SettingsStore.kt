@@ -31,7 +31,7 @@ class SettingsStore(private val context: Context) {
     private val keyDisablePmtud = booleanPreferencesKey("disable_path_mtu_discovery")
     private val keyMtu = intPreferencesKey("tunnel_mtu")
     private val keyShowTraffic = booleanPreferencesKey("show_live_traffic")
-    private val keyDnsCache = booleanPreferencesKey("cache_dns_locally")
+    private val keyLocalDns = booleanPreferencesKey("answer_dns_locally")
     private val keyTcpBuffer = intPreferencesKey("tcp_buffer_kb")
     private val keyFakeIcmp = booleanPreferencesKey("answer_ping_locally")
 
@@ -85,14 +85,14 @@ class SettingsStore(private val context: Context) {
         .map { it[keyDnsServer2] ?: "" }
 
     /**
-     * Whether names are cached inside the tunnel. Default on: a repeated lookup
-     * is answered from memory instead of paying a round trip, which is the
-     * dominant cost on a high-latency tunnel. Misses are still resolved through
-     * the server, and real answers are cached — no fake addresses.
+     * Whether names are answered inside the tunnel (hev's `mapdns`) instead of
+     * being forwarded to a public resolver. Default on: the answer is instant and
+     * the *name* travels in the SOCKS5 request, so the server resolves it with no
+     * extra round trip — which is what a high-latency tunnel needs most.
      * Ignored while a custom DNS server is set — see `proxy/dnsMode()`.
      */
-    val dnsCacheEnabled: Flow<Boolean> = context.settingsDataStore.data
-        .map { it[keyDnsCache] ?: true }
+    val localDnsEnabled: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyLocalDns] ?: true }
 
     /**
      * Per-connection TCP send buffer of the tunnel engine, in KiB.
@@ -177,8 +177,8 @@ class SettingsStore(private val context: Context) {
         context.settingsDataStore.edit { it[keyDnsServer2] = server }
     }
 
-    suspend fun setDnsCacheEnabled(enabled: Boolean) {
-        context.settingsDataStore.edit { it[keyDnsCache] = enabled }
+    suspend fun setLocalDnsEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyLocalDns] = enabled }
     }
 
 

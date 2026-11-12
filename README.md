@@ -30,6 +30,11 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   *first* connection — upstream: "the client will not connect until the first
   call to TCP() or UDP()" — after that the session is held open), with a 20 s
   QUIC heartbeat
+- **16 KB page size**: `libtun2socks.so` is linked with 16 KB LOAD alignment and
+  `scripts/tun2socks.sh verify` fails if that regresses. The bundled Hysteria
+  core is an upstream prebuilt that is still 4 KB aligned, so Android 15+ on a
+  16 KB-page device shows its compatibility warning for that file;
+  `scripts/tun2socks.sh info` prints the alignment of whichever core is bundled.
 - **Failures are named**, not just reported: the status card translates the
   core's own log line into one sentence (name does not resolve, TLS failed,
   password rejected, nothing came back, something else answered, obfuscation
@@ -38,20 +43,21 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   TCP and UDP only, so ICMP cannot cross it; this makes the engine answer echo
   itself. Handy for apps that gate on ping, at the cost of ping no longer
   meaning anything
-- DNS, two modes (Settings → Network). **Cache DNS answers** (default) is served
-  by a resolver that lives in the app: the VPN pushes its own TUN address, so
-  Android's queries land on a socket the app owns instead of going into the
-  tunnel. A repeated lookup is answered from an in-memory cache with every TTL
-  aged on the way out; a miss is resolved through the core (DNS over TCP via its
-  SOCKS5 listener), so the query still leaves from the server and the answer is
-  a real one — no fake addresses, so an app that resolves early and connects
-  later keeps working, and AAAA behaves like everywhere else. Turn the switch
-  off and the tun gets real resolvers directly — Quad9 (`9.9.9.9`) with
-  Cloudflare (`1.1.1.1`) as the backup — because Android has no "no DNS means
-  use the tunnel" mode: with an empty DNS list it resolves through the
-  underlying network, i.e. the queries leave over Wi-Fi and never reach the
-  server. A custom primary/secondary (IPv4 or IPv6, validated) overrides both
-  modes.
+- DNS, two modes (Settings → Network). **Answer DNS in the tunnel** (default) is
+  done by the tunnel engine (hev's `mapdns`): the VPN pushes one resolver
+  (`192.0.2.53`), the engine intercepts it, answers A queries instantly with an
+  address from `198.18.0.0/15`, and forwards the *name* over SOCKS5 so the
+  server resolves it. That removes a round trip per name, which is the biggest
+  DNS cost on a high-latency tunnel. The trade is honest: a mapped address is
+  only meaningful while the app is connected, so a client that resolves early
+  and connects much later can fail, and IPv6-only destinations do not resolve in
+  this mode. Turn the switch off and the tun gets real resolvers — Quad9
+  (`9.9.9.9`) with Cloudflare (`1.1.1.1`) as the backup — because Android has no
+  "no DNS means use the tunnel" mode: with an empty DNS list it resolves through
+  the underlying network, i.e. the queries leave over Wi-Fi and never reach the
+  server. A custom primary/secondary overrides both modes. (A local resolver on
+  port 53 is not an option: Android reserves privileged ports and `bind()` fails
+  with EACCES.)
 
 - **Network handover**: switching Wi-Fi ↔ mobile restarts the Hysteria core, so
   the session is back within a second instead of waiting out the 30 s QUIC idle

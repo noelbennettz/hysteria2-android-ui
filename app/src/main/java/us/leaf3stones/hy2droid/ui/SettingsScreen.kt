@@ -73,7 +73,6 @@ import us.leaf3stones.hy2droid.data.LanRanges
 import us.leaf3stones.hy2droid.data.SettingsStore
 import us.leaf3stones.hy2droid.proxy.BenchResult
 import us.leaf3stones.hy2droid.proxy.BenchStep
-import us.leaf3stones.hy2droid.proxy.LocalDns
 import us.leaf3stones.hy2droid.proxy.TunnelProbe
 import us.leaf3stones.hy2droid.proxy.TunnelState
 
@@ -102,7 +101,7 @@ fun SettingsScreen(
     val dnsEnabled by viewModel.customDnsEnabled.collectAsState()
     val dns1 by viewModel.customDnsServer.collectAsState()
     val dns2 by viewModel.customDnsServer2.collectAsState()
-    val localDns by viewModel.dnsCacheEnabled.collectAsState()
+    val localDns by viewModel.localDnsEnabled.collectAsState()
     val bypassLan by viewModel.bypassLan.collectAsState()
     val autoTestLatency by viewModel.autoTestLatency.collectAsState()
     val disablePmtud by viewModel.disablePathMtuDiscovery.collectAsState()
@@ -301,16 +300,8 @@ fun SettingsScreen(
                 // A custom resolver wins over the mode switch, so the switch is
                 // shown disabled rather than pretending it still applies.
                 enabled = !dnsEnabled,
-                onCheckedChange = viewModel::setDnsCacheEnabled,
+                onCheckedChange = viewModel::setLocalDnsEnabled,
             )
-            if (localDns && !LocalDns.available) {
-                Text(
-                    text = stringResource(R.string.settings_dns_cache_unavailable),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(start = 72.dp, end = 16.dp, bottom = 12.dp),
-                )
-            }
             if (localDns && privateDnsOn) {
                 Text(
                     text = stringResource(R.string.settings_private_dns_hint),
