@@ -87,6 +87,9 @@
     <string name="settings_mtu">MTU du tunnel</string>
     <string name="settings_mtu_summary">%1$d octets ; à réduire si les gros paquets bloquent</string>
     <string name="settings_mtu_hint">1280 – 1500 ; appliqué à la prochaine connexion</string>
+    <string name="settings_tcp_buffer">Tampon TCP par connexion</string>
+    <string name="settings_tcp_buffer_summary">%1$d Ko ; un tampon plus grand accélère une connexion unique sur un tunnel à forte latence, au prix de mémoire par connexion</string>
+    <string name="settings_tcp_buffer_option">%1$d Ko</string>
     <string name="settings_blocked_traffic">Trafic bloqué</string>
     <string name="settings_blocked_traffic_summary">Refuser le trafic comme QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Tester la latence au démarrage</string>

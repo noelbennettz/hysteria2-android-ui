@@ -11,12 +11,12 @@ import us.leaf3stones.hy2droid.data.SettingsStore
 class Tun2socksConfigTest {
 
     @Test
-    fun `no rules means no filtering section`() {
+    fun `no rules means a bare misc section with the tcp buffer`() {
         val yaml = Tun2socksConfig.build(emptyList())
 
         assertTrue(yaml.contains("socks5:\n  port: 1080\n  address: 127.0.0.1\n  udp: 'udp'"))
         assertTrue(yaml.contains("ipv4: 10.0.88.88"))
-        assertFalse(yaml.contains("misc:"))
+        assertTrue(yaml.contains("misc:\n  tcp-buffer-size: "))
         assertFalse(yaml.contains("block-"))
     }
 
@@ -24,7 +24,7 @@ class Tun2socksConfigTest {
     fun `udp rules are emitted as block-udp`() {
         val yaml = Tun2socksConfig.build(listOf(BlockRule.QUIC))
 
-        assertTrue(yaml.contains("misc:\n  block-udp: '443'"))
+        assertTrue(yaml.contains("  block-udp: '443'"))
         assertFalse(yaml.contains("block-tcp"))
     }
 
@@ -33,7 +33,7 @@ class Tun2socksConfigTest {
         val yaml = Tun2socksConfig.build(DEFAULT_BLOCK_RULES)
 
         assertEquals(listOf(BlockRule.QUIC), DEFAULT_BLOCK_RULES)
-        assertTrue(yaml.contains("misc:\n  block-udp: '443'"))
+        assertTrue(yaml.contains("  block-udp: '443'"))
         assertFalse(yaml.contains("block-tcp"))
     }
 
@@ -48,7 +48,7 @@ class Tun2socksConfigTest {
             ),
         )
 
-        assertTrue(yaml.contains("misc:\n  block-tcp: '25,465,8000-8100'\n  block-udp: '443,8000-8100'\n"))
+        assertTrue(yaml.contains("  block-tcp: '25,465,8000-8100'\n  block-udp: '443,8000-8100'\n"))
     }
 
     @Test
@@ -65,4 +65,29 @@ class Tun2socksConfigTest {
         assertTrue(yaml.contains("mtu: 1380"))
     }
 
+    @Test
+    fun `the tcp buffer defaults to the settings default, in bytes`() {
+        val yaml = Tun2socksConfig.build(emptyList())
+
+        assertTrue(
+            yaml.contains("tcp-buffer-size: ${SettingsStore.DEFAULT_TCP_BUFFER_KB * 1024}"),
+        )
+    }
+
+    @Test
+    fun `the tcp buffer follows the chosen size`() {
+        val yaml = Tun2socksConfig.build(emptyList(), tcpBufferKb = 256)
+
+        assertTrue(yaml.contains("tcp-buffer-size: 262144"))
+    }
+
+    @Test
+    fun `only offered buffer sizes survive, rounded to the nearest`() {
+        // A restored backup or a hand-edited preference cannot ask for nonsense.
+        assertEquals(64, SettingsStore.clampTcpBufferKb(0))
+        assertEquals(64, SettingsStore.clampTcpBufferKb(70))
+        assertEquals(128, SettingsStore.clampTcpBufferKb(120))
+        assertEquals(256, SettingsStore.clampTcpBufferKb(4096))
+        assertEquals(131072, SettingsStore.tcpBufferBytes(128))
+    }
 }

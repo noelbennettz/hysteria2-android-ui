@@ -331,6 +331,12 @@ class Hysteria2VpnService : VpnService() {
             SettingsStore.DEFAULT_MTU
         }
 
+        val tcpBufferKb = try {
+            settings.tcpBufferKb.first()
+        } catch (_: Exception) {
+            SettingsStore.DEFAULT_TCP_BUFFER_KB
+        }
+
         val blockRules = try {
             settings.blockRules.first()
         } catch (_: Exception) {
@@ -362,7 +368,7 @@ class Hysteria2VpnService : VpnService() {
 
         val tun2socksFile = File(filesDir, Tun2socksConfig.FILE_NAME)
         try {
-            tun2socksFile.writeText(Tun2socksConfig.build(blockRules, mtu))
+            tun2socksFile.writeText(Tun2socksConfig.build(blockRules, mtu, tcpBufferKb))
         } catch (e: Exception) {
             fail(getString(R.string.error_tun2socks_config, e.message ?: ""))
             return

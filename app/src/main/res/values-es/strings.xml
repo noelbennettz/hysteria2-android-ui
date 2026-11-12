@@ -87,6 +87,9 @@
     <string name="settings_mtu">MTU del túnel</string>
     <string name="settings_mtu_summary">%1$d bytes; redúcelo si los paquetes grandes se atascan</string>
     <string name="settings_mtu_hint">1280 – 1500; se aplica en la próxima conexión</string>
+    <string name="settings_tcp_buffer">Búfer TCP por conexión</string>
+    <string name="settings_tcp_buffer_summary">%1$d KB; un búfer mayor acelera una sola conexión en túneles con latencia alta, a costa de memoria por conexión</string>
+    <string name="settings_tcp_buffer_option">%1$d KB</string>
     <string name="settings_blocked_traffic">Tráfico bloqueado</string>
     <string name="settings_blocked_traffic_summary">Rechazar tráfico como QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Probar latencia al abrir</string>

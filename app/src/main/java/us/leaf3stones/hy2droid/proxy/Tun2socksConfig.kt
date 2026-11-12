@@ -26,6 +26,11 @@ object Tun2socksConfig {
     fun build(
         blockRules: List<BlockRule> = emptyList(),
         mtu: Int = SettingsStore.DEFAULT_MTU,
+        /**
+         * The engine terminates TCP in userspace, so this is the per-connection
+         * send buffer — the throughput of one stream is `buffer / RTT`.
+         */
+        tcpBufferKb: Int = SettingsStore.DEFAULT_TCP_BUFFER_KB,
     ): String {
         val lines = mutableListOf(
             "tunnel:",
@@ -39,15 +44,14 @@ object Tun2socksConfig {
             "  port: ${Tun.SOCKS_PORT}",
             "  address: 127.0.0.1",
             "  udp: 'udp'",
+            "",
+            "misc:",
+            "  tcp-buffer-size: ${SettingsStore.tcpBufferBytes(tcpBufferKb)}",
         )
         val tcp = blockRules.tcpPortSpec()
         val udp = blockRules.udpPortSpec()
-        if (tcp.isNotEmpty() || udp.isNotEmpty()) {
-            lines += ""
-            lines += "misc:"
-            if (tcp.isNotEmpty()) lines += "  block-tcp: '$tcp'"
-            if (udp.isNotEmpty()) lines += "  block-udp: '$udp'"
-        }
+        if (tcp.isNotEmpty()) lines += "  block-tcp: '$tcp'"
+        if (udp.isNotEmpty()) lines += "  block-udp: '$udp'"
         return lines.joinToString("\n", postfix = "\n")
     }
 }

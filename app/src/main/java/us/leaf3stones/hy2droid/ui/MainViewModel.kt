@@ -79,6 +79,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val mtu: StateFlow<Int> = settings.mtu
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsStore.DEFAULT_MTU)
 
+    val tcpBufferKb: StateFlow<Int> = settings.tcpBufferKb
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsStore.DEFAULT_TCP_BUFFER_KB)
+
+
     val blockRules: StateFlow<List<BlockRule>> = settings.blockRules
         .stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_BLOCK_RULES)
 
@@ -196,6 +200,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setMtu(value: Int) {
         viewModelScope.launch { settings.setMtu(value) }
+    }
+
+    fun setTcpBufferKb(kb: Int) {
+        viewModelScope.launch { settings.setTcpBufferKb(kb) }
     }
 
     fun setBlockRules(rules: List<BlockRule>) {

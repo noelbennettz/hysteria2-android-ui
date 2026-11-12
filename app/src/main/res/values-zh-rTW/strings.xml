@@ -87,6 +87,9 @@
     <string name="settings_mtu">通道 MTU</string>
     <string name="settings_mtu_summary">%1$d 位元組；大封包卡住時可以調低</string>
     <string name="settings_mtu_hint">1280 – 1500，下次連線時生效</string>
+    <string name="settings_tcp_buffer">TCP 連線緩衝</string>
+    <string name="settings_tcp_buffer_summary">每條連線的傳送緩衝：%1$d KB；高延遲隧道下調大能提升單連線速度，代價是每條連線多佔記憶體</string>
+    <string name="settings_tcp_buffer_option">%1$d KB</string>
     <string name="settings_blocked_traffic">封鎖流量</string>
     <string name="settings_blocked_traffic_summary">拒絕 QUIC（UDP 443）等流量</string>
     <string name="settings_auto_test_latency">啟動時測試延遲</string>

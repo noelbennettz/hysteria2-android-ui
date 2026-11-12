@@ -87,6 +87,9 @@
     <string name="settings_mtu">MTU туннеля</string>
     <string name="settings_mtu_summary">%1$d байт; уменьшите, если крупные пакеты застревают</string>
     <string name="settings_mtu_hint">1280 – 1500; применится при следующем подключении</string>
+    <string name="settings_tcp_buffer">Буфер TCP на соединение</string>
+    <string name="settings_tcp_buffer_summary">%1$d КБ; больше буфер — быстрее одно соединение на медленном туннеле, но больше памяти на соединение</string>
+    <string name="settings_tcp_buffer_option">%1$d КБ</string>
     <string name="settings_blocked_traffic">Заблокированный трафик</string>
     <string name="settings_blocked_traffic_summary">Отклонять трафик вроде QUIC (UDP 443)</string>
     <string name="settings_auto_test_latency">Проверять задержку при запуске</string>

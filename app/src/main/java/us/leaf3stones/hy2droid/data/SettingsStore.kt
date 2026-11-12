@@ -32,6 +32,8 @@ class SettingsStore(private val context: Context) {
     private val keyMtu = intPreferencesKey("tunnel_mtu")
     private val keyShowTraffic = booleanPreferencesKey("show_live_traffic")
     private val keyDnsCache = booleanPreferencesKey("cache_dns_locally")
+    private val keyTcpBuffer = intPreferencesKey("tcp_buffer_kb")
+
 
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
@@ -90,6 +92,19 @@ class SettingsStore(private val context: Context) {
      */
     val dnsCacheEnabled: Flow<Boolean> = context.settingsDataStore.data
         .map { it[keyDnsCache] ?: true }
+
+    /**
+     * Per-connection TCP send buffer of the tunnel engine, in KiB.
+     *
+     * This is the single biggest throughput knob for one connection: the engine
+     * terminates TCP in userspace, so the download rate of one stream is
+     * `buffer / RTT` (64 KiB over a 200 ms path tops out around 2.6 Mbit/s).
+     * Each session pays the buffer plus a fixed 84 KiB task stack, so the
+     * default is a compromise, not the maximum.
+     */
+    val tcpBufferKb: Flow<Int> = context.settingsDataStore.data
+        .map { it[keyTcpBuffer] ?: DEFAULT_TCP_BUFFER_KB }
+
 
 
     /** Whether local-network ranges bypass the tunnel. Default off; Android 13+. */
@@ -163,6 +178,11 @@ class SettingsStore(private val context: Context) {
         context.settingsDataStore.edit { it[keyMtu] = clampMtu(mtu) }
     }
 
+    suspend fun setTcpBufferKb(kb: Int) {
+        context.settingsDataStore.edit { it[keyTcpBuffer] = clampTcpBufferKb(kb) }
+    }
+
+
     suspend fun setBlockRules(rules: List<BlockRule>) {
         context.settingsDataStore.edit { it[keyBlockRules] = encode(rules.encodeRules().toSet()) }
     }
@@ -216,5 +236,24 @@ class SettingsStore(private val context: Context) {
 
         /** Keep a user-supplied MTU inside [MIN_MTU]..[MAX_MTU]. */
         fun clampMtu(value: Int): Int = value.coerceIn(MIN_MTU, MAX_MTU)
+
+        /**
+         * TCP buffer sizes offered in Settings, in KiB. The upper bound is the
+         * engine's own ceiling: lwIP is built with `TCP_SND_BUF = 32 * TCP_MSS`
+         * (262,112 bytes at MSS 8191), and anything larger is clamped away.
+         */
+        val TCP_BUFFER_CHOICES_KB = listOf(64, 128, 256)
+
+        /** 64 KiB is the engine's default; 128 KiB is twice the window for free. */
+        const val DEFAULT_TCP_BUFFER_KB = 128
+
+        /** The nearest offered size, so a restored/hand-edited value is usable. */
+        fun clampTcpBufferKb(value: Int): Int =
+            TCP_BUFFER_CHOICES_KB.minByOrNull { kotlin.math.abs(it - value) }
+                ?: DEFAULT_TCP_BUFFER_KB
+
+        /** Bytes handed to the engine's `misc.tcp-buffer-size`. */
+        fun tcpBufferBytes(kb: Int): Int = clampTcpBufferKb(kb) * 1024
+
     }
 }

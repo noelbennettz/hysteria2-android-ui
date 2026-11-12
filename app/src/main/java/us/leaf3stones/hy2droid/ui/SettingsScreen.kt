@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -98,9 +99,11 @@ fun SettingsScreen(
     val autoTestLatency by viewModel.autoTestLatency.collectAsState()
     val disablePmtud by viewModel.disablePathMtuDiscovery.collectAsState()
     val mtu by viewModel.mtu.collectAsState()
+    val tcpBufferKb by viewModel.tcpBufferKb.collectAsState()
     val tunnelState by viewModel.tunnelState.collectAsState()
     val active = tunnelState is TunnelState.Connected || tunnelState is TunnelState.Connecting
     var mtuDialogOpen by remember { mutableStateOf(false) }
+    var tcpBufferDialogOpen by remember { mutableStateOf(false) }
 
     // SAF: the user picks where the zip goes, so there is no storage permission
     // to ask for and no FileProvider to declare.
@@ -246,6 +249,13 @@ fun SettingsScreen(
                 onClick = { mtuDialogOpen = true },
             )
             HorizontalDivider()
+            ClickRow(
+                icon = Icons.Filled.SwapVert,
+                title = stringResource(R.string.settings_tcp_buffer),
+                subtitle = stringResource(R.string.settings_tcp_buffer_summary, tcpBufferKb),
+                onClick = { tcpBufferDialogOpen = true },
+            )
+            HorizontalDivider()
             SwitchRow(
                 icon = Icons.Filled.SettingsEthernet,
                 title = stringResource(R.string.settings_disable_pmtud),
@@ -332,6 +342,41 @@ fun SettingsScreen(
             )
             HorizontalDivider()
         }
+    }
+
+    if (tcpBufferDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { tcpBufferDialogOpen = false },
+            title = { Text(stringResource(R.string.settings_tcp_buffer)) },
+            text = {
+                Column {
+                    SettingsStore.TCP_BUFFER_CHOICES_KB.forEach { kb ->
+                        Text(
+                            text = stringResource(R.string.settings_tcp_buffer_option, kb),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (kb == tcpBufferKb) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.setTcpBufferKb(kb)
+                                    tcpBufferDialogOpen = false
+                                }
+                                .padding(vertical = 12.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { tcpBufferDialogOpen = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 
     if (mtuDialogOpen) {
