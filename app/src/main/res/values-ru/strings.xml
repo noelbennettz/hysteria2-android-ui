@@ -69,8 +69,8 @@
     <string name="settings_show_address_summary">Показывать хост и порт на карточках профилей</string>
     <string name="settings_show_traffic">Трафик в реальном времени</string>
     <string name="settings_show_traffic_summary">Показывать скорость на карточке состояния и в уведомлении</string>
-    <string name="settings_local_dns">Отвечать на DNS локально</string>
-    <string name="settings_local_dns_summary">Имена разрешаются внутри туннеля силами сервера: без лишнего круга на каждый запрос, но нужен рабочий резолвер на сервере. Не действует, если задан свой DNS.</string>
+    <string name="settings_dns_cache">Кешировать ответы DNS</string>
+    <string name="settings_dns_cache_summary">Повторные запросы отвечаются внутри туннеля вместо лишнего круга; промахи всё равно уходят на сервер. Не действует, если задан свой DNS.</string>
     <string name="settings_custom_dns">Свой DNS-сервер</string>
     <string name="settings_section_appearance">Оформление</string>
     <string name="settings_section_network">Сеть</string>

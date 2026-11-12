@@ -69,8 +69,8 @@
     <string name="settings_show_address_summary">Afficher l\'hôte et le port sur les cartes de profil</string>
     <string name="settings_show_traffic">Trafic en direct</string>
     <string name="settings_show_traffic_summary">Affiche le débit sur la carte d\'état et dans la notification</string>
-    <string name="settings_local_dns">Résoudre le DNS localement</string>
-    <string name="settings_local_dns_summary">Les noms sont résolus dans le tunnel par le serveur : aucun aller-retour par requête, mais il faut un résolveur fonctionnel sur le serveur. Ignoré si un DNS personnalisé est défini.</string>
+    <string name="settings_dns_cache">Mettre en cache les réponses DNS</string>
+    <string name="settings_dns_cache_summary">Les requêtes répétées sont résolues dans le tunnel au lieu de payer un aller-retour ; celles absentes du cache passent par le serveur. Ignoré si un DNS personnalisé est défini.</string>
     <string name="settings_custom_dns">Serveur DNS personnalisé</string>
     <string name="settings_section_appearance">Apparence</string>
     <string name="settings_section_network">Réseau</string>

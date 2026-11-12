@@ -40,43 +40,27 @@ The app exposes this in Settings → Blocked traffic.
 `Hysteria2VpnService` declares (`startTun2socks`, `stopTun2socks`,
 `getTun2socksStats`) and drops the unused `isRunning` binding.
 
-## Mapped DNS (`mapdns`) — upstream, no patch
+## Mapped DNS (`mapdns`): available upstream, deliberately unused
 
 2.19.3 already answers DNS locally when the YAML has a top-level `mapdns` block,
-and — the part that used to be an open question — it also converts a mapped
-address back to a **name** before dialling:
+and it converts a mapped address back to a **name** before dialling
+(`src/misc/hev-utils.c:hev_socks5_addr_from_lwip()` →
+`hev_mapped_dns_lookup()` → `ATYP_DOMAIN`, on both the TCP and the UDP session
+path). It is not used by this app.
 
-- `src/hev-socks5-tunnel.c:udp_recv_handler()` intercepts UDP addressed to
-  `mapdns.address` and hands it to `dns_recv_handler()`;
-- `src/hev-mapped-dns.c:hev_mapped_dns_handle()` synthesises an A answer out of
-  `network | index` (TTL 1) and caches name → index (`cache-size`, LRU);
-- `src/misc/hev-utils.c:hev_socks5_addr_from_lwip()` calls
-  `hev_mapped_dns_lookup()` and emits `ATYP_DOMAIN` instead of `ATYP_IPV4`. Both
-  the TCP (`hev-socks5-session-tcp.c`) and the UDP (`hev-socks5-session-udp.c`)
-  dial paths go through it, so Hysteria 2 receives the hostname and resolves it
-  on the server.
+Its answers are *fake* addresses out of a reserved pool (`network | index`, TTL
+1 second). That breaks the two things users notice most: an app that resolves a
+name and connects minutes later reaches a pool address that no longer maps to
+anything, and an AAAA query is answered with "no records", so IPv6-only
+destinations stop resolving. Fake-IP is a memory-saving trick for proxies that
+cannot cache; this app has real answers to cache instead.
 
-So the app only renders the block (`proxy/Tun2socksConfig.kt`, `mapDns = true`)
-and pushes `Tun.MAPPED_DNS` as the resolver — no C change, no rebuild, and
-`scripts/tun2socks.sh` still applies exactly the two patches above.
-
-Two things that bite:
-
-- `mapdns:` must be a **top-level** key (sibling of `tunnel`/`socks5`/`misc`);
-  `hev_config_parse()` only walks the root mapping, so an indented block is
-  silently ignored.
-- The answer TTL is 1 second **on purpose**: `hev_mapped_dns_put(NULL)` wipes the
-  mapping when the tunnel engine stops, and a long TTL would leave apps holding
-  placeholder addresses that no longer resolve to anything. Do not "optimise" it.
-
-To check the rendered YAML against hev's parser without a device:
-
-```bash
-HEV=$(scripts/tun2socks.sh source)
-cd "$HEV" && make static
-# feed it a file produced by Tun2socksConfig.build(..., mapDns = true) and assert
-# hev_config_get_mapdns_{address,port,network,netmask,cache_size}()
-```
+`proxy/LocalDns.kt` + `data/DnsMessage.kt` implement a plain DNS cache: the VPN
+pushes the TUN's own address as the resolver, the kernel delivers those queries
+to the app's socket, a hit is answered from memory with TTLs aged, and a miss is
+sent through the core (DNS over TCP inside the core's SOCKS5 listener). Nothing
+of that lives in `libtun2socks.so`, so `scripts/tun2socks.sh` still applies
+exactly the two patches above, and the `.so` files need no rebuild.
 
 ## Testing the rule parser without a device
 

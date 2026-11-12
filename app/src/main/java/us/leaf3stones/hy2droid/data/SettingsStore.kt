@@ -31,7 +31,8 @@ class SettingsStore(private val context: Context) {
     private val keyDisablePmtud = booleanPreferencesKey("disable_path_mtu_discovery")
     private val keyMtu = intPreferencesKey("tunnel_mtu")
     private val keyShowTraffic = booleanPreferencesKey("show_live_traffic")
-    private val keyLocalDns = booleanPreferencesKey("resolve_dns_locally")
+    private val keyDnsCache = booleanPreferencesKey("cache_dns_locally")
+
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -81,13 +82,15 @@ class SettingsStore(private val context: Context) {
         .map { it[keyDnsServer2] ?: "" }
 
     /**
-     * Whether names are resolved inside the tunnel (hev's `mapdns`) instead of
-     * being forwarded to a public resolver. Default on: it removes a round trip
-     * per distinct name, which is the dominant cost on a high-latency tunnel.
+     * Whether names are cached inside the tunnel. Default on: a repeated lookup
+     * is answered from memory instead of paying a round trip, which is the
+     * dominant cost on a high-latency tunnel. Misses are still resolved through
+     * the server, and real answers are cached — no fake addresses.
      * Ignored while a custom DNS server is set — see `proxy/dnsMode()`.
      */
-    val resolveDnsLocally: Flow<Boolean> = context.settingsDataStore.data
-        .map { it[keyLocalDns] ?: true }
+    val dnsCacheEnabled: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyDnsCache] ?: true }
+
 
     /** Whether local-network ranges bypass the tunnel. Default off; Android 13+. */
     val bypassLan: Flow<Boolean> = context.settingsDataStore.data
@@ -147,9 +150,10 @@ class SettingsStore(private val context: Context) {
         context.settingsDataStore.edit { it[keyDnsServer2] = server }
     }
 
-    suspend fun setResolveDnsLocally(enabled: Boolean) {
-        context.settingsDataStore.edit { it[keyLocalDns] = enabled }
+    suspend fun setDnsCacheEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyDnsCache] = enabled }
     }
+
 
     suspend fun setBypassLan(enabled: Boolean) {
         context.settingsDataStore.edit { it[keyBypassLan] = enabled }

@@ -28,18 +28,21 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   *first* connection — upstream: "the client will not connect until the first
   call to TCP() or UDP()" — after that the session is held open), with a 20 s
   QUIC heartbeat
-- DNS, two modes (Settings → Network). **Answer DNS locally** (default) is
-  answered inside the tunnel by `libtun2socks.so` (hev's `mapdns`): the resolver
-  it advertises (`192.0.2.53`) is intercepted, an A query gets a placeholder
-  address from `198.18.0.0/15` instantly, and the *name* is forwarded over
-  SOCKS5 so the server resolves it — one connection round trip saved per
-  distinct name, at the cost of depending on the server's resolver. Turn it off
-  and the tun gets real resolvers instead — Quad9 (`9.9.9.9`) with Cloudflare
-  (`1.1.1.1`) as the backup — because Android has no "no DNS means use the
-  tunnel" mode: with an empty DNS list it resolves through the underlying
-  network, i.e. the queries leave over Wi-Fi and never reach the server.
-  A custom primary/secondary (IPv4 or IPv6, validated) overrides both modes, and
-  then also disables the local answering.
+- DNS, two modes (Settings → Network). **Cache DNS answers** (default) is served
+  by a resolver that lives in the app: the VPN pushes its own TUN address, so
+  Android's queries land on a socket the app owns instead of going into the
+  tunnel. A repeated lookup is answered from an in-memory cache with every TTL
+  aged on the way out; a miss is resolved through the core (DNS over TCP via its
+  SOCKS5 listener), so the query still leaves from the server and the answer is
+  a real one — no fake addresses, so an app that resolves early and connects
+  later keeps working, and AAAA behaves like everywhere else. Turn the switch
+  off and the tun gets real resolvers directly — Quad9 (`9.9.9.9`) with
+  Cloudflare (`1.1.1.1`) as the backup — because Android has no "no DNS means
+  use the tunnel" mode: with an empty DNS list it resolves through the
+  underlying network, i.e. the queries leave over Wi-Fi and never reach the
+  server. A custom primary/secondary (IPv4 or IPv6, validated) overrides both
+  modes.
+
 - **Network handover**: switching Wi-Fi ↔ mobile restarts the Hysteria core, so
   the session is back within a second instead of waiting out the 30 s QUIC idle
   timeout. The TUN and the tunnel engine stay up; flows in flight during the
@@ -138,9 +141,10 @@ process — same UID — reaches the server over the underlying network and reso
 the profile's hostname with the system resolver. If that resolver is broken the
 connect fails; there is deliberately no fallback (no hardcoded resolver, no DoH
 retry) on that path. DNS *inside* the tunnel is separate: the tun always gets a
-resolver (see Features), and in the default mode that resolver is hev's own
-`mapdns` address, so app lookups are answered locally with a placeholder and the
-name is dialled by the server.
+resolver (see Features), and in the default mode that resolver is the TUN's own
+address, answered by the app's caching resolver (`proxy/LocalDns.kt`), which
+forwards misses through the core's SOCKS5 listener.
+
 
 A network handover cannot be fixed by re-pinning the TUN: Hysteria 2 has no
 rebind API, so the service watches the set of validated non-VPN transports and

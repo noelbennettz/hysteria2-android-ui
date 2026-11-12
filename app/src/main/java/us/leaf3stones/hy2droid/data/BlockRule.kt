@@ -108,33 +108,8 @@ val DEFAULT_BLOCK_RULES: List<BlockRule> = listOf(BlockRule.QUIC)
 /** The `misc.block-tcp` value: comma separated ports/ranges, `""` when nothing applies. */
 fun List<BlockRule>.tcpPortSpec(): String = portSpec(udp = false)
 
-/**
- * The `misc.block-udp` value: comma separated ports/ranges, `""` when nothing
- * applies.
- *
- * [excludingPort] carves one port out of the result. Used for port 53 when DNS
- * is answered inside the tunnel: hev checks the mapped-DNS destination before
- * the block list, but a rule that covers 53 makes the failure confusing and
- * order-dependent, so the port is simply not blocked. Ranges are split rather
- * than dropped, so blocking `1-1024` still blocks everything around 53.
- */
-fun List<BlockRule>.udpPortSpec(excludingPort: Int? = null): String =
-    filter { it.udp }
-        .sortedBy { it.portFrom }
-        .flatMap { it.portSpecsSkipping(excludingPort) }
-        .joinToString(",")
-
-/** This rule as one or two `from-to` specs, with [port] removed when covered. */
-internal fun BlockRule.portSpecsSkipping(port: Int?): List<String> {
-    if (port == null || port !in portFrom..portTo) return listOf(portSpec)
-    val specs = mutableListOf<String>()
-    if (portFrom <= port - 1) specs += portRangeSpec(portFrom, port - 1)
-    if (port + 1 <= portTo) specs += portRangeSpec(port + 1, portTo)
-    return specs
-}
-
-private fun portRangeSpec(from: Int, to: Int): String =
-    if (from == to) from.toString() else "$from-$to"
+/** The `misc.block-udp` value: comma separated ports/ranges, `""` when nothing applies. */
+fun List<BlockRule>.udpPortSpec(): String = portSpec(udp = true)
 
 private fun List<BlockRule>.portSpec(udp: Boolean): String =
     filter { if (udp) it.udp else it.tcp }

@@ -71,9 +71,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val customDnsServer2: StateFlow<String> = settings.customDnsServer2
         .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
-    val resolveDnsLocally: StateFlow<Boolean> = settings.resolveDnsLocally
+    val dnsCacheEnabled: StateFlow<Boolean> = settings.dnsCacheEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
-
     val bypassLan: StateFlow<Boolean> = settings.bypassLan
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
@@ -187,8 +186,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setCustomDnsServer2(server) }
     }
 
-    fun setResolveDnsLocally(enabled: Boolean) {
-        viewModelScope.launch { settings.setResolveDnsLocally(enabled) }
+    fun setDnsCacheEnabled(enabled: Boolean) {
+        viewModelScope.launch { settings.setDnsCacheEnabled(enabled) }
     }
 
     fun setBypassLan(enabled: Boolean) {

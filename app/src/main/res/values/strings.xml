@@ -72,8 +72,8 @@
     <string name="settings_show_address_summary">Show host and port on the profile cards</string>
     <string name="settings_show_traffic">Live traffic</string>
     <string name="settings_show_traffic_summary">Show throughput on the status card and in the notification</string>
-    <string name="settings_local_dns">Answer DNS locally</string>
-    <string name="settings_local_dns_summary">Names are answered inside the tunnel and resolved by the server: no round trip per lookup, but it needs a working resolver on the server. Ignored while a custom DNS server is set.</string>
+    <string name="settings_dns_cache">Cache DNS answers</string>
+    <string name="settings_dns_cache_summary">Repeated lookups are answered inside the tunnel instead of paying a round trip; misses still go through the server. Ignored while a custom DNS server is set.</string>
     <string name="settings_custom_dns">Custom DNS server</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_network">Network</string>

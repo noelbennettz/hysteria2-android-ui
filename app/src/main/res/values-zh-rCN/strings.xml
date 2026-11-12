@@ -69,8 +69,8 @@
     <string name="settings_show_address_summary">在配置卡片上显示主机和端口</string>
     <string name="settings_show_traffic">实时流量</string>
     <string name="settings_show_traffic_summary">在状态卡片和通知中显示传输速率</string>
-    <string name="settings_local_dns">本地应答 DNS</string>
-    <string name="settings_local_dns_summary">域名在隧道内直接应答、由服务器解析：每次查询省一个往返，但需要服务器端 DNS 可用；设置自定义 DNS 时不生效。</string>
+    <string name="settings_dns_cache">缓存 DNS 解析结果</string>
+    <string name="settings_dns_cache_summary">重复的域名查询在隧道内直接命中，省下一次往返；未命中仍经服务器解析。设置自定义 DNS 时不生效。</string>
     <string name="settings_custom_dns">自定义 DNS 服务器</string>
     <string name="settings_section_appearance">外观</string>
     <string name="settings_section_network">网络</string>

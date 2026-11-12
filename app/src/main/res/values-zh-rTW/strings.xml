@@ -69,8 +69,8 @@
     <string name="settings_show_address_summary">在節點卡片上顯示主機與連接埠</string>
     <string name="settings_show_traffic">即時流量</string>
     <string name="settings_show_traffic_summary">在狀態卡片與通知中顯示傳輸速率</string>
-    <string name="settings_local_dns">本機應答 DNS</string>
-    <string name="settings_local_dns_summary">名稱在隧道內直接應答、由伺服器解析：每次查詢省一個往返，但需要伺服器端 DNS 可用；設定自訂 DNS 時不生效。</string>
+    <string name="settings_dns_cache">快取 DNS 解析結果</string>
+    <string name="settings_dns_cache_summary">重複的網域查詢在隧道內直接命中，省下一次往返；未命中仍經伺服器解析。設定自訂 DNS 時不生效。</string>
     <string name="settings_custom_dns">自訂 DNS 伺服器</string>
     <string name="settings_section_appearance">外觀</string>
     <string name="settings_section_network">網路</string>

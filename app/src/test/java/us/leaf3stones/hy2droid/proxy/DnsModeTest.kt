@@ -1,7 +1,6 @@
 package us.leaf3stones.hy2droid.proxy
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,26 +11,38 @@ import us.leaf3stones.hy2droid.data.SettingsStore
 class DnsModeTest {
 
     @Test
-    fun `a custom server wins over the local-answer switch`() {
-        assertEquals(DnsMode.Custom, dnsMode(customEnabled = true, localAnswer = true))
-        assertEquals(DnsMode.Custom, dnsMode(customEnabled = true, localAnswer = false))
+    fun `a custom server wins over the cache switch`() {
+        assertEquals(DnsMode.Custom, dnsMode(customEnabled = true, cacheEnabled = true))
+        assertEquals(DnsMode.Custom, dnsMode(customEnabled = true, cacheEnabled = false))
     }
 
     @Test
-    fun `local answers are the default when nothing custom is set`() {
-        assertEquals(DnsMode.Local, dnsMode(customEnabled = false, localAnswer = true))
+    fun `the cache is the default when nothing custom is set`() {
+        assertEquals(DnsMode.Cache, dnsMode(customEnabled = false, cacheEnabled = true))
     }
 
     @Test
     fun `forwarded is the escape hatch`() {
-        assertEquals(DnsMode.Forwarded, dnsMode(customEnabled = false, localAnswer = false))
+        assertEquals(DnsMode.Forwarded, dnsMode(customEnabled = false, cacheEnabled = false))
     }
 
     @Test
-    fun `local mode pushes exactly one resolver`() {
-        // A second resolver would send a share of the lookups through the tunnel:
-        // one round trip each, answered by a different party than the mapped ones.
-        assertEquals(listOf(Tun.MAPPED_DNS), dnsServersFor(DnsMode.Local, "8.8.8.8", "8.8.4.4"))
+    fun `cache mode pushes the tun's own address`() {
+        assertEquals(
+            listOf(Tun.CACHE_DNS),
+            dnsServersFor(DnsMode.Cache, "8.8.8.8", "8.8.4.4", cacheAvailable = true),
+        )
+        // The kernel delivers queries for an interface address to a local socket,
+        // so the resolver has to be that address.
+        assertEquals(Tun.IPV4, Tun.CACHE_DNS)
+    }
+
+    @Test
+    fun `cache mode falls back to real resolvers when port 53 is taken`() {
+        assertEquals(
+            SettingsStore.DEFAULT_DNS_SERVERS,
+            dnsServersFor(DnsMode.Cache, "", "", cacheAvailable = false),
+        )
     }
 
     @Test
@@ -67,63 +78,43 @@ class DnsModeTest {
     }
 
     @Test
-    fun `the tun address and the mapped resolver are not upstream resolvers`() {
-        assertEquals(SettingsStore.DEFAULT_DNS_SERVERS, dnsServersFor(DnsMode.Custom, Tun.IPV4, ""))
+    fun `the tun address is not an upstream resolver`() {
         assertEquals(
             SettingsStore.DEFAULT_DNS_SERVERS,
-            dnsServersFor(DnsMode.Custom, Tun.MAPPED_DNS, ""),
+            dnsServersFor(DnsMode.Custom, Tun.CACHE_DNS, ""),
         )
         assertEquals(
             listOf("1.0.0.1"),
-            dnsServersFor(DnsMode.Custom, "1.0.0.1", Tun.IPV4),
+            dnsServersFor(DnsMode.Custom, "1.0.0.1", Tun.CACHE_DNS),
         )
-    }
-
-    @Test
-    fun `the mapped resolver is not the tun address`() {
-        assertNotEquals(Tun.IPV4, Tun.MAPPED_DNS)
     }
 
     /**
-     * "Bypass local network" excludes [LanRanges] from the VPN. An excluded
-     * address never reaches hev, so a mapped resolver inside one of them would
-     * turn DNS into a black hole for everyone with that switch on.
+     * The local resolver answers on the TUN's address, which sits inside the
+     * "bypass local network" ranges (10.0.0.0/8). That is fine — an address on an
+     * interface is reached through the kernel's local table before any excluded
+     * route — but the resolver must never be a *routed* address, so keep the two
+     * facts next to each other.
      */
     @Test
-    fun `the mapped resolver is outside every lan range and outside the fake-ip pool`() {
-        // IPv4 ranges only: MAPPED_DNS is IPv4, and the IPv6 entries are not
-        // reachable from an IPv4 destination anyway.
+    fun `the cache resolver is a local interface address, not a routed one`() {
+        assertTrue(Tun.CACHE_DNS == Tun.IPV4)
+        assertNotEquals(SettingsStore.DEFAULT_DNS_PRIMARY, Tun.CACHE_DNS)
+        // No LanRanges entry may collide with the upstream resolvers either.
         for ((network, prefix) in LanRanges.IPV4) {
-            assertFalse(
-                "${Tun.MAPPED_DNS} must not be inside $network/$prefix",
-                inPrefix(Tun.MAPPED_DNS, network, prefix),
-            )
+            for (upstream in SettingsStore.DEFAULT_DNS_SERVERS) {
+                assertTrue(
+                    "$upstream must not be inside $network/$prefix",
+                    !inPrefix(upstream, network, prefix),
+                )
+            }
         }
-        val poolPrefix = prefixLength(Tun.MAPPED_DNS_NETMASK)
-        assertFalse(
-            "${Tun.MAPPED_DNS} must not collide with a mapped answer",
-            inPrefix(Tun.MAPPED_DNS, Tun.MAPPED_DNS_POOL, poolPrefix),
-        )
-        // The pool itself has to be reachable through the tunnel, or the
-        // answers hev hands out would not come back to it.
-        for ((network, prefix) in LanRanges.IPV4) {
-            assertFalse(
-                "$network/$prefix must not contain the fake-ip pool",
-                inPrefix(Tun.MAPPED_DNS_POOL, network, prefix) ||
-                    inPrefix(network, Tun.MAPPED_DNS_POOL, poolPrefix),
-            )
-        }
-        assertTrue(poolPrefix > 0)
     }
-
 
     private fun inPrefix(address: String, network: String, prefix: Int): Boolean {
         val mask = if (prefix <= 0) 0L else (0xFFFFFFFFL shl (32 - prefix)) and 0xFFFFFFFFL
         return (toLong(address) and mask) == (toLong(network) and mask)
     }
-
-    private fun prefixLength(netmask: String): Int =
-        toLong(netmask).countOneBits()
 
     private fun toLong(address: String): Long {
         val parts = address.split('.')
