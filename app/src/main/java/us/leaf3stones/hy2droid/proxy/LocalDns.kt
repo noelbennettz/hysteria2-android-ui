@@ -1,20 +1,17 @@
 package us.leaf3stones.hy2droid.proxy
 
 import android.util.Log
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.Socket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import us.leaf3stones.hy2droid.data.DnsCache
 import us.leaf3stones.hy2droid.data.DnsWire
+import java.io.IOException
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.InetSocketAddress
 
 /**
  * A caching DNS resolver that lives inside the tunnel.

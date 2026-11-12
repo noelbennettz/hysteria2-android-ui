@@ -50,9 +50,9 @@ import com.google.zxing.MultiFormatReader
 import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.ReaderException
 import com.google.zxing.common.HybridBinarizer
+import us.leaf3stones.hy2droid.R
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
-import us.leaf3stones.hy2droid.R
 
 /**
  * A self-contained QR scanner (CameraX + ZXing) that needs no Google Play services.
@@ -221,4 +221,3 @@ private fun decodeFrame(imageProxy: ImageProxy, onText: (String) -> Unit) {
         imageProxy.close()
     }
 }
-

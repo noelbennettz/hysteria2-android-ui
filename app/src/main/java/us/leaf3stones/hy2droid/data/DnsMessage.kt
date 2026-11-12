@@ -216,4 +216,3 @@ object DnsWire {
         return Record(readU16(packet, afterName), ttl, ttlOffset, rdataStart, rdataLength, next)
     }
 }
-

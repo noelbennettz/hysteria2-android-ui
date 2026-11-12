@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">Hy2droid</string>
 
     <!-- Home -->
@@ -88,7 +88,8 @@
     <string name="settings_disable_pmtud">Disable path MTU discovery</string>
     <string name="settings_disable_pmtud_summary">Workaround for networks that drop large QUIC packets (MTU black holes); applies on the next connect</string>
     <string name="settings_mtu">Tunnel MTU</string>
-    <string name="settings_mtu_summary">%1$d bytes; lower it if large packets stall</string>
+    <!-- A fixed unit, not a plural: "bytes" never changes with the number. -->
+    <string name="settings_mtu_summary" tools:ignore="PluralsCandidate">%1$d bytes; lower it if large packets stall</string>
     <string name="settings_mtu_hint">1280 – 1500 — applies on the next connect</string>
     <string name="settings_blocked_traffic">Blocked traffic</string>
     <string name="settings_blocked_traffic_summary">Refuse flows such as QUIC (UDP 443)</string>

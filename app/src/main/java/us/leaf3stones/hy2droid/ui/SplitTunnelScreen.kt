@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,7 +56,7 @@ fun SplitTunnelScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.action_back),
                         )
                     }
@@ -133,9 +133,9 @@ private fun loadInstalledApps(context: Context): List<AppInfo> {
     return pm.queryIntentActivities(intent, 0)
         .mapNotNull { ri ->
             val info = ri.activityInfo?.applicationInfo ?: return@mapNotNull null
-            val pkg = info.packageName ?: return@mapNotNull null
+            val pkg = info.packageName
             if (pkg == context.packageName) return@mapNotNull null
-            val label = info.loadLabel(pm)?.toString() ?: pkg
+            val label = info.loadLabel(pm).toString().ifBlank { pkg }
             AppInfo(label, pkg)
         }
         .distinctBy { it.packageName }

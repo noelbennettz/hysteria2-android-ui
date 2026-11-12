@@ -76,6 +76,9 @@ class DiagnosticsExporter(private val context: Context) {
         sb.append("  custom DNS: ").append(
             runCatching { settings.customDnsEnabled.first() }.getOrDefault(false),
         ).append('\n')
+        sb.append("  DNS cache: ").append(
+            runCatching { settings.dnsCacheEnabled.first() }.getOrDefault(false),
+        ).append('\n')
         sb.append("  bypass LAN: ").append(
             runCatching { settings.bypassLan.first() }.getOrDefault(false),
         ).append('\n')

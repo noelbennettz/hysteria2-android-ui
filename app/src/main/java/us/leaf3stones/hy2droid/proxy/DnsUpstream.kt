@@ -1,17 +1,17 @@
 package us.leaf3stones.hy2droid.proxy
 
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import us.leaf3stones.hy2droid.data.DnsWire
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import us.leaf3stones.hy2droid.data.DnsWire
 
 /**
  * DNS over the tunnel, for cache misses.

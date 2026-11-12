@@ -211,6 +211,11 @@ fetched automatically (see *Bundled core*), so a fresh clone builds with:
 ./gradlew assembleDebug        # app/build/outputs/apk/debug/
 ./gradlew testDebugUnitTest    # JVM unit tests
 ./gradlew assembleRelease      # signed APK when a keystore is present
+./gradlew lintDebug            # Android lint; errors fail the build
+
+scripts/check-style.sh         # .editorconfig rules (LF, final newline, width,
+                               # import order, no tabs/trailing spaces)
+scripts/check-style.sh --fix   # rewrite the mechanical ones
 ```
 
 ## Bundled core

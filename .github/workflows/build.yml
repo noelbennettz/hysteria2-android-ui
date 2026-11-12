@@ -22,6 +22,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # .editorconfig is not enforced by anything at build time; this is the
+      # gate that keeps whitespace and import order from drifting.
+      - name: Check code style
+        run: bash scripts/check-style.sh
+
       - name: Install Hysteria core
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -92,4 +97,3 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/prune-runs.sh 3
-

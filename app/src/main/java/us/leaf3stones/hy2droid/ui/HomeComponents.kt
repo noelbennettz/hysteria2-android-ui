@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.proxy.TunnelState
 import us.leaf3stones.hy2droid.proxy.TunnelStats
+import java.util.Locale
 
 /** The status card at the top of the home screen. */
 @Composable
@@ -99,8 +100,10 @@ private fun statusColor(state: TunnelState): Color = when (state) {
 fun formatBytes(bytes: Long): String {
     if (bytes < 1024) return "$bytes B"
     val kb = bytes / 1024.0
-    if (kb < 1024) return String.format("%.1f KB", kb)
+    // Explicit locale: a bare String.format() would use the default one silently.
+    val locale = Locale.getDefault()
+    if (kb < 1024) return String.format(locale, "%.1f KB", kb)
     val mb = kb / 1024.0
-    if (mb < 1024) return String.format("%.1f MB", mb)
-    return String.format("%.2f GB", mb / 1024.0)
+    if (mb < 1024) return String.format(locale, "%.1f MB", mb)
+    return String.format(locale, "%.2f GB", mb / 1024.0)
 }

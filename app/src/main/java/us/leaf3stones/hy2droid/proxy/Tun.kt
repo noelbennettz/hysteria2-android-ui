@@ -31,5 +31,3 @@ object Tun {
     /** Port the local resolver listens on (and the one clients query). */
     const val CACHE_DNS_PORT = 53
 }
-
-

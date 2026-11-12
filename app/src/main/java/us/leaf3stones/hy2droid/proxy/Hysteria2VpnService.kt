@@ -1,8 +1,10 @@
 package us.leaf3stones.hy2droid.proxy
 
+import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
-import android.app.PendingIntent
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -16,15 +18,13 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.VpnService
-import android.Manifest
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.service.quicksettings.TileService
+import android.text.format.Formatter
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import android.app.Notification
-import android.text.format.Formatter
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -974,17 +974,16 @@ class Hysteria2VpnService : VpnService() {
     }
 
     private fun startForegroundSafely(text: String = getString(R.string.status_connecting)) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.notification_channel_name),
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = getString(R.string.notification_channel_description)
-            }
-            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
-                .createNotificationChannel(channel)
+        // minSdk is 30, so notification channels always exist.
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_LOW,
+        ).apply {
+            description = getString(R.string.notification_channel_description)
         }
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+            .createNotificationChannel(channel)
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         } else {
@@ -1122,7 +1121,6 @@ class Hysteria2VpnService : VpnService() {
             NetworkCapabilities.TRANSPORT_WIFI,
             NetworkCapabilities.TRANSPORT_ETHERNET,
             NetworkCapabilities.TRANSPORT_BLUETOOTH,
-            NetworkCapabilities.TRANSPORT_USB,
         )
 
 
@@ -1143,4 +1141,3 @@ class Hysteria2VpnService : VpnService() {
         private const val CORE_TAG = "hysteria"
     }
 }
-

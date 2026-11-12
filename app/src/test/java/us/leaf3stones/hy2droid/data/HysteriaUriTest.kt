@@ -10,8 +10,10 @@ class HysteriaUriTest {
     @Test
     fun `parses a full share link`() {
         val profile = HysteriaUri.parse(
-            "hysteria2://mypass@example.com:8443/?sni=sni.example.com&obfs=salamander&obfs-password=ob&insecure=1#My%20Node",
+            "hysteria2://mypass@example.com:8443/?sni=sni.example.com" +
+                "&obfs=salamander&obfs-password=ob&insecure=1#My%20Node",
         )
+
 
         requireNotNull(profile)
         assertEquals("example.com", profile.server)

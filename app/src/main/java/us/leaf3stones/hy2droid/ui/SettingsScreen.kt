@@ -5,6 +5,7 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,8 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
@@ -156,7 +157,10 @@ fun SettingsScreen(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
                     }
                 },
             )
@@ -274,34 +278,18 @@ fun SettingsScreen(
             )
             if (dnsEnabled) {
                 Column(Modifier.padding(horizontal = 16.dp)) {
-                    OutlinedTextField(
+                    DnsServerField(
                         value = dns1Text,
                         onValueChange = { dns1Text = it.trim() },
-                        label = { Text(stringResource(R.string.settings_dns_primary)) },
-                        singleLine = true,
-                        isError = !dns1Valid,
-                        supportingText = {
-                            if (!dns1Valid) {
-                                Text(stringResource(R.string.settings_dns_invalid))
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        modifier = Modifier.fillMaxWidth(),
+                        labelRes = R.string.settings_dns_primary,
+                        valid = dns1Valid,
                     )
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
+                    DnsServerField(
                         value = dns2Text,
                         onValueChange = { dns2Text = it.trim() },
-                        label = { Text(stringResource(R.string.settings_dns_secondary)) },
-                        singleLine = true,
-                        isError = !dns2Valid,
-                        supportingText = {
-                            if (!dns2Valid) {
-                                Text(stringResource(R.string.settings_dns_invalid))
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        modifier = Modifier.fillMaxWidth(),
+                        labelRes = R.string.settings_dns_secondary,
+                        valid = dns2Valid,
                     )
                     Spacer(Modifier.height(8.dp))
                     Button(
@@ -391,6 +379,28 @@ private fun SectionHeader(title: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+    )
+}
+
+/** One DNS server input; the primary and the secondary differ only in the label. */
+@Composable
+private fun DnsServerField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    @StringRes labelRes: Int,
+    valid: Boolean,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(stringResource(labelRes)) },
+        singleLine = true,
+        isError = !valid,
+        supportingText = {
+            if (!valid) Text(stringResource(R.string.settings_dns_invalid))
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 

@@ -1,7 +1,7 @@
 package us.leaf3stones.hy2droid.proxy
 
-import android.app.PendingIntent
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.net.VpnService

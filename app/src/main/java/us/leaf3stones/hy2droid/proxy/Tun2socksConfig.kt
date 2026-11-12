@@ -51,5 +51,3 @@ object Tun2socksConfig {
         return lines.joinToString("\n", postfix = "\n")
     }
 }
-
-

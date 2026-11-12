@@ -1,10 +1,10 @@
 package us.leaf3stones.hy2droid.data
 
-import java.io.ByteArrayOutputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.io.ByteArrayOutputStream
 
 /** The DNS wire handling behind the in-tunnel cache. */
 class DnsMessageTest {
@@ -233,4 +233,3 @@ class DnsMessageTest {
             (packet[at + 7].toInt() and 0xFF)
     }
 }
-
