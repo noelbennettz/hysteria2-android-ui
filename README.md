@@ -11,7 +11,7 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 
 <p align="center">
   <img src="screenshots/s1.png" width="300" alt="Home screen showing the tunnel status and saved profiles">
-  <img src="screenshots/s2.png" width="300" alt="Settings screen with appearance options, split tunnelling, blocked traffic, LAN bypass and the DNS cache switch">
+  <img src="screenshots/s2.png" width="300" alt="Settings screen with appearance options, split tunnelling, blocked traffic, LAN bypass and the in-tunnel DNS switch">
 </p>
 
 ## Features

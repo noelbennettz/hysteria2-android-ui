@@ -294,8 +294,8 @@ fun SettingsScreen(
             HorizontalDivider()
             SwitchRow(
                 icon = Icons.Filled.Dns,
-                title = stringResource(R.string.settings_dns_cache),
-                subtitle = stringResource(R.string.settings_dns_cache_summary),
+                title = stringResource(R.string.settings_dns_in_tunnel),
+                subtitle = stringResource(R.string.settings_dns_in_tunnel_summary),
                 checked = localDns,
                 // A custom resolver wins over the mode switch, so the switch is
                 // shown disabled rather than pretending it still applies.

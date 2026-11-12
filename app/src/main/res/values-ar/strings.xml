@@ -78,9 +78,9 @@
     <string name="settings_show_traffic_summary">إظهار معدل النقل في بطاقة الحالة وفي الإشعار</string>
     <string name="settings_fake_icmp">الرد على ping محليًا</string>
     <string name="settings_fake_icmp_summary">لا ينقل Hysteria سوى TCP وUDP، لذا لا يمر ICMP. عند التفعيل يرد النفق على ping بنفسه: تتوقف التطبيقات والألعاب التي تفحص الاتصال عن الشكوى، لكن ping لم يعد يخبرك بشيء عن المسار.</string>
-    <string name="settings_private_dns_hint">DNS الخاص في النظام مفعّل، لذا لا يُستخدم مخزن DNS المدمج.</string>
-    <string name="settings_dns_cache">الرد على DNS داخل النفق</string>
-    <string name="settings_dns_cache_summary">يرد النفق على الأسماء ويمرر الاسم ليجري تحليله على الخادم: بلا رحلة DNS. يتطلب مُحلِّلًا يعمل على الخادم. يُتجاهل عند تعيين خادم DNS مخصص.</string>
+    <string name="settings_private_dns_hint">DNS الخاص في النظام مفعّل: تُحلَّل الأسماء خارج النفق، لذا لا أثر لهذا الخيار.</string>
+    <string name="settings_dns_in_tunnel">الرد على DNS داخل النفق</string>
+    <string name="settings_dns_in_tunnel_summary">يرد النفق على الأسماء ويمرر الاسم ليجري تحليله على الخادم: بلا رحلة DNS. يتطلب مُحلِّلًا يعمل على الخادم. يُتجاهل عند تعيين خادم DNS مخصص.</string>
     <string name="settings_custom_dns">خادم DNS مخصص</string>
     <string name="settings_section_appearance">المظهر</string>
     <string name="settings_section_network">الشبكة</string>

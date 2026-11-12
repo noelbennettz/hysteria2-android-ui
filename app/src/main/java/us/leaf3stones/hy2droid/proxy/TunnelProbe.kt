@@ -31,12 +31,12 @@ data class BenchResult(
 /**
  * Measures the live tunnel from inside the app, the way a browser uses it.
  *
- * Every step goes through the running core's local listeners (the DNS cache,
+ * Every step goes through the running core's local listeners (the DNS answer,
  * SOCKS5, the HTTP proxy), because the app's own UID is excluded from the VPN:
  * a direct socket would measure the phone's connection, not the tunnel.
  *
- * The order is the diagnosis. A slow DNS answer blames the cache or the
- * server's resolver; a slow *cold* connect blames the QUIC session start (the
+ * The order is the diagnosis. A slow DNS answer blames the server's resolver; a
+ * slow *cold* connect blames the QUIC session start (the
  * "first page after idle takes seconds" case); a slow warm connect blames the
  * path; a fast connect with a slow first byte blames the server's egress.
  */
@@ -76,7 +76,7 @@ class TunnelProbe(
         BenchResult(step, "failed", ok = false, detail = e.message ?: e.javaClass.simpleName)
     }
 
-    /** One query straight at the in-tunnel cache; throws when nothing answers. */
+    /** One query straight at the in-tunnel resolver; throws when nothing answers. */
     private fun dnsLookup(name: String) {
         val query = dnsQuery(name)
         DatagramSocket().use { socket ->

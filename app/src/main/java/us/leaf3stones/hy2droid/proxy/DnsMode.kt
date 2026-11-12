@@ -5,9 +5,9 @@ import us.leaf3stones.hy2droid.data.SettingsStore
 /**
  * Where names inside the tunnel are resolved.
  *
- * A custom server wins over the cache switch (one setting decides, so the two
+ * A custom server wins over the in-tunnel switch (one setting decides, so the two
  * controls in Settings can never disagree): "Custom DNS server" means the user
- * picked the resolvers, and the cache switch only applies when it is off.
+ * picked the resolvers, and the in-tunnel switch only applies when it is off.
  */
 enum class DnsMode {
     /**
@@ -17,7 +17,7 @@ enum class DnsMode {
      */
     Local,
 
-    /** Real public resolvers pushed into the TUN, no cache. */
+    /** Real public resolvers pushed into the TUN; every lookup costs a round trip. */
     Forwarded,
 
     /** The user's own primary/secondary. */
