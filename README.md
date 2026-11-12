@@ -63,10 +63,11 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   drift apart. 1400 carries a full-size QUIC datagram on a 1500-byte path with
   fewer packets than 1280; drop to 1280 only on networks that stall
 - **TCP buffer per connection** (Settings → Network, 64 / 128 / 256 KB, default
-  128): the tunnel engine terminates TCP in userspace, so one connection's
-  throughput is `buffer / RTT` — 64 KB over a 200 ms path tops out near
-  2.6 Mbit/s, 256 KB near 10.5. Bigger costs memory per open connection
-  (buffer + 84 KB task stack), which is why the engine's own default is 64 KB
+  128): the engine's send buffer on the tun hop. That hop is local (sub-ms), so
+  the buffer absorbs bursts and bounds what can queue for a slow reader; it is
+  not a WAN window and does not set the ceiling of a fast link. Bigger costs
+  memory per open connection (buffer + 84 KB task stack), which is why the
+  engine's default is 64 KB
 
 - Deleting a profile asks first — the auth secret cannot be recovered
 - Quick Settings tile to connect/disconnect, kept in sync with the tunnel state;

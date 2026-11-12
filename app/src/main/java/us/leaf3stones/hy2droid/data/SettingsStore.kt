@@ -96,11 +96,11 @@ class SettingsStore(private val context: Context) {
     /**
      * Per-connection TCP send buffer of the tunnel engine, in KiB.
      *
-     * This is the single biggest throughput knob for one connection: the engine
-     * terminates TCP in userspace, so the download rate of one stream is
-     * `buffer / RTT` (64 KiB over a 200 ms path tops out around 2.6 Mbit/s).
-     * Each session pays the buffer plus a fixed 84 KiB task stack, so the
-     * default is a compromise, not the maximum.
+     * The tun hop between the app and the engine is local, so this is a burst
+     * absorber, not a wide-area window: it bounds what can queue while the
+     * reader is slow, and it does not decide the ceiling of a fast link (that
+     * is the QUIC path, its socket buffers and the CPU). Each session pays the
+     * buffer plus a fixed 84 KiB task stack, so the default is a compromise.
      */
     val tcpBufferKb: Flow<Int> = context.settingsDataStore.data
         .map { it[keyTcpBuffer] ?: DEFAULT_TCP_BUFFER_KB }
@@ -240,7 +240,8 @@ class SettingsStore(private val context: Context) {
         /**
          * TCP buffer sizes offered in Settings, in KiB. The upper bound is the
          * engine's own ceiling: lwIP is built with `TCP_SND_BUF = 32 * TCP_MSS`
-         * (262,112 bytes at MSS 8191), and anything larger is clamped away.
+         * (262,112 bytes at MSS 8191); a larger value is clamped away there, so
+         * offering more would be a lie in the UI.
          */
         val TCP_BUFFER_CHOICES_KB = listOf(64, 128, 256)
 

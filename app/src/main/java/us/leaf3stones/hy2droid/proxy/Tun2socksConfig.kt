@@ -27,8 +27,9 @@ object Tun2socksConfig {
         blockRules: List<BlockRule> = emptyList(),
         mtu: Int = SettingsStore.DEFAULT_MTU,
         /**
-         * The engine terminates TCP in userspace, so this is the per-connection
-         * send buffer — the throughput of one stream is `buffer / RTT`.
+         * The engine's per-connection send buffer on the tun hop. That hop is
+         * local (sub-millisecond), so this bounds bursts and queues for a slow
+         * reader rather than the throughput of a fast link.
          */
         tcpBufferKb: Int = SettingsStore.DEFAULT_TCP_BUFFER_KB,
     ): String {
