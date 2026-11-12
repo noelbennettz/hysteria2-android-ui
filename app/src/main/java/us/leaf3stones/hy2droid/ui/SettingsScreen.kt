@@ -92,6 +92,7 @@ fun SettingsScreen(
     val dnsEnabled by viewModel.customDnsEnabled.collectAsState()
     val dns1 by viewModel.customDnsServer.collectAsState()
     val dns2 by viewModel.customDnsServer2.collectAsState()
+    val localDns by viewModel.resolveDnsLocally.collectAsState()
     val bypassLan by viewModel.bypassLan.collectAsState()
     val autoTestLatency by viewModel.autoTestLatency.collectAsState()
     val disablePmtud by viewModel.disablePathMtuDiscovery.collectAsState()
@@ -247,6 +248,17 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_disable_pmtud_summary),
                 checked = disablePmtud,
                 onCheckedChange = viewModel::setDisablePathMtuDiscovery,
+            )
+            HorizontalDivider()
+            SwitchRow(
+                icon = Icons.Filled.Dns,
+                title = stringResource(R.string.settings_local_dns),
+                subtitle = stringResource(R.string.settings_local_dns_summary),
+                checked = localDns,
+                // A custom resolver wins over the mode switch, so the switch is
+                // shown disabled rather than pretending it still applies.
+                enabled = !dnsEnabled,
+                onCheckedChange = viewModel::setResolveDnsLocally,
             )
             HorizontalDivider()
             SwitchRow(

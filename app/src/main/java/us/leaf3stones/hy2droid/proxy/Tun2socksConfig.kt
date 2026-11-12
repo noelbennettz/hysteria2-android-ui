@@ -26,6 +26,8 @@ object Tun2socksConfig {
     fun build(
         blockRules: List<BlockRule> = emptyList(),
         mtu: Int = SettingsStore.DEFAULT_MTU,
+        /** Answer DNS inside the tunnel (mapdns) instead of forwarding queries. */
+        mapDns: Boolean = false,
     ): String {
         val lines = mutableListOf(
             "tunnel:",
@@ -40,8 +42,21 @@ object Tun2socksConfig {
             "  address: 127.0.0.1",
             "  udp: 'udp'",
         )
+        if (mapDns) {
+            // Top-level key (a sibling of `tunnel`/`socks5`/`misc`, not a child):
+            // hev's config parser only walks the root mapping.
+            lines += ""
+            lines += "mapdns:"
+            lines += "  address: ${Tun.MAPPED_DNS}"
+            lines += "  port: ${Tun.MAPPED_DNS_PORT}"
+            lines += "  network: ${Tun.MAPPED_DNS_POOL}"
+            lines += "  netmask: ${Tun.MAPPED_DNS_NETMASK}"
+            lines += "  cache-size: ${Tun.MAPPED_DNS_CACHE_SIZE}"
+        }
         val tcp = blockRules.tcpPortSpec()
-        val udp = blockRules.udpPortSpec()
+        // Never block the port the local resolver answers on: a rule covering
+        // 53 would make DNS die in a way nobody can diagnose from the UI.
+        val udp = blockRules.udpPortSpec(excludingPort = if (mapDns) Tun.MAPPED_DNS_PORT else null)
         if (tcp.isNotEmpty() || udp.isNotEmpty()) {
             lines += ""
             lines += "misc:"

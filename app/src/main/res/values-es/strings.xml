@@ -69,6 +69,8 @@
     <string name="settings_show_address_summary">Mostrar host y puerto en las tarjetas de perfil</string>
     <string name="settings_show_traffic">Tráfico en vivo</string>
     <string name="settings_show_traffic_summary">Muestra el caudal en la tarjeta de estado y en la notificación</string>
+    <string name="settings_local_dns">Resolver DNS localmente</string>
+    <string name="settings_local_dns_summary">Los nombres se responden dentro del túnel y los resuelve el servidor: sin ida y vuelta por consulta, pero requiere un resolutor que funcione en el servidor. Se ignora si hay un DNS personalizado.</string>
     <string name="settings_custom_dns">Servidor DNS personalizado</string>
     <string name="settings_section_appearance">Apariencia</string>
     <string name="settings_section_network">Red</string>

@@ -31,6 +31,7 @@ class SettingsStore(private val context: Context) {
     private val keyDisablePmtud = booleanPreferencesKey("disable_path_mtu_discovery")
     private val keyMtu = intPreferencesKey("tunnel_mtu")
     private val keyShowTraffic = booleanPreferencesKey("show_live_traffic")
+    private val keyLocalDns = booleanPreferencesKey("resolve_dns_locally")
 
     /** Package names excluded from the VPN (split-tunneling bypass). */
     val excluded: Flow<Set<String>> = context.settingsDataStore.data
@@ -78,6 +79,15 @@ class SettingsStore(private val context: Context) {
     /** The optional secondary DNS server address ("" when unset). */
     val customDnsServer2: Flow<String> = context.settingsDataStore.data
         .map { it[keyDnsServer2] ?: "" }
+
+    /**
+     * Whether names are resolved inside the tunnel (hev's `mapdns`) instead of
+     * being forwarded to a public resolver. Default on: it removes a round trip
+     * per distinct name, which is the dominant cost on a high-latency tunnel.
+     * Ignored while a custom DNS server is set — see `proxy/dnsMode()`.
+     */
+    val resolveDnsLocally: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyLocalDns] ?: true }
 
     /** Whether local-network ranges bypass the tunnel. Default off; Android 13+. */
     val bypassLan: Flow<Boolean> = context.settingsDataStore.data
@@ -135,6 +145,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setCustomDnsServer2(server: String) {
         context.settingsDataStore.edit { it[keyDnsServer2] = server }
+    }
+
+    suspend fun setResolveDnsLocally(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyLocalDns] = enabled }
     }
 
     suspend fun setBypassLan(enabled: Boolean) {

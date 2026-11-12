@@ -36,6 +36,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -53,6 +54,8 @@ import us.leaf3stones.hy2droid.ui.MainActivity
 import java.io.File
 import java.net.InetAddress
 import java.util.Scanner
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 /**
  * The [VpnService] that owns the TUN interface and the Hysteria 2 core process.
@@ -83,6 +86,25 @@ class Hysteria2VpnService : VpnService() {
     private var statsJob: Job? = null
     private var monitorJob: Job? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var networkJob: Job? = null
+
+    /**
+     * The config file the running core was started from. A network handover
+     * restarts the process, and it has to come back with the same profile.
+     */
+    private var hysteriaConfigFile: File? = null
+
+    /** Live, usable (non-VPN) transports; the value is a [NetworkSwitchPolicy] token. */
+    private val networkTokenCache = ConcurrentHashMap<Network, String>()
+
+    /**
+     * The current set of usable transports, as one token (null = no network).
+     * Snapshot, not event: a handover fires several callbacks in no fixed order,
+     * and only the settled value is actionable — see [NetworkSwitchPolicy].
+     */
+    private val networkTokens = MutableStateFlow<String?>(null)
+
+    private val networkSwitch = NetworkSwitchPolicy()
 
     @Volatile
     private var shuttingDown = false
@@ -255,23 +277,20 @@ class Hysteria2VpnService : VpnService() {
         } catch (_: Exception) {
             emptySet()
         }
+        val mode = try {
+            dnsMode(
+                customEnabled = settings.customDnsEnabled.first(),
+                localAnswer = settings.resolveDnsLocally.first(),
+            )
+        } catch (_: Exception) {
+            DnsMode.Forwarded
+        }
         val dnsServers = try {
-            val custom = if (settings.customDnsEnabled.first()) {
-                listOfNotNull(
-                    settings.customDnsServer.first().takeIf { it.isNotBlank() },
-                    settings.customDnsServer2.first().takeIf { it.isNotBlank() },
-                )
-            } else {
-                emptyList()
-            }
-            // Always push at least one resolver. Android has no "no DNS means use
-            // the tunnel" mode: with an empty DNS list the VPN network has no
-            // resolver at all, so resolution silently falls back to the underlying
-            // network's DNS (a leak — the queries leave over Wi-Fi, not through the
-            // server). The addresses are not special; what matters is that the
-            // queries are routed into the tunnel and answered by whatever resolver
-            // the server's egress can reach.
-            custom.ifEmpty { SettingsStore.DEFAULT_DNS_SERVERS }
+            // Always at least one resolver. Android has no "no DNS means use the
+            // tunnel" mode: with an empty list the VPN network has no resolver at
+            // all, so resolution falls back to the underlying network's DNS (a
+            // leak — the queries leave over Wi-Fi, not through the server).
+            dnsServersFor(mode, settings.customDnsServer.first(), settings.customDnsServer2.first())
         } catch (_: Exception) {
             SettingsStore.DEFAULT_DNS_SERVERS
         }
@@ -295,7 +314,9 @@ class Hysteria2VpnService : VpnService() {
         }
 
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
+        hysteriaConfigFile = configFile
         when (ensureConfigFile(configFile)) {
+
             ConfigPrep.Ready -> Unit
 
             ConfigPrep.NoProfile -> {
@@ -317,7 +338,9 @@ class Hysteria2VpnService : VpnService() {
 
         val tun2socksFile = File(filesDir, Tun2socksConfig.FILE_NAME)
         try {
-            tun2socksFile.writeText(Tun2socksConfig.build(blockRules, mtu))
+            tun2socksFile.writeText(
+                Tun2socksConfig.build(blockRules, mtu, mapDns = mode == DnsMode.Local),
+            )
         } catch (e: Exception) {
             fail(getString(R.string.error_tun2socks_config, e.message ?: ""))
             return
@@ -340,6 +363,7 @@ class Hysteria2VpnService : VpnService() {
         }
         tunInterface = pfd
         registerNetworkTracking()
+        startNetworkTracking()
 
         val process = launchCore(configFile)
         if (process == null) {
@@ -453,23 +477,51 @@ class Hysteria2VpnService : VpnService() {
     }
 
     /**
-     * Keep the tun pinned to the physical network the device is actually using.
-     * Without this, a Wi-Fi ↔ mobile handover can leave the tunnel routing into a
-     * network that is gone (no traffic until the app is toggled).
+     * Watch the physical networks the tunnel runs over.
+     *
+     * The Hysteria core is a separate process, so nothing Android does to the
+     * TUN can fix a core whose QUIC path vanished: a handover has to restart it.
+     * This only collects *what* is usable; [networkJob] decides *when*.
      */
     private fun registerNetworkTracking() {
         val manager = getSystemService(ConnectivityManager::class.java) ?: return
         if (networkCallback != null) return
+        networkTokenCache.clear()
+        networkTokens.value = null
+        networkSwitch.reset()
         val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) = updateUnderlying(network)
+            override fun onAvailable(network: Network) = record(network)
 
-            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                if (caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
-                    updateUnderlying(network)
-                }
+            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) =
+                record(network)
+
+            override fun onLost(network: Network) {
+                networkTokenCache.remove(network)
+                publishToken()
             }
 
-            override fun onLost(network: Network) = Unit
+            /**
+             * Add or drop one transport. `VALIDATED` is the gate: a network that
+             * is merely "available" (cellular still attaching, captive portal)
+             * would give the restarted core a handshake that cannot work yet.
+             */
+            private fun record(network: Network) {
+                val caps = manager.getNetworkCapabilities(network)
+                if (caps == null ||
+                    !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
+                    !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) ||
+                    !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                ) {
+                    networkTokenCache.remove(network)
+                    publishToken()
+                    return
+                }
+                networkTokenCache[network] = NetworkSwitchPolicy.transportToken(
+                    NetworkSwitchPolicy.transportMask(caps.transportTypes.toList()),
+                    manager.getLinkProperties(network)?.interfaceName,
+                )
+                publishToken()
+            }
         }
         val request = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -483,7 +535,43 @@ class Hysteria2VpnService : VpnService() {
         }
     }
 
+    private fun publishToken() {
+        // Callbacks arrive on binder threads; assigning a StateFlow is safe and
+        // never blocks, and the latest snapshot is by definition the truth.
+        networkTokens.value = NetworkSwitchPolicy.networkToken(networkTokenCache.values)
+    }
+
+    /**
+     * Feed the settled snapshot to [networkSwitch].
+     *
+     * The settle window is the debounce for the burst a single handover produces
+     * (`onLost` + `onAvailable` in either order, sometimes three deep). It is a
+     * settle, not a cooldown: a second real handover right afterwards is still
+     * honoured — dropping it would leave the core on a dead path until some
+     * unrelated event showed up.
+     */
+    private fun startNetworkTracking() {
+        networkJob?.cancel()
+        networkJob = serviceScope.launch {
+            var lastSeen = networkTokens.value
+            while (isActive) {
+                networkTokens.first { it != lastSeen }
+                delay(HANDOVER_SETTLE_MS)
+                val settled = networkTokens.value
+                lastSeen = settled
+                // Same lock as start/stop: a restart must never interleave with
+                // an in-flight connect or a user disconnect.
+                tunnelMutex.withLock { applyNetworkToken(settled) }
+            }
+        }
+    }
+
     private fun unregisterNetworkTracking() {
+        networkJob?.cancel()
+        networkJob = null
+        networkTokenCache.clear()
+        networkTokens.value = null
+        networkSwitch.reset()
         val callback = networkCallback ?: return
         networkCallback = null
         try {
@@ -493,17 +581,64 @@ class Hysteria2VpnService : VpnService() {
         }
     }
 
-    /** Point the tunnel at [network] when it is a real (non-VPN) transport. */
-    private fun updateUnderlying(network: Network) {
-        val manager = getSystemService(ConnectivityManager::class.java) ?: return
-        val caps = manager.getNetworkCapabilities(network) ?: return
-        if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)) return
+    private suspend fun applyNetworkToken(token: String?) {
+        if (shuttingDown || tunInterface == null) return
+        if (token == null) {
+            // Nothing usable: show it instead of a stale "Connected". The core is
+            // kept alive — a returning network is adopted below, and killing it
+            // here would only make the recovery slower.
+            if (TunnelStatus.state.value == TunnelState.Connected) {
+                updateState(TunnelState.Connecting)
+                refreshNotification()
+            }
+            return
+        }
+        when (networkSwitch.onCurrent(token)) {
+            NetworkAction.Adopt -> {
+                pinUnderlying()
+                restoreConnected()
+            }
+
+            NetworkAction.Restart -> {
+                pinUnderlying()
+                updateState(TunnelState.Connecting)
+                refreshNotification()
+                restartCore()
+                // restartCore() switches to Error on its own failures; a
+                // successful restart leaves the state at Connecting.
+                restoreConnected()
+            }
+
+            // Same transports as before. If the transport came back unchanged
+            // (airplane mode off), the tunnel is up again without a restart.
+            NetworkAction.Ignore -> restoreConnected()
+        }
+
+    }
+
+    /**
+     * Let Android route the tunnel over the system's default network.
+     *
+     * The previous code pinned whichever network's callback fired last, which
+     * with Wi-Fi and cellular both up could pin the tunnel to cellular while
+     * Wi-Fi was the default — and made every capability update look like a
+     * network change. Null means "the network the system picked", which follows
+     * handovers by itself; the restart above is what actually matters.
+     */
+    private fun pinUnderlying() {
         try {
-            setUnderlyingNetworks(arrayOf(network))
-            Log.i(TAG, "Underlying network: $network")
+            setUnderlyingNetworks(null)
+            Log.i(TAG, "Underlying network: system default (${networkSwitch.adopted})")
         } catch (e: Exception) {
             Log.w(TAG, "setUnderlyingNetworks failed", e)
         }
+    }
+
+    /** Show Connected again after a loss/adopt cycle, without touching Error/Idle. */
+    private fun restoreConnected() {
+        if (TunnelStatus.state.value != TunnelState.Connecting) return
+        updateState(TunnelState.Connected)
+        refreshNotification()
     }
 
     /** Outcome of preparing `hysteria.yaml` before the core is launched. */
@@ -573,6 +708,67 @@ class Hysteria2VpnService : VpnService() {
     } catch (e: Exception) {
         Log.e(TAG, "Failed to exec the Hysteria core", e)
         null
+    }
+
+    /**
+     * Replace the core process after a transport handover.
+     *
+     * Hysteria 2 has no rebind API, so the only way to get a QUIC session onto
+     * the new path is a new process; the TUN and hev stay up, so the SOCKS port
+     * is dark for the ~0.1–0.3 s the core needs to start and bind. hev's
+     * sessions seen during that window are reset, and the apps behind them
+     * retry — a short, visible failure instead of the 30 s idle-timeout black
+     * hole this replaces.
+     */
+    private suspend fun restartCore() {
+        if (shuttingDown) return
+        val old = coreProcess ?: return
+        val configFile = hysteriaConfigFile
+        if (configFile == null) {
+            fail(getString(R.string.error_core_launch))
+            return
+        }
+        // Make sure the old process is *gone* before a new one binds the same
+        // port: a core that refuses to die would otherwise leave a fresh process
+        // that cannot listen, which looks exactly like a dead tunnel.
+        //
+        // Order matters: `monitorJob` is blocked inside `process.waitFor()`,
+        // which is not a cancellation point, so joining it before the process
+        // is dead would hang here forever.
+        coreStoppedByUs = true
+        try {
+            old.destroy()
+        } catch (_: Throwable) {
+            // Already dead.
+        }
+        if (!old.waitFor(CORE_STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            Log.w(TAG, "Core ignored SIGTERM; killing it")
+            try {
+                old.destroyForcibly()
+            } catch (_: Throwable) {
+                // Already dead.
+            }
+            if (!old.waitFor(CORE_STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                Log.e(TAG, "Core survived SIGKILL; not restarting")
+                fail(getString(R.string.error_core_launch))
+                return
+            }
+        }
+        // Now unblocked; join so the old monitor cannot race the flag reset.
+        monitorJob?.cancelAndJoin()
+        monitorJob = null
+
+        val fresh = launchCore(configFile)
+        if (fresh == null) {
+            fail(getString(R.string.error_core_launch))
+            return
+        }
+        coreProcess = fresh
+        // Reset *before* the monitor starts: a crash of the new core is a real
+        // failure and must not be swallowed by the flag that hid the old exit.
+        coreStoppedByUs = false
+        monitorJob = serviceScope.launch { monitorCore(fresh) }
+        Log.i(TAG, "Core restarted after network switch")
     }
 
     private suspend fun monitorCore(process: Process) {
@@ -867,6 +1063,17 @@ class Hysteria2VpnService : VpnService() {
         /** The active Hysteria config file name under `filesDir`. */
         const val HYSTERIA_CONFIG_FILE = "hysteria.yaml"
 
+        /**
+         * How long a handover may keep changing before the tunnel acts on it.
+         * One handover produces several callbacks (`onLost` + `onAvailable`, in
+         * either order); acting on the first one would restart the core onto a
+         * network that is about to be replaced.
+         */
+        private const val HANDOVER_SETTLE_MS = 600L
+
+        /** Grace period for the old core to exit before it is killed. */
+        private const val CORE_STOP_TIMEOUT_MS = 2_000L
+
         private const val CORE_BINARY = "libhysteria.so"
         private const val STATS_INTERVAL_MS = 1000L
 
@@ -884,5 +1091,4 @@ class Hysteria2VpnService : VpnService() {
         private const val CORE_TAG = "hysteria"
     }
 }
-
 

@@ -69,6 +69,8 @@
     <string name="settings_show_address_summary">إظهار المضيف والمنفذ على بطاقات الملفات الشخصية</string>
     <string name="settings_show_traffic">حركة البيانات المباشرة</string>
     <string name="settings_show_traffic_summary">إظهار معدل النقل في بطاقة الحالة وفي الإشعار</string>
+    <string name="settings_local_dns">تحليل DNS محليًا</string>
+    <string name="settings_local_dns_summary">تُحلّ الأسماء داخل النفق على الخادم: بلا رحلة ذهاب وإياب لكل استعلام، لكنه يتطلب مُحلِّلًا يعمل على الخادم. يُتجاهل عند تعيين خادم DNS مخصص.</string>
     <string name="settings_custom_dns">خادم DNS مخصص</string>
     <string name="settings_section_appearance">المظهر</string>
     <string name="settings_section_network">الشبكة</string>
