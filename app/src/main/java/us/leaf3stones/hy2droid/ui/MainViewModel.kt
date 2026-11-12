@@ -82,6 +82,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val tcpBufferKb: StateFlow<Int> = settings.tcpBufferKb
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsStore.DEFAULT_TCP_BUFFER_KB)
 
+    val fakeIcmp: StateFlow<Boolean> = settings.fakeIcmp
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
 
     val blockRules: StateFlow<List<BlockRule>> = settings.blockRules
         .stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_BLOCK_RULES)
@@ -204,6 +207,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setTcpBufferKb(kb: Int) {
         viewModelScope.launch { settings.setTcpBufferKb(kb) }
+    }
+
+    fun setFakeIcmp(enabled: Boolean) {
+        viewModelScope.launch { settings.setFakeIcmp(enabled) }
     }
 
     fun setBlockRules(rules: List<BlockRule>) {

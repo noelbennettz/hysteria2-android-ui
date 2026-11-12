@@ -33,6 +33,7 @@ class SettingsStore(private val context: Context) {
     private val keyShowTraffic = booleanPreferencesKey("show_live_traffic")
     private val keyDnsCache = booleanPreferencesKey("cache_dns_locally")
     private val keyTcpBuffer = intPreferencesKey("tcp_buffer_kb")
+    private val keyFakeIcmp = booleanPreferencesKey("answer_ping_locally")
 
 
 
@@ -104,6 +105,17 @@ class SettingsStore(private val context: Context) {
      */
     val tcpBufferKb: Flow<Int> = context.settingsDataStore.data
         .map { it[keyTcpBuffer] ?: DEFAULT_TCP_BUFFER_KB }
+
+    /**
+     * Whether ICMP echo is answered inside the tunnel (`tunnel.icmp: reply`).
+     *
+     * Hysteria forwards TCP and UDP only, so a real ping cannot cross it. With
+     * this on, the engine answers the echo locally, which keeps apps and games
+     * that gate on ping happy — at the price of `ping` no longer telling you
+     * anything about the path. Off by default.
+     */
+    val fakeIcmp: Flow<Boolean> = context.settingsDataStore.data
+        .map { it[keyFakeIcmp] ?: false }
 
 
 
@@ -180,6 +192,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setTcpBufferKb(kb: Int) {
         context.settingsDataStore.edit { it[keyTcpBuffer] = clampTcpBufferKb(kb) }
+    }
+
+    suspend fun setFakeIcmp(enabled: Boolean) {
+        context.settingsDataStore.edit { it[keyFakeIcmp] = enabled }
     }
 
 

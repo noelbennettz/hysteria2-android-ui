@@ -32,6 +32,8 @@ object Tun2socksConfig {
          * reader rather than the throughput of a fast link.
          */
         tcpBufferKb: Int = SettingsStore.DEFAULT_TCP_BUFFER_KB,
+        /** Answer ICMP echo locally (`tunnel.icmp: reply`); off by default. */
+        fakeIcmp: Boolean = false,
     ): String {
         val lines = mutableListOf(
             "tunnel:",
@@ -40,6 +42,12 @@ object Tun2socksConfig {
             "  multi-queue: false",
             "  ipv4: ${Tun.IPV4}",
             "  ipv6: '${Tun.IPV6}'",
+        )
+        // `tunnel.icmp: reply` answers echo locally: Hysteria carries TCP and UDP
+        // only, so a real ping cannot cross it. Off unless the user asks for it,
+        // because a fake reply makes ping useless as a diagnostic.
+        if (fakeIcmp) lines += "  icmp: reply"
+        lines += listOf(
             "",
             "socks5:",
             "  port: ${Tun.SOCKS_PORT}",
@@ -49,6 +57,7 @@ object Tun2socksConfig {
             "misc:",
             "  tcp-buffer-size: ${SettingsStore.tcpBufferBytes(tcpBufferKb)}",
         )
+
         val tcp = blockRules.tcpPortSpec()
         val udp = blockRules.udpPortSpec()
         if (tcp.isNotEmpty()) lines += "  block-tcp: '$tcp'"

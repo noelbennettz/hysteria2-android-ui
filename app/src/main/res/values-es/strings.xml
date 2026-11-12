@@ -69,6 +69,9 @@
     <string name="settings_show_address_summary">Mostrar host y puerto en las tarjetas de perfil</string>
     <string name="settings_show_traffic">Tráfico en vivo</string>
     <string name="settings_show_traffic_summary">Muestra el caudal en la tarjeta de estado y en la notificación</string>
+    <string name="settings_fake_icmp">Responder al ping localmente</string>
+    <string name="settings_fake_icmp_summary">Hysteria solo transporta TCP y UDP, así que ICMP no pasa. Al activarlo, el túnel responde al ping: las apps y juegos que comprueban la conexión dejan de fallar, pero el ping ya no dice nada del camino.</string>
+    <string name="settings_private_dns_hint">El DNS privado del sistema está activo, así que la caché DNS integrada no se usa.</string>
     <string name="settings_dns_cache">Guardar en caché las respuestas DNS</string>
     <string name="settings_dns_cache_summary">Las consultas repetidas se responden dentro del túnel en vez de pagar un ida y vuelta; las que no están en caché se resuelven por el servidor. Se ignora si hay un DNS personalizado.</string>
     <string name="settings_custom_dns">Servidor DNS personalizado</string>

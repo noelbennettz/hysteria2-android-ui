@@ -88,6 +88,9 @@ class Hysteria2VpnService : VpnService() {
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var networkJob: Job? = null
 
+    /** A restart that the rate limit pushed out; see [NetworkSwitchPolicy]. */
+    private var pendingRestartJob: Job? = null
+
     /**
      * The config file the running core was started from. A network handover
      * restarts the process, and it has to come back with the same profile.
@@ -337,6 +340,12 @@ class Hysteria2VpnService : VpnService() {
             SettingsStore.DEFAULT_TCP_BUFFER_KB
         }
 
+        val fakeIcmp = try {
+            settings.fakeIcmp.first()
+        } catch (_: Exception) {
+            false
+        }
+
         val blockRules = try {
             settings.blockRules.first()
         } catch (_: Exception) {
@@ -368,7 +377,7 @@ class Hysteria2VpnService : VpnService() {
 
         val tun2socksFile = File(filesDir, Tun2socksConfig.FILE_NAME)
         try {
-            tun2socksFile.writeText(Tun2socksConfig.build(blockRules, mtu, tcpBufferKb))
+            tun2socksFile.writeText(Tun2socksConfig.build(blockRules, mtu, tcpBufferKb, fakeIcmp))
         } catch (e: Exception) {
             fail(getString(R.string.error_tun2socks_config, e.message ?: ""))
             return
@@ -607,6 +616,8 @@ class Hysteria2VpnService : VpnService() {
     private fun unregisterNetworkTracking() {
         networkJob?.cancel()
         networkJob = null
+        pendingRestartJob?.cancel()
+        pendingRestartJob = null
         networkTokenCache.clear()
         networkTokens.value = null
         networkSwitch.reset()
@@ -651,7 +662,36 @@ class Hysteria2VpnService : VpnService() {
             // (airplane mode off), the tunnel is up again without a restart.
             NetworkAction.Ignore -> restoreConnected()
         }
+        // A handover that fell inside the rate limit still owes a restart.
+        schedulePendingRestart()
+    }
 
+    /**
+     * Run the deferred restart once the rate limit has elapsed, if one is owed.
+     *
+     * A separate job on purpose: a flapping link keeps the token flow busy, and
+     * the wait must not delay adopting (or reflecting) the next change.
+     */
+    private fun schedulePendingRestart() {
+        val wait = networkSwitch.pendingDelayMs() ?: run {
+            pendingRestartJob?.cancel()
+            pendingRestartJob = null
+            return
+        }
+        pendingRestartJob?.cancel()
+        pendingRestartJob = serviceScope.launch {
+            delay(wait)
+            tunnelMutex.withLock {
+                if (shuttingDown || tunInterface == null) return@withLock
+                if (!networkSwitch.takeDueRestart()) return@withLock
+                Log.i(TAG, "Deferred core restart after repeated network changes")
+                pinUnderlying()
+                updateState(TunnelState.Connecting)
+                refreshNotification()
+                restartCore()
+                restoreConnected()
+            }
+        }
     }
 
     /**

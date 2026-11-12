@@ -69,6 +69,9 @@
     <string name="settings_show_address_summary">在配置卡片上显示主机和端口</string>
     <string name="settings_show_traffic">实时流量</string>
     <string name="settings_show_traffic_summary">在状态卡片和通知中显示传输速率</string>
+    <string name="settings_fake_icmp">本机回应 ping</string>
+    <string name="settings_fake_icmp_summary">Hysteria 只承载 TCP 与 UDP，ICMP 无法通过。开启后隧道自行回应 ping：靠 ping 判断连通性的应用与游戏不会误判，但 ping 从此不能用来诊断链路。</string>
+    <string name="settings_private_dns_hint">系统的 Private DNS 已开启，内置 DNS 缓存不会生效。</string>
     <string name="settings_dns_cache">缓存 DNS 解析结果</string>
     <string name="settings_dns_cache_summary">重复的域名查询在隧道内直接命中，省下一次往返；未命中仍经服务器解析。设置自定义 DNS 时不生效。</string>
     <string name="settings_custom_dns">自定义 DNS 服务器</string>

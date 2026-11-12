@@ -69,6 +69,9 @@
     <string name="settings_show_address_summary">在節點卡片上顯示主機與連接埠</string>
     <string name="settings_show_traffic">即時流量</string>
     <string name="settings_show_traffic_summary">在狀態卡片與通知中顯示傳輸速率</string>
+    <string name="settings_fake_icmp">本機回應 ping</string>
+    <string name="settings_fake_icmp_summary">Hysteria 只承載 TCP 與 UDP，ICMP 無法通過。開啟後隧道自行回應 ping：靠 ping 判斷連線的應用與遊戲不會誤判，但 ping 從此不能用來診斷鏈路。</string>
+    <string name="settings_private_dns_hint">系統的 Private DNS 已開啟，內建 DNS 快取不會生效。</string>
     <string name="settings_dns_cache">快取 DNS 解析結果</string>
     <string name="settings_dns_cache_summary">重複的網域查詢在隧道內直接命中，省下一次往返；未命中仍經伺服器解析。設定自訂 DNS 時不生效。</string>
     <string name="settings_custom_dns">自訂 DNS 伺服器</string>

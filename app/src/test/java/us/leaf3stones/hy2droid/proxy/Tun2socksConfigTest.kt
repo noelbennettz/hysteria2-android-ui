@@ -82,6 +82,21 @@ class Tun2socksConfigTest {
     }
 
     @Test
+    fun `icmp is left alone by default`() {
+        val yaml = Tun2socksConfig.build(emptyList())
+
+        assertFalse(yaml.contains("icmp"))
+    }
+
+    @Test
+    fun `answering ping locally is opt-in and uses the engine's reply mode`() {
+        val yaml = Tun2socksConfig.build(emptyList(), fakeIcmp = true)
+
+        // hev parses `tunnel.icmp` as a string and only enables the flag for "reply".
+        assertTrue(yaml.contains("  ipv6: 'fc00::1'\n  icmp: reply\n"))
+    }
+
+    @Test
     fun `only offered buffer sizes survive, rounded to the nearest`() {
         // A restored backup or a hand-edited preference cannot ask for nonsense.
         assertEquals(64, SettingsStore.clampTcpBufferKb(0))

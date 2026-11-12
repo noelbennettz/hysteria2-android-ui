@@ -2,6 +2,7 @@ package us.leaf3stones.hy2droid.ui
 
 import android.net.InetAddresses
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -100,6 +101,7 @@ fun SettingsScreen(
     val disablePmtud by viewModel.disablePathMtuDiscovery.collectAsState()
     val mtu by viewModel.mtu.collectAsState()
     val tcpBufferKb by viewModel.tcpBufferKb.collectAsState()
+    val fakeIcmp by viewModel.fakeIcmp.collectAsState()
     val tunnelState by viewModel.tunnelState.collectAsState()
     val active = tunnelState is TunnelState.Connected || tunnelState is TunnelState.Connecting
     var mtuDialogOpen by remember { mutableStateOf(false) }
@@ -108,6 +110,17 @@ fun SettingsScreen(
     // SAF: the user picks where the zip goes, so there is no storage permission
     // to ask for and no FileProvider to declare.
     val context = LocalContext.current
+    // Private DNS (DoT/DoH) sends queries to its own endpoint, straight past the
+    // in-tunnel cache. Worth saying out loud instead of leaving users guessing.
+    // The key is not in the public SDK, but Global settings are readable by name.
+    val privateDnsOn = remember {
+        try {
+            val mode = Settings.Global.getString(context.contentResolver, PRIVATE_DNS_MODE)
+            mode != null && mode != PRIVATE_DNS_OFF
+        } catch (_: Exception) {
+            false
+        }
+    }
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip"),
     ) { uri ->
@@ -265,6 +278,14 @@ fun SettingsScreen(
             )
             HorizontalDivider()
             SwitchRow(
+                icon = Icons.Filled.Public,
+                title = stringResource(R.string.settings_fake_icmp),
+                subtitle = stringResource(R.string.settings_fake_icmp_summary),
+                checked = fakeIcmp,
+                onCheckedChange = viewModel::setFakeIcmp,
+            )
+            HorizontalDivider()
+            SwitchRow(
                 icon = Icons.Filled.Dns,
                 title = stringResource(R.string.settings_dns_cache),
                 subtitle = stringResource(R.string.settings_dns_cache_summary),
@@ -274,6 +295,14 @@ fun SettingsScreen(
                 enabled = !dnsEnabled,
                 onCheckedChange = viewModel::setDnsCacheEnabled,
             )
+            if (localDns && privateDnsOn) {
+                Text(
+                    text = stringResource(R.string.settings_private_dns_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 72.dp, end = 16.dp, bottom = 12.dp),
+                )
+            }
             HorizontalDivider()
             SwitchRow(
                 icon = Icons.Filled.Dns,
@@ -522,3 +551,9 @@ private fun ClickRow(
         )
     }
 }
+
+/** `Settings.Global`, hidden from the SDK but readable by name. */
+private const val PRIVATE_DNS_MODE = "private_dns_mode"
+
+/** The value of [PRIVATE_DNS_MODE] when private DNS is disabled. */
+private const val PRIVATE_DNS_OFF = "off"

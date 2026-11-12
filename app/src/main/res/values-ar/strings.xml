@@ -69,6 +69,9 @@
     <string name="settings_show_address_summary">إظهار المضيف والمنفذ على بطاقات الملفات الشخصية</string>
     <string name="settings_show_traffic">حركة البيانات المباشرة</string>
     <string name="settings_show_traffic_summary">إظهار معدل النقل في بطاقة الحالة وفي الإشعار</string>
+    <string name="settings_fake_icmp">الرد على ping محليًا</string>
+    <string name="settings_fake_icmp_summary">لا ينقل Hysteria سوى TCP وUDP، لذا لا يمر ICMP. عند التفعيل يرد النفق على ping بنفسه: تتوقف التطبيقات والألعاب التي تفحص الاتصال عن الشكوى، لكن ping لم يعد يخبرك بشيء عن المسار.</string>
+    <string name="settings_private_dns_hint">DNS الخاص في النظام مفعّل، لذا لا يُستخدم مخزن DNS المدمج.</string>
     <string name="settings_dns_cache">تخزين إجابات DNS محليًا</string>
     <string name="settings_dns_cache_summary">تُجاب الاستعلامات المتكررة داخل النفق بدلًا من دفع رحلة ذهاب وإياب؛ أما غير المخزَّنة فتُحلّ عبر الخادم. يُتجاهل عند تعيين خادم DNS مخصص.</string>
     <string name="settings_custom_dns">خادم DNS مخصص</string>

@@ -1,8 +1,11 @@
 package us.leaf3stones.hy2droid.proxy
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -60,6 +63,71 @@ class NetworkSwitchPolicyTest {
     }
 
     @Test
+    fun `a change inside the rate limit is adopted now and restarted later`() {
+        var now = 0L
+        val policy = NetworkSwitchPolicy(clock = { now }, restartIntervalMs = 10_000)
+
+        assertEquals(NetworkAction.Adopt, policy.onCurrent("2:wlan0"))
+        now = 1_000
+        assertEquals(NetworkAction.Restart, policy.onCurrent("1:rmnet_data0"))
+        // Immediately after, a second handover may not restart again...
+        now = 2_000
+        assertEquals(NetworkAction.Adopt, policy.onCurrent("2:wlan0"))
+        assertEquals("2:wlan0", policy.adopted)
+        assertEquals(9_000L, policy.pendingDelayMs())
+        // ...but it is owed, and runs as soon as the interval has passed.
+        assertFalse(policy.takeDueRestart())
+        // The interval is measured from the last restart, 1 s after the start.
+        now = 11_000
+        assertTrue(policy.takeDueRestart())
+        assertFalse(policy.takeDueRestart())
+        assertNull(policy.pendingDelayMs())
+    }
+
+    @Test
+    fun `a flapping link produces one restart per interval, and settles on the last one`() {
+        var now = 0L
+        val policy = NetworkSwitchPolicy(clock = { now }, restartIntervalMs = 10_000)
+        policy.onCurrent("2:wlan0")
+        now = 500
+        assertEquals(NetworkAction.Restart, policy.onCurrent("1:rmnet_data0"))
+
+        var restarts = 1
+        // The link keeps flapping once a second for a while.
+        for (step in 1..6) {
+            now = 500L + step * 1_000
+            val action = policy.onCurrent(if (step % 2 == 0) "1:rmnet_data0" else "2:wlan0")
+            if (action == NetworkAction.Restart) restarts++
+            // Whatever the limiter says, the pin follows the network that is up.
+            assertEquals(if (step % 2 == 0) "1:rmnet_data0" else "2:wlan0", policy.adopted)
+        }
+        assertEquals(1, restarts)
+        // The owed restart runs once the interval has passed, and only once.
+        now = 20_000
+        assertTrue(policy.takeDueRestart())
+        restarts++
+        assertFalse(policy.takeDueRestart())
+        assertEquals(2, restarts)
+    }
+
+    @Test
+    fun `a settled network cancels the restart it owed`() {
+        var now = 0L
+        val policy = NetworkSwitchPolicy(clock = { now }, restartIntervalMs = 10_000)
+        policy.onCurrent("2:wlan0")
+        now = 1_000
+        assertEquals(NetworkAction.Restart, policy.onCurrent("1:rmnet_data0"))
+        now = 2_000
+        assertEquals(NetworkAction.Adopt, policy.onCurrent("2:wlan0"))
+        assertNotNull(policy.pendingDelayMs())
+        // Back on the network the core was started with: nothing is owed.
+        now = 3_000
+        assertEquals(NetworkAction.Ignore, policy.onCurrent("2:wlan0"))
+        assertNull(policy.pendingDelayMs())
+        assertFalse(policy.takeDueRestart())
+    }
+
+    @Test
     fun `a network that comes back on the same transport restarts the core`() {
         val policy = NetworkSwitchPolicy()
         policy.onCurrent("2:wlan0")
@@ -74,16 +142,24 @@ class NetworkSwitchPolicyTest {
 
     @Test
     fun `going away and coming back on another transport restarts once per change`() {
-        val policy = NetworkSwitchPolicy()
+        var now = 0L
+        val policy = NetworkSwitchPolicy(clock = { now }, restartIntervalMs = 10_000)
         policy.onCurrent("2:wlan0")
 
+        now = 1_000
         assertEquals(NetworkAction.Ignore, policy.onCurrent(null))
+        now = 2_000
         assertEquals(NetworkAction.Restart, policy.onCurrent("1:rmnet_data0"))
+        now = 3_000
         assertEquals(NetworkAction.Ignore, policy.onCurrent("1:rmnet_data0"))
 
-        // A second gap is a second dead path, so it restarts again on the way back.
+        // A second gap is a second dead path, so it restarts again on the way back
+        // once the rate limit has passed.
+        now = 20_000
         assertEquals(NetworkAction.Ignore, policy.onCurrent(null))
+        now = 21_000
         assertEquals(NetworkAction.Restart, policy.onCurrent("2:wlan0"))
+        now = 22_000
         assertEquals(NetworkAction.Ignore, policy.onCurrent("2:wlan0"))
     }
 

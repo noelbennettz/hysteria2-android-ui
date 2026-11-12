@@ -69,6 +69,9 @@
     <string name="settings_show_address_summary">Показывать хост и порт на карточках профилей</string>
     <string name="settings_show_traffic">Трафик в реальном времени</string>
     <string name="settings_show_traffic_summary">Показывать скорость на карточке состояния и в уведомлении</string>
+    <string name="settings_fake_icmp">Отвечать на ping локально</string>
+    <string name="settings_fake_icmp_summary">Hysteria передаёт только TCP и UDP, поэтому ICMP не проходит. Если включить, туннель отвечает на ping сам: приложения и игры, проверяющие связь, не ругаются, но ping больше ничего не говорит о пути.</string>
+    <string name="settings_private_dns_hint">Системный Private DNS включён, встроенный DNS-кеш не используется.</string>
     <string name="settings_dns_cache">Кешировать ответы DNS</string>
     <string name="settings_dns_cache_summary">Повторные запросы отвечаются внутри туннеля вместо лишнего круга; промахи всё равно уходят на сервер. Не действует, если задан свой DNS.</string>
     <string name="settings_custom_dns">Свой DNS-сервер</string>

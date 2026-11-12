@@ -72,6 +72,9 @@
     <string name="settings_show_address_summary">Show host and port on the profile cards</string>
     <string name="settings_show_traffic">Live traffic</string>
     <string name="settings_show_traffic_summary">Show throughput on the status card and in the notification</string>
+    <string name="settings_fake_icmp">Answer ping locally</string>
+    <string name="settings_fake_icmp_summary">Hysteria carries TCP and UDP only, so ICMP cannot pass. On, the tunnel answers ping itself: apps and games that check connectivity stay happy, but ping no longer tells you anything about the path.</string>
+    <string name="settings_private_dns_hint">System Private DNS is on, so the built-in DNS cache is bypassed.</string>
     <string name="settings_dns_cache">Cache DNS answers</string>
     <string name="settings_dns_cache_summary">Repeated lookups are answered inside the tunnel instead of paying a round trip; misses still go through the server. Ignored while a custom DNS server is set.</string>
     <string name="settings_custom_dns">Custom DNS server</string>

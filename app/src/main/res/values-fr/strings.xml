@@ -69,6 +69,9 @@
     <string name="settings_show_address_summary">Afficher l\'hôte et le port sur les cartes de profil</string>
     <string name="settings_show_traffic">Trafic en direct</string>
     <string name="settings_show_traffic_summary">Affiche le débit sur la carte d\'état et dans la notification</string>
+    <string name="settings_fake_icmp">Répondre au ping localement</string>
+    <string name="settings_fake_icmp_summary">Hysteria ne transporte que TCP et UDP, donc ICMP ne passe pas. Activé, le tunnel répond lui-même au ping : les applis et jeux qui testent la connexion ne se trompent plus, mais le ping ne dit plus rien du chemin.</string>
+    <string name="settings_private_dns_hint">Le DNS privé du système est activé : le cache DNS intégré n\'est pas utilisé.</string>
     <string name="settings_dns_cache">Mettre en cache les réponses DNS</string>
     <string name="settings_dns_cache_summary">Les requêtes répétées sont résolues dans le tunnel au lieu de payer un aller-retour ; celles absentes du cache passent par le serveur. Ignoré si un DNS personnalisé est défini.</string>
     <string name="settings_custom_dns">Serveur DNS personnalisé</string>
