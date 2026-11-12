@@ -23,11 +23,21 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   and rebuilds it, no manual disconnect needed
 - Share a profile as a QR code
 - Salamander obfuscation, custom SNI, optional "allow insecure certificate"
-- Brutal congestion control via an upload/download bandwidth hint (0 = BBR)
+- Brutal congestion control as an explicit switch with an upload/download hint;
+  off by default, because Brutal paces at a fixed rate and does not back off on
+  loss (BBR adapts by itself)
 - `fastOpen` is **off** by default; `lazy` is always on (it only defers the
   *first* connection — upstream: "the client will not connect until the first
   call to TCP() or UDP()" — after that the session is held open), with a 20 s
   QUIC heartbeat
+- **Failures are named**, not just reported: the status card translates the
+  core's own log line into one sentence (name does not resolve, TLS failed,
+  password rejected, nothing came back, something else answered, obfuscation
+  mismatch) while the raw line stays in logcat and the diagnostics export
+- **Answer ping locally** (Settings → Network, off by default): Hysteria carries
+  TCP and UDP only, so ICMP cannot cross it; this makes the engine answer echo
+  itself. Handy for apps that gate on ping, at the cost of ping no longer
+  meaning anything
 - DNS, two modes (Settings → Network). **Cache DNS answers** (default) is served
   by a resolver that lives in the app: the VPN pushes its own TUN address, so
   Android's queries land on a socket the app owns instead of going into the
@@ -323,8 +333,10 @@ point `HY2_KEYSTORE_FILE` at it) and export `HY2_KEYSTORE_PASSWORD`,
 - **SNI** — TLS server name; blank means "derive from the server host". Needed
   when the server is addressed by IP but the certificate is issued to a hostname
 - **Obfuscation password** — Salamander password; blank disables obfs
-- **Upload / Download Mbps** — your real line speeds to enable Brutal; both 0
-  keeps BBR (see the
+- **Brutal congestion control** — the switch above the two rate fields. Off
+  keeps BBR, which adapts to whatever the path is doing; on, the core paces at
+  exactly **Upload / Download Mbps** and ignores loss, so use about 80 percent
+  of your measured speed and keep it off on unstable networks (see the
   [official docs](https://v2.hysteria.network/docs/advanced/Full-Server-Config/))
 - **Allow insecure certificate** — skips TLS verification; keep it off unless
   you know what you are doing
