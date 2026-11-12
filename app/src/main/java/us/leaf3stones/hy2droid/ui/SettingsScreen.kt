@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lan
+import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.SettingsEthernet
@@ -54,6 +55,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,10 +66,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.DiagnosticsExporter
 import us.leaf3stones.hy2droid.data.LanRanges
 import us.leaf3stones.hy2droid.data.SettingsStore
+import us.leaf3stones.hy2droid.proxy.BenchResult
+import us.leaf3stones.hy2droid.proxy.BenchStep
+import us.leaf3stones.hy2droid.proxy.LocalDns
+import us.leaf3stones.hy2droid.proxy.TunnelProbe
 import us.leaf3stones.hy2droid.proxy.TunnelState
 
 /** Returns true when [value] is a numeric IPv4 or IPv6 address. */
@@ -106,6 +113,7 @@ fun SettingsScreen(
     val active = tunnelState is TunnelState.Connected || tunnelState is TunnelState.Connecting
     var mtuDialogOpen by remember { mutableStateOf(false) }
     var tcpBufferDialogOpen by remember { mutableStateOf(false) }
+    var tunnelTestOpen by remember { mutableStateOf(false) }
 
     // SAF: the user picks where the zip goes, so there is no storage permission
     // to ask for and no FileProvider to declare.
@@ -295,6 +303,14 @@ fun SettingsScreen(
                 enabled = !dnsEnabled,
                 onCheckedChange = viewModel::setDnsCacheEnabled,
             )
+            if (localDns && !LocalDns.available) {
+                Text(
+                    text = stringResource(R.string.settings_dns_cache_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(start = 72.dp, end = 16.dp, bottom = 12.dp),
+                )
+            }
             if (localDns && privateDnsOn) {
                 Text(
                     text = stringResource(R.string.settings_private_dns_hint),
@@ -356,6 +372,13 @@ fun SettingsScreen(
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_diagnostics))
             ClickRow(
+                icon = Icons.Filled.NetworkCheck,
+                title = stringResource(R.string.settings_test_tunnel),
+                subtitle = stringResource(R.string.settings_test_tunnel_summary),
+                onClick = { tunnelTestOpen = true },
+            )
+            HorizontalDivider()
+            ClickRow(
                 icon = Icons.Filled.BugReport,
                 title = stringResource(R.string.settings_export_logs),
                 subtitle = stringResource(R.string.settings_export_logs_summary),
@@ -371,6 +394,13 @@ fun SettingsScreen(
             )
             HorizontalDivider()
         }
+    }
+
+    if (tunnelTestOpen) {
+        TunnelTestDialog(
+            connected = active,
+            onDismiss = { tunnelTestOpen = false },
+        )
     }
 
     if (tcpBufferDialogOpen) {
@@ -454,6 +484,101 @@ private fun SectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
     )
+}
+
+/**
+ * Runs [TunnelProbe] against the live tunnel and lists each step.
+ *
+ * Steps appear as they finish, so a slow one is visible instead of the dialog
+ * sitting silent for seconds; a failed step keeps its error text.
+ */
+@Composable
+private fun TunnelTestDialog(connected: Boolean, onDismiss: () -> Unit) {
+    var results by remember { mutableStateOf<List<BenchResult>>(emptyList()) }
+    var running by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    fun runProbe() {
+        if (!connected || running) return
+        results = emptyList()
+        running = true
+        scope.launch {
+            TunnelProbe().run { step -> results = results + step }
+            running = false
+        }
+    }
+
+    LaunchedEffect(Unit) { runProbe() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_test_tunnel)) },
+        text = {
+            Column {
+                if (!connected) {
+                    Text(stringResource(R.string.test_tunnel_offline))
+                } else {
+                    if (running) {
+                        Text(stringResource(R.string.test_tunnel_running))
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    BenchStep.values().forEach { step ->
+                        val result = results.firstOrNull { it.step == step } ?: return@forEach
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                        ) {
+                            Text(
+                                text = stringResource(stepLabel(step)),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                text = result.value,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (result.ok) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                },
+                            )
+                        }
+                        val detail = result.detail
+                        if (!result.ok && detail != null) {
+                            Text(
+                                text = detail,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (connected) {
+                TextButton(onClick = { runProbe() }, enabled = !running) {
+                    Text(stringResource(R.string.test_tunnel_run))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_close))
+            }
+        },
+    )
+}
+
+@StringRes
+private fun stepLabel(step: BenchStep): Int = when (step) {
+    BenchStep.Dns -> R.string.test_tunnel_dns
+    BenchStep.ConnectCold -> R.string.test_tunnel_cold
+    BenchStep.ConnectWarm -> R.string.test_tunnel_warm
+    BenchStep.Ttfb -> R.string.test_tunnel_ttfb
+    BenchStep.Throughput -> R.string.test_tunnel_speed
+    BenchStep.Direct -> R.string.test_tunnel_direct
 }
 
 /** One DNS server input; the primary and the secondary differ only in the label. */

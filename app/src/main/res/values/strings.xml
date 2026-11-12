@@ -109,6 +109,18 @@
     <string name="settings_auto_test_latency">Test latency on launch</string>
     <string name="settings_auto_test_latency_summary">Measure the nodes that have no result yet when the app opens and list the fastest one first</string>
     <string name="settings_section_diagnostics">Diagnostics</string>
+    <string name="test_tunnel_direct">Download, direct (no tunnel)</string>
+    <string name="settings_dns_cache_unavailable">Not available on this device: Android reserves port 53, so queries are forwarded through the tunnel instead.</string>
+    <string name="settings_test_tunnel">Test tunnel</string>
+    <string name="settings_test_tunnel_summary">Measure DNS, connect and download through the running tunnel</string>
+    <string name="test_tunnel_dns">DNS (in-tunnel cache)</string>
+    <string name="test_tunnel_cold">First connect (cold)</string>
+    <string name="test_tunnel_warm">Second connect (warm)</string>
+    <string name="test_tunnel_ttfb">First byte (HTTPS)</string>
+    <string name="test_tunnel_speed">Download (5 MB)</string>
+    <string name="test_tunnel_running">Measuring…</string>
+    <string name="test_tunnel_run">Run again</string>
+    <string name="test_tunnel_offline">Connect the tunnel first.</string>
     <string name="settings_export_logs">Export logs</string>
     <string name="settings_export_logs_summary">Save the app and Hysteria core logs as a zip file</string>
 

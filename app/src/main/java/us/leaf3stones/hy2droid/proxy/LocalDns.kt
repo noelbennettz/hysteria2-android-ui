@@ -44,9 +44,11 @@ class LocalDns(private val upstreams: List<String>, private val socksPort: Int) 
         if (socket != null) return true
         return try {
             socket = open(null)
+            available = true
             true
         } catch (e: Exception) {
             Log.w(TAG, "Could not bind UDP/$PORT for the local resolver", e)
+            available = false
             false
         }
     }
@@ -142,6 +144,15 @@ class LocalDns(private val upstreams: List<String>, private val socksPort: Int) 
     }
 
     companion object {
+        /**
+         * False when the platform refuses port 53 (Android reserves privileged
+         * ports, so this is the normal case on a non-rooted phone). The settings
+         * screen uses it to stop claiming the cache is on.
+         */
+        @Volatile
+        var available: Boolean = false
+            private set
+
         const val PORT = Tun.CACHE_DNS_PORT
         private const val MAX_UDP = 4096
         private const val TAG = "LocalDns"

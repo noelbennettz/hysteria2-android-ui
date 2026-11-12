@@ -126,7 +126,7 @@ class DnsUpstream(
                     val candidate = Socket()
                     candidate.soTimeout = READ_TIMEOUT_MS
                     candidate.connect(
-                        InetSocketAddress(InetAddress.getLoopbackAddress(), socksPort),
+                        InetSocketAddress(InetAddress.getByName(LOOPBACK), socksPort),
                         CONNECT_TIMEOUT_MS,
                     )
                     val outs = candidate.getOutputStream()
@@ -198,6 +198,9 @@ class DnsUpstream(
     }
 
     companion object {
+        /** The core listens on IPv4 loopback only; `getLoopbackAddress()` can be ::1. */
+        private const val LOOPBACK = "127.0.0.1"
+
         /** Enough for a page load's parallel lookups without a connection per query. */
         private const val MAX_CONNECTIONS = 4
 
