@@ -28,13 +28,23 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   *first* connection — upstream: "the client will not connect until the first
   call to TCP() or UDP()" — after that the session is held open), with a 20 s
   QUIC heartbeat
-- Custom DNS resolvers (primary/secondary, IPv4 or IPv6, validated). The tunnel
-  always gets resolvers — Quad9 (`9.9.9.9`) with Cloudflare (`1.1.1.1`) as the
-  backup — because Android has no "no DNS means use the tunnel" mode: with an
-  empty DNS list it resolves through the underlying network, i.e. the queries
-  leave over Wi-Fi and never reach the server. Any address works, the queries are
-  answered from the server's egress; the custom switch replaces the defaults with
-  your own
+- DNS, two modes (Settings → Network). **Answer DNS locally** (default) is
+  answered inside the tunnel by `libtun2socks.so` (hev's `mapdns`): the resolver
+  it advertises (`192.0.2.53`) is intercepted, an A query gets a placeholder
+  address from `198.18.0.0/15` instantly, and the *name* is forwarded over
+  SOCKS5 so the server resolves it — one connection round trip saved per
+  distinct name, at the cost of depending on the server's resolver. Turn it off
+  and the tun gets real resolvers instead — Quad9 (`9.9.9.9`) with Cloudflare
+  (`1.1.1.1`) as the backup — because Android has no "no DNS means use the
+  tunnel" mode: with an empty DNS list it resolves through the underlying
+  network, i.e. the queries leave over Wi-Fi and never reach the server.
+  A custom primary/secondary (IPv4 or IPv6, validated) overrides both modes, and
+  then also disables the local answering.
+- **Network handover**: switching Wi-Fi ↔ mobile restarts the Hysteria core, so
+  the session is back within a second instead of waiting out the 30 s QUIC idle
+  timeout. The TUN and the tunnel engine stay up; flows in flight during the
+  restart are reset and retried by the apps.
+
 - Split tunnelling: pick apps that bypass the VPN
 - **Blocked traffic**: refuse flows by protocol and port inside the tunnel —
   QUIC (UDP 443) is blocked by default, because Hysteria 2 cannot accelerate it
@@ -127,8 +137,18 @@ The app's own UID is excluded from the tunnel
 process — same UID — reaches the server over the underlying network and resolves
 the profile's hostname with the system resolver. If that resolver is broken the
 connect fails; there is deliberately no fallback (no hardcoded resolver, no DoH
-retry) on that path. DNS *inside* the tunnel is separate: the tun always gets
-resolvers (see Features), so app lookups go through the server.
+retry) on that path. DNS *inside* the tunnel is separate: the tun always gets a
+resolver (see Features), and in the default mode that resolver is hev's own
+`mapdns` address, so app lookups are answered locally with a placeholder and the
+name is dialled by the server.
+
+A network handover cannot be fixed by re-pinning the TUN: Hysteria 2 has no
+rebind API, so the service watches the set of validated non-VPN transports and
+restarts the core when it changes (Wi-Fi ↔ mobile, airplane mode). The restart
+is serialised with connect/disconnect, the old process is killed before the new
+one binds the SOCKS port, and a core that dies afterwards is still reported as
+an error.
+
 
 `libtun2socks.so` binds its JNI symbols to the **exact** class
 `us.leaf3stones.hy2droid.proxy.Hysteria2VpnService` and to the signatures of

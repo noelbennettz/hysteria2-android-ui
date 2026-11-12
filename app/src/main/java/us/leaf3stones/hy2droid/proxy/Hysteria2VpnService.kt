@@ -517,7 +517,11 @@ class Hysteria2VpnService : VpnService() {
                     return
                 }
                 networkTokenCache[network] = NetworkSwitchPolicy.transportToken(
-                    NetworkSwitchPolicy.transportMask(caps.transportTypes.toList()),
+                    // `NetworkCapabilities.getTransportTypes()` is not in the
+                    // public SDK at compileSdk 34, so ask per transport.
+                    NetworkSwitchPolicy.transportMask(
+                        TRACKED_TRANSPORTS.filter { caps.hasTransport(it) },
+                    ),
                     manager.getLinkProperties(network)?.interfaceName,
                 )
                 publishToken()
@@ -1073,6 +1077,21 @@ class Hysteria2VpnService : VpnService() {
 
         /** Grace period for the old core to exit before it is killed. */
         private const val CORE_STOP_TIMEOUT_MS = 2_000L
+
+        /**
+         * Transports the network token is built from. `NetworkCapabilities` only
+         * exposes `hasTransport()` in the public SDK at this compileSdk, so the
+         * set is enumerated; the ones that can carry a phone's egress are enough
+         * to tell Wi-Fi from cellular (and Ethernet from a hotspot link).
+         */
+        private val TRACKED_TRANSPORTS = intArrayOf(
+            NetworkCapabilities.TRANSPORT_CELLULAR,
+            NetworkCapabilities.TRANSPORT_WIFI,
+            NetworkCapabilities.TRANSPORT_ETHERNET,
+            NetworkCapabilities.TRANSPORT_BLUETOOTH,
+            NetworkCapabilities.TRANSPORT_USB,
+        )
+
 
         private const val CORE_BINARY = "libhysteria.so"
         private const val STATS_INTERVAL_MS = 1000L
