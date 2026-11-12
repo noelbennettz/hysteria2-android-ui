@@ -20,6 +20,12 @@
     <string name="scan_permission_needed">扫描二维码需要相机权限。</string>
 
     <!-- Connection status -->
+    <string name="core_hint_host">域名解析不到：检查地址，以及手机本身的 DNS。</string>
+    <string name="core_hint_tls">TLS 验证失败：检查 SNI 与证书；只有在你知道原因时才用 insecure。</string>
+    <string name="core_hint_auth">服务器拒绝了密码。</string>
+    <string name="core_hint_timeout">没有任何回应：端口不对、UDP 被挡，或服务器没开。</string>
+    <string name="core_hint_refused">那个端口有人应答，但不是 Hysteria。</string>
+    <string name="core_hint_obfs">混淆密码不一致：两端必须用同一个 Salamander 密码。</string>
     <string name="status_idle">未连接</string>
     <string name="status_connecting">正在连接…</string>
     <string name="status_connected">已连接</string>

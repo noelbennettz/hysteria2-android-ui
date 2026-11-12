@@ -20,6 +20,12 @@
     <string name="scan_permission_needed">Для сканирования QR-кода нужен доступ к камере.</string>
 
     <!-- Connection status -->
+    <string name="core_hint_host">Имя сервера не разрешается здесь. Проверьте адрес и DNS самого телефона.</string>
+    <string name="core_hint_tls">Ошибка проверки TLS: проверьте SNI и сертификат; insecure включайте только если понимаете зачем.</string>
+    <string name="core_hint_auth">Сервер отклонил пароль.</string>
+    <string name="core_hint_timeout">Ответа нет: неверный порт, UDP заблокирован или сервер выключен.</string>
+    <string name="core_hint_refused">На этом порту кто-то отвечает, но это не Hysteria.</string>
+    <string name="core_hint_obfs">Несовпадение обфускации: на обеих сторонах должен быть один пароль Salamander.</string>
     <string name="status_idle">Отключено</string>
     <string name="status_connecting">Подключение…</string>
     <string name="status_connected">Подключено</string>

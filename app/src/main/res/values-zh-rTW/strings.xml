@@ -20,6 +20,12 @@
     <string name="scan_permission_needed">掃描 QR 碼需要相機權限。</string>
 
     <!-- Connection status -->
+    <string name="core_hint_host">網域解析不到：檢查位址，以及手機本身的 DNS。</string>
+    <string name="core_hint_tls">TLS 驗證失敗：檢查 SNI 與憑證；只有在你知道原因時才用 insecure。</string>
+    <string name="core_hint_auth">伺服器拒絕了密碼。</string>
+    <string name="core_hint_timeout">沒有任何回應：連接埠不對、UDP 被擋，或伺服器沒開。</string>
+    <string name="core_hint_refused">那個連接埠有人應答，但不是 Hysteria。</string>
+    <string name="core_hint_obfs">混淆密碼不一致：兩端必須用同一個 Salamander 密碼。</string>
     <string name="status_idle">未連線</string>
     <string name="status_connecting">連線中…</string>
     <string name="status_connected">已連線</string>

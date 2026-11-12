@@ -55,6 +55,7 @@ fun HomeScreen(
     val profiles by viewModel.profiles.collectAsState()
     val selectedId by viewModel.selectedId.collectAsState()
     val tunnelState by viewModel.tunnelState.collectAsState()
+    val problem by viewModel.coreProblem.collectAsState()
     val stats by viewModel.stats.collectAsState()
     val showServerAddress by viewModel.showServerAddress.collectAsState()
     val showTraffic by viewModel.showTraffic.collectAsState()
@@ -159,6 +160,7 @@ fun HomeScreen(
                 stats = stats,
                 showTraffic = showTraffic,
                 profileName = activeProfile?.let { it.name.ifBlank { it.authority } },
+                problem = problem,
             )
             Spacer(Modifier.height(20.dp))
             Text(

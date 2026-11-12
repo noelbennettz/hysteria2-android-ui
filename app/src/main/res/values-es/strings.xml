@@ -20,6 +20,12 @@
     <string name="scan_permission_needed">Se necesita permiso de cámara para escanear un código QR.</string>
 
     <!-- Connection status -->
+    <string name="core_hint_host">No se puede resolver el nombre del servidor aquí. Revisa la dirección y el DNS del teléfono.</string>
+    <string name="core_hint_tls">Falló la verificación TLS: revisa el SNI y el certificado; usa el modo insecure solo si sabes por qué.</string>
+    <string name="core_hint_auth">El servidor rechazó la contraseña.</string>
+    <string name="core_hint_timeout">No llegó nada: puerto equivocado, UDP bloqueado o servidor caído.</string>
+    <string name="core_hint_refused">Algo respondió en ese puerto, pero no es Hysteria.</string>
+    <string name="core_hint_obfs">La ofuscación no coincide: ambos lados deben usar la misma contraseña Salamander.</string>
     <string name="status_idle">Desconectado</string>
     <string name="status_connecting">Conectando…</string>
     <string name="status_connected">Conectado</string>

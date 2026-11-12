@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import us.leaf3stones.hy2droid.data.BlockRule
 import us.leaf3stones.hy2droid.data.ConfigFile
+import us.leaf3stones.hy2droid.data.CoreProblem
 import us.leaf3stones.hy2droid.data.DEFAULT_BLOCK_RULES
 import us.leaf3stones.hy2droid.data.DiagnosticsExporter
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
@@ -88,6 +89,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     val blockRules: StateFlow<List<BlockRule>> = settings.blockRules
         .stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_BLOCK_RULES)
+
+    val coreProblem: StateFlow<CoreProblem?> = TunnelStatus.problem
 
     val tunnelState: StateFlow<TunnelState> = TunnelStatus.state
     val stats: StateFlow<TunnelStats> = TunnelStatus.stats

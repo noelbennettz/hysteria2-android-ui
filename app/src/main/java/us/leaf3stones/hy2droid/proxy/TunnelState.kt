@@ -3,6 +3,7 @@ package us.leaf3stones.hy2droid.proxy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import us.leaf3stones.hy2droid.data.CoreProblem
 
 /** The lifecycle state of the system VPN tunnel. */
 sealed interface TunnelState {
@@ -61,6 +62,21 @@ object TunnelStatus {
 
     internal fun setRestartedBySystem(value: Boolean) {
         _restartedBySystem.value = value
+    }
+
+    private val _problem = MutableStateFlow<CoreProblem?>(null)
+
+    /**
+     * The probable cause of a failure the core's log named, or null.
+     *
+     * Kept out of [state] on purpose: the tunnel can be "Connected" while the
+     * core keeps failing to reach the server, which is exactly the case users
+     * describe as "it is slow".
+     */
+    val problem: StateFlow<CoreProblem?> = _problem.asStateFlow()
+
+    internal fun setProblem(problem: CoreProblem?) {
+        _problem.value = problem
     }
 
     internal fun setActiveProfile(id: String?) {

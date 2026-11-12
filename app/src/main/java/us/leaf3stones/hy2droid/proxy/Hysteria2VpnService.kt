@@ -45,6 +45,7 @@ import kotlinx.coroutines.sync.withLock
 import us.leaf3stones.hy2droid.BuildConfig
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.ConfigFile
+import us.leaf3stones.hy2droid.data.CoreDiagnosis
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
 import us.leaf3stones.hy2droid.data.LanRanges
 import us.leaf3stones.hy2droid.data.ProfileStore
@@ -354,6 +355,7 @@ class Hysteria2VpnService : VpnService() {
 
         val configFile = File(filesDir, HYSTERIA_CONFIG_FILE)
         hysteriaConfigFile = configFile
+        TunnelStatus.setProblem(null)
         when (ensureConfigFile(configFile)) {
 
             ConfigPrep.Ready -> Unit
@@ -771,6 +773,9 @@ class Hysteria2VpnService : VpnService() {
                         val safe = Redact.logLine(line)
                         Log.v(CORE_TAG, safe)
                         coreLog?.write(safe)
+                        // Say what went wrong while it is happening, not only in
+                        // an exported log after the fact.
+                        CoreDiagnosis.classify(safe)?.let { TunnelStatus.setProblem(it) }
                     }
                 }
             } catch (_: Exception) {

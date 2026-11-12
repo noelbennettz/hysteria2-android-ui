@@ -20,6 +20,12 @@
     <string name="scan_permission_needed">يلزم إذن الكاميرا لمسح رمز QR.</string>
 
     <!-- Connection status -->
+    <string name="core_hint_host">لا يمكن تحليل اسم الخادم هنا. تحقق من العنوان ومن DNS الهاتف.</string>
+    <string name="core_hint_tls">فشل تحقق TLS: تحقق من SNI ومن الشهادة؛ لا تستخدم insecure إلا إذا كنت تعرف السبب.</string>
+    <string name="core_hint_auth">رفض الخادم كلمة المرور.</string>
+    <string name="core_hint_timeout">لا يوجد رد: منفذ خاطئ أو UDP محجوب أو الخادم متوقف.</string>
+    <string name="core_hint_refused">هناك من يرد على هذا المنفذ لكنه ليس Hysteria.</string>
+    <string name="core_hint_obfs">عدم تطابق التمويه: يجب أن يستخدم الطرفان نفس كلمة مرور Salamander.</string>
     <string name="status_idle">غير متصل</string>
     <string name="status_connecting">جارٍ الاتصال…</string>
     <string name="status_connected">متصل</string>

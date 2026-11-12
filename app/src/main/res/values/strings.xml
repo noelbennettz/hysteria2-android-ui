@@ -22,6 +22,12 @@
     <string name="scan_permission_needed">Camera permission is required to scan a QR code.</string>
 
     <!-- Connection status -->
+    <string name="core_hint_host">The server name cannot be resolved here. Check the address, and the phone\'s own DNS.</string>
+    <string name="core_hint_tls">TLS verification failed: check the SNI and the certificate, and only use insecure mode if you know why.</string>
+    <string name="core_hint_auth">The server rejected the password.</string>
+    <string name="core_hint_timeout">Nothing came back: wrong port, blocked UDP, or the server is down.</string>
+    <string name="core_hint_refused">Something answered on that port, but it is not Hysteria.</string>
+    <string name="core_hint_obfs">Obfuscation mismatch: both sides must use the same Salamander password.</string>
     <string name="status_idle">Disconnected</string>
     <string name="status_connecting">Connecting…</string>
     <string name="status_connected">Connected</string>

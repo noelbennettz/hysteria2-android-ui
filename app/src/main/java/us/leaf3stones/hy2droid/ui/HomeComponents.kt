@@ -1,5 +1,6 @@
 package us.leaf3stones.hy2droid.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.CoreProblem
 import us.leaf3stones.hy2droid.proxy.TunnelState
 import us.leaf3stones.hy2droid.proxy.TunnelStats
 import java.util.Locale
@@ -33,6 +35,7 @@ fun ConnectionCard(
     stats: TunnelStats,
     showTraffic: Boolean,
     profileName: String? = null,
+    problem: CoreProblem? = null,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp)) {
@@ -67,6 +70,15 @@ fun ConnectionCard(
                 )
             }
 
+            if (problem != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(problemHint(problem)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
             if (state is TunnelState.Error) {
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -77,6 +89,18 @@ fun ConnectionCard(
             }
         }
     }
+}
+
+@Composable
+/** The one-line explanation shown for a [CoreProblem]. */
+@StringRes
+private fun problemHint(problem: CoreProblem): Int = when (problem) {
+    CoreProblem.HostNotFound -> R.string.core_hint_host
+    CoreProblem.Tls -> R.string.core_hint_tls
+    CoreProblem.Auth -> R.string.core_hint_auth
+    CoreProblem.Timeout -> R.string.core_hint_timeout
+    CoreProblem.Refused -> R.string.core_hint_refused
+    CoreProblem.Obfs -> R.string.core_hint_obfs
 }
 
 @Composable
