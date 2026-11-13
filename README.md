@@ -80,10 +80,12 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
   `quic.disablePathMTUDiscovery: true`, the standard workaround for networks
   that silently drop large QUIC packets (MTU black holes), where connections
   otherwise stall
-- **Tunnel MTU** (Settings → Network, default 1400, range 1280–1500): the same
+- **Tunnel MTU** (Settings → Network, default 1500, range 1280–1500): the same
   value goes into the TUN interface and the tun2socks config, so the two cannot
-  drift apart. 1400 carries a full-size QUIC datagram on a 1500-byte path with
-  fewer packets than 1280; drop to 1280 only on networks that stall
+  drift apart. 1500 is the largest standard frame and the TUN only feeds the
+  local tunnel engine — the payload leaves as the core's own QUIC, which does
+  its own path MTU discovery — so there is no outer header to reserve room for.
+  Lower it only on networks that stall on full-size packets
 - **TCP buffer per connection** (Settings → Network, 64 / 128 / 256 KB, default
   128): the engine's send buffer on the tun hop. That hop is local (sub-ms), so
   the buffer absorbs bursts and bounds what can queue for a slow reader; it is
@@ -156,7 +158,7 @@ UI (Compose / Material 3)
                      Hysteria2VpnService (VpnService)
                         ├─ VpnService.Builder → TUN fd
                         │    IPv4 10.0.88.88/16, IPv6 fc00::1/64,
-                        │    MTU from Settings (default 1400)
+                        │    MTU from Settings (default 1500)
                         ├─ exec libhysteria.so -c hysteria.yaml
                         │    → 127.0.0.1:1080 (SOCKS5) + :1081 (HTTP)
                         └─ libtun2socks.so (JNI): TUN fd → SOCKS5

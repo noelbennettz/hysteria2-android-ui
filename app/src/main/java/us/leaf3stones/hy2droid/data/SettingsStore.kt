@@ -124,9 +124,11 @@ class SettingsStore(private val context: Context) {
         .map { it[keyBypassLan] ?: false }
 
     /**
-     * TUN interface MTU. Defaults to 1400, which carries a full-size QUIC datagram
-     * on a 1500-byte path without the packet count of the 1280 floor; lower it on
-     * networks that drop full-size packets (see also [disablePathMtuDiscovery]).
+     * TUN interface MTU. Defaults to 1500: the TUN only feeds the local tunnel
+     * engine, which hands payload to the core's SOCKS5 listener, so the largest
+     * standard Ethernet frame costs the fewest packets and the outer QUIC path
+     * does its own PMTUD. Lower it only on networks that stall on full-size
+     * packets.
      */
     val mtu: Flow<Int> = context.settingsDataStore.data
         .map { clampMtu(it[keyMtu] ?: DEFAULT_MTU) }
@@ -236,13 +238,13 @@ class SettingsStore(private val context: Context) {
         val DEFAULT_DNS_SERVERS: List<String> = listOf(DEFAULT_DNS_PRIMARY, DEFAULT_DNS_SECONDARY)
 
         /**
-         * Default TUN MTU: 1400. Fits a full QUIC datagram inside a 1500-byte path
-         * — so it carries fewer packets than 1280 does — while still leaving room
-         * for the tunnel headers on paths that clamp a little lower. Drop it to
-         * 1280 (Settings → Network) only on networks that stall on full-size
-         * packets.
+         * Default TUN MTU: 1500, the largest standard Ethernet frame. The TUN is
+         * a local hop to the tunnel engine (payload then goes out as the core's
+         * own QUIC, which does its own path MTU discovery), so there is no outer
+         * header to reserve room for here. Drop it toward 1280 (Settings →
+         * Network) only on networks that stall on full-size packets.
          */
-        const val DEFAULT_MTU = 1400
+        const val DEFAULT_MTU = 1500
 
         /** Smallest MTU still able to carry IPv6; below this nothing works. */
         const val MIN_MTU = 1280
