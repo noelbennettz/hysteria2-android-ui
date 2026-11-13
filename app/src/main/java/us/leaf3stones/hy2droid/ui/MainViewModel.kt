@@ -113,6 +113,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var autoTestStarted = false
 
     init {
+        // Fast open became the default after it measured a full RTT per
+        // connection on a real node; turn it on for profiles that never had a
+        // chance to choose (exactly once).
+        viewModelScope.launch { store.enableFastOpenOnce() }
         // Seed the in-memory numbers with what the last session measured, so the
         // list is ordered from the first frame instead of after a full re-probe.
         viewModelScope.launch {

@@ -57,6 +57,7 @@
     <string name="field_rx">التنزيل (ميغابت/ث)</string>
     <string name="field_insecure">السماح بشهادة غير آمنة</string>
     <string name="field_fast_open">QUIC fast open</string>
+    <string name="field_fast_open_summary">يقبل الاتصال دون انتظار تأكيد الخادم للوجهة: رحلة ذهاب وعودة أقل لكل اتصال، فتفتح الصفحات أسرع. الوجهة غير المتاحة تُغلق بدل إظهار خطأ.</string>
     <string name="bandwidth_hint">يرسل Brutal بهذه السرعات بالضبط، لذا استخدم نحو 80 بالمئة من السرعة المقاسة. في شبكة غير مستقرة (بيانات الجوال أو Wi-Fi عام) اتركه مغلقًا: يتكيّف BBR تلقائيًا.</string>
 
     <!-- Notification -->

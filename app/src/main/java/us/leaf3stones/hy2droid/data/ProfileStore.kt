@@ -3,6 +3,7 @@ package us.leaf3stones.hy2droid.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -36,6 +37,7 @@ class ProfileStore(private val context: Context) {
     private val keyProfiles = stringPreferencesKey("profiles_json")
     private val keySelected = stringPreferencesKey("selected_id")
     private val keyLatency = stringPreferencesKey("latencies_json")
+    private val keyFastOpenMigrated = booleanPreferencesKey("fast_open_default_migrated")
 
     /** All stored profiles, in insertion order. */
     val profiles: Flow<List<Profile>> = context.profileDataStore.data
@@ -127,6 +129,23 @@ class ProfileStore(private val context: Context) {
         context.profileDataStore.edit { prefs -> prefs[keySelected] = id }
     }
 
+    /**
+     * One-time upgrade: profiles written before fast open became the default
+     * carry an explicit `false` the user never picked (the switch barely
+     * existed). Turn it on once; from then on the switch belongs to the user and
+     * this flag keeps the migration from running again.
+     */
+    suspend fun enableFastOpenOnce() {
+        context.profileDataStore.edit { prefs ->
+            if (prefs[keyFastOpenMigrated] == true) return@edit
+            val list = decodeList(prefs[keyProfiles])
+            if (list.any { !it.fastOpen }) {
+                prefs[keyProfiles] = encodeList(list.map { it.copy(fastOpen = true) })
+            }
+            prefs[keyFastOpenMigrated] = true
+        }
+    }
+
     private fun decodeList(json: String?): List<Profile> {
         if (json.isNullOrBlank()) return emptyList()
         return try {
@@ -208,7 +227,7 @@ class ProfileStore(private val context: Context) {
             brutal = o.optBoolean("brutal", tx > 0 || rx > 0),
             txMbps = tx,
             rxMbps = rx,
-            fastOpen = o.optBoolean("fastOpen", false),
+            fastOpen = o.optBoolean("fastOpen", true),
             port = o.optInt("port", 443),
         )
     }

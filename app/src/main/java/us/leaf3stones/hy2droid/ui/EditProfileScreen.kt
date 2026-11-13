@@ -60,7 +60,7 @@ fun EditProfileScreen(
     var tx by remember { mutableStateOf(initial?.txMbps?.takeIf { it > 0 }?.toString().orEmpty()) }
     var rx by remember { mutableStateOf(initial?.rxMbps?.takeIf { it > 0 }?.toString().orEmpty()) }
     var insecure by remember { mutableStateOf(initial?.insecure ?: false) }
-    var fastOpen by remember { mutableStateOf(initial?.fastOpen ?: false) }
+    var fastOpen by remember { mutableStateOf(initial?.fastOpen ?: true) }
     var importLink by remember { mutableStateOf("") }
     var importFailed by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
@@ -236,6 +236,11 @@ fun EditProfileScreen(
                 label = stringResource(R.string.field_fast_open),
                 checked = fastOpen,
                 onCheckedChange = { fastOpen = it },
+            )
+            Text(
+                text = stringResource(R.string.field_fast_open_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(
                 onClick = {

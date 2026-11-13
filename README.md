@@ -26,10 +26,16 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - Brutal congestion control as an explicit switch with an upload/download hint;
   off by default, because Brutal paces at a fixed rate and does not back off on
   loss (BBR adapts by itself)
-- `fastOpen` is **off** by default; `lazy` is always on (it only defers the
-  *first* connection — upstream: "the client will not connect until the first
-  call to TCP() or UDP()" — after that the session is held open), with a 20 s
-  QUIC heartbeat
+- `fastOpen` is **on** by default: the client accepts each new connection
+  without waiting for the server to confirm the destination, which removes one
+  round trip per connection. That is invisible in a bulk download but is exactly
+  what makes browsing many small connections feel fast (measured on a ~150 ms
+  node: 580 → 230 ms to open a connection, 1.27 → 0.76 s to first byte). The
+  trade-off, per upstream, is that a dead destination is closed instead of
+  reporting an error; the per-profile switch turns it off. `lazy` is always on
+  (it only defers the *first* connection — upstream: "the client will not
+  connect until the first call to TCP() or UDP()" — after that the session is
+  held open), with a 20 s QUIC heartbeat
 - **16 KB page size**: `libtun2socks.so` is linked with 16 KB LOAD alignment and
   `scripts/tun2socks.sh verify` fails if that regresses. The bundled Hysteria
   core is an upstream prebuilt that is still 4 KB aligned, so Android 15+ on a

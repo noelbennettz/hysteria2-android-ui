@@ -39,6 +39,15 @@ class HysteriaConfigBuilderTest {
     }
 
     @Test
+    fun `fast open is on for a profile that never chose`() {
+        // The default is part of the product, not a detail: it removes one RTT
+        // per connection, which is what browsing notices.
+        val profile = Profile(id = "1", name = "Node", server = "example.com", auth = "a")
+
+        assertTrue(HysteriaConfigBuilder.build(profile).contains("fastOpen: true"))
+    }
+
+    @Test
     fun `rates without the Brutal switch are not sent to the core`() {
         // A typed-in number must not silently opt a profile into a fixed-rate
         // congestion control that ignores loss.
@@ -79,7 +88,6 @@ class HysteriaConfigBuilderTest {
         assertFalse(yaml.contains("bandwidth:"))
         assertFalse(yaml.contains("obfs:"))
         assertFalse(yaml.contains("tls:"))
-        assertTrue(yaml.contains("fastOpen: false"))
         assertTrue(yaml.contains("socks5:"))
         assertTrue(yaml.contains("http:"))
     }

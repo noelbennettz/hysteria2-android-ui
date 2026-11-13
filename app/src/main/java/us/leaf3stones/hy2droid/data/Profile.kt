@@ -15,7 +15,9 @@ package us.leaf3stones.hy2droid.data
  * @property brutal whether Brutal congestion control is used at all (otherwise BBR).
  * @property txMbps uplink bandwidth in Mbps for Brutal congestion control (0 = unset).
  * @property rxMbps downlink bandwidth in Mbps for Brutal congestion control (0 = unset).
- * @property fastOpen whether to enable QUIC fast open.
+ * @property fastOpen whether to enable QUIC fast open (accept each connection
+ *   without waiting for the server to confirm the destination: one less round
+ *   trip per connection, which is what makes browsing feel fast).
  */
 data class Profile(
     val id: String,
@@ -28,7 +30,7 @@ data class Profile(
     val brutal: Boolean = false,
     val txMbps: Int = 0,
     val rxMbps: Int = 0,
-    val fastOpen: Boolean = false,
+    val fastOpen: Boolean = true,
     val port: Int = 443,
 ) {
     /** True when Salamander obfuscation is configured. */

@@ -57,6 +57,7 @@
     <string name="field_rx">Débit descendant (Mbps)</string>
     <string name="field_insecure">Autoriser un certificat non sécurisé</string>
     <string name="field_fast_open">QUIC fast open</string>
+    <string name="field_fast_open_summary">Accepte chaque connexion sans attendre la confirmation du serveur : un aller-retour de moins par connexion, donc des pages plus rapides. Une destination injoignable est fermée au lieu d\'afficher une erreur.</string>
     <string name="bandwidth_hint">Brutal émet exactement à ces débits : utilisez environ 80 pour cent de votre vitesse mesurée. Sur un réseau instable (données mobiles, Wi-Fi public), laissez-le désactivé : BBR s\'adapte tout seul.</string>
 
     <!-- Notification -->

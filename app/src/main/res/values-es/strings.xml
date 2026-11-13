@@ -57,6 +57,7 @@
     <string name="field_rx">Bajada (Mbps)</string>
     <string name="field_insecure">Permitir certificado no seguro</string>
     <string name="field_fast_open">QUIC fast open</string>
+    <string name="field_fast_open_summary">Acepta cada conexión sin esperar a que el servidor confirme el destino: un viaje de ida y vuelta menos por conexión, así las páginas abren más rápido. Un destino caído se cierra en vez de mostrar un error.</string>
     <string name="bandwidth_hint">Brutal envía exactamente a estas tasas, así que usa cerca del 80 por ciento de tu velocidad medida. En una red inestable (datos móviles, Wi-Fi público) déjalo apagado: BBR se adapta solo.</string>
 
     <!-- Notification -->

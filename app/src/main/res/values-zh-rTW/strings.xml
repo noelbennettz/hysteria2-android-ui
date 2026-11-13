@@ -57,6 +57,7 @@
     <string name="field_rx">下載 Mbps</string>
     <string name="field_insecure">允許不安全的憑證</string>
     <string name="field_fast_open">QUIC fast open</string>
+    <string name="field_fast_open_summary">不等伺服器確認目的地就接受連線：每條連線少一個往返，開網頁更快。目的地不通時會直接關閉，而不是顯示錯誤。</string>
     <string name="bandwidth_hint">Brutal 會嚴格照這個速率送封包，建議填約實測速度的八成。網路不穩時（行動數據、公共 Wi-Fi）請關掉：BBR 會自己適應。</string>
 
     <!-- Notification -->

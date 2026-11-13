@@ -59,6 +59,7 @@
     <string name="field_rx">Download Mbps</string>
     <string name="field_insecure">Allow insecure certificate</string>
     <string name="field_fast_open">QUIC fast open</string>
+    <string name="field_fast_open_summary">Accepts each connection without waiting for the server to confirm the destination: one round trip less per connection, so pages open faster. A dead destination closes instead of showing an error.</string>
     <string name="bandwidth_hint">Brutal paces at exactly these rates, so use about 80 percent of your measured speed. On an unstable network (mobile data, public Wi-Fi) leave it off: BBR adapts by itself.</string>
 
     <!-- Notification -->
