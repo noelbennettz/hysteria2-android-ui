@@ -56,6 +56,48 @@ class HysteriaUriTest {
     }
 
     @Test
+    fun `parses bandwidth from third-party links and enables Brutal`() {
+        val profile = HysteriaUri.parse(
+            "hysteria2://pass@example.com:443/?sni=s&up=20&down=100#Fast",
+        )
+
+        requireNotNull(profile)
+        assertTrue(profile.brutal)
+        assertEquals(20, profile.txMbps)
+        assertEquals(100, profile.rxMbps)
+        assertTrue(profile.usesBrutal)
+    }
+
+    @Test
+    fun `parses legacy upmbps and tolerates units and case`() {
+        val profile = HysteriaUri.parse(
+            "hysteria2://pass@example.com:443/?UP=20Mbps&Down=100%20mbps",
+        )
+
+        requireNotNull(profile)
+        assertEquals(20, profile.txMbps)
+        assertEquals(100, profile.rxMbps)
+    }
+
+    @Test
+    fun `ignores zero or broken bandwidth values`() {
+        val zero = HysteriaUri.parse("hysteria2://pass@example.com:443/?up=0&down=0")
+        val broken = HysteriaUri.parse("hysteria2://pass@example.com:443/?up=fast")
+        val decimal = HysteriaUri.parse("hysteria2://pass@example.com:443/?up=1.5")
+
+        requireNotNull(zero)
+        requireNotNull(broken)
+        requireNotNull(decimal)
+        assertEquals(0, zero.txMbps)
+        assertTrue(!zero.brutal)
+        assertEquals(0, broken.rxMbps)
+        assertTrue(!broken.brutal)
+        // 1.5 Mbps must not silently become 15.
+        assertEquals(0, decimal.txMbps)
+        assertTrue(!decimal.brutal)
+    }
+
+    @Test
     fun `builds a share link that round-trips`() {
         val profile = Profile(
             id = "1",

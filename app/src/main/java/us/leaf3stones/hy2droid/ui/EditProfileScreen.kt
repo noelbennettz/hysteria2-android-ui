@@ -28,12 +28,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.HysteriaUri
 import us.leaf3stones.hy2droid.data.Profile
@@ -61,6 +63,8 @@ fun EditProfileScreen(
     var fastOpen by remember { mutableStateOf(initial?.fastOpen ?: false) }
     var importLink by remember { mutableStateOf("") }
     var importFailed by remember { mutableStateOf(false) }
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
     // A port outside 1–65535 would only surface as a core error after Connect.
     val portValue = port.toIntOrNull()
@@ -91,7 +95,7 @@ fun EditProfileScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scroll)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -118,6 +122,14 @@ fun EditProfileScreen(
                             sni = parsed.sni
                             obfs = parsed.obfsPassword
                             insecure = parsed.insecure
+                            brutal = parsed.brutal
+                            tx = parsed.txMbps.takeIf { it > 0 }?.toString().orEmpty()
+                            rx = parsed.rxMbps.takeIf { it > 0 }?.toString().orEmpty()
+                            // The link carried rates: jump to the Brutal block so
+                            // the values are not applied invisibly below the fold.
+                            if (parsed.hasBandwidth) {
+                                scope.launch { scroll.animateScrollTo(scroll.maxValue) }
+                            }
                         }
                     },
                     shape = RoundedCornerShape(4.dp),

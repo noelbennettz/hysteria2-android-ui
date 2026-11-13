@@ -36,6 +36,11 @@ object HysteriaUri {
         val sni = params["sni"].orEmpty()
         val obfsPassword = params["obfs-password"].orEmpty()
         val insecure = params["insecure"].let { it == "1" || it.equals("true", ignoreCase = true) }
+        // Bandwidth is not part of the official scheme (it says client-specific
+        // values must not be shared), but other clients put it in anyway. Accept
+        // both the short and the legacy names, and only positive values.
+        val tx = bandwidth(params["up"] ?: params["upmbps"])
+        val rx = bandwidth(params["down"] ?: params["downmbps"])
         val name = decode(uri.fragment.orEmpty()).ifBlank { host }
 
         return Profile(
@@ -47,8 +52,17 @@ object HysteriaUri {
             sni = sni,
             obfsPassword = obfsPassword,
             insecure = insecure,
+            brutal = tx != null || rx != null,
+            txMbps = tx ?: 0,
+            rxMbps = rx ?: 0,
         )
     }
+
+    /** `20`, `20Mbps` and `20 mbps` all mean the same thing in the wild. */
+    private val BANDWIDTH = Regex("""^(\d+)\s*(?:mbps)?$""", RegexOption.IGNORE_CASE)
+
+    private fun bandwidth(raw: String?): Int? =
+        raw?.trim()?.let { BANDWIDTH.find(it)?.groupValues?.get(1)?.toIntOrNull() }?.takeIf { it > 0 }
 
     /** Emit a share link for [profile]. */
     fun build(profile: Profile): String {
@@ -81,7 +95,7 @@ object HysteriaUri {
         return rawQuery.split('&').mapNotNull { pair ->
             val idx = pair.indexOf('=')
             if (idx <= 0) return@mapNotNull null
-            decode(pair.substring(0, idx)) to decode(pair.substring(idx + 1))
+            decode(pair.substring(0, idx)).lowercase() to decode(pair.substring(idx + 1))
         }.toMap()
     }
 
