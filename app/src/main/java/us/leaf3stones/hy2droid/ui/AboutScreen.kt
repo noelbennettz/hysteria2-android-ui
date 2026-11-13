@@ -5,7 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -104,13 +107,22 @@ fun AboutScreen(onBack: () -> Unit) {
                     .padding(horizontal = 24.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Image(
-                    painter = painterResource(R.mipmap.ic_launcher),
-                    contentDescription = null,
+                // The adaptive launcher icon is an XML drawable, which
+                // `painterResource` refuses at runtime; draw the same pieces by
+                // hand instead: the real glyph over the real background colour.
+                Box(
                     modifier = Modifier
                         .size(72.dp)
-                        .clip(RoundedCornerShape(18.dp)),
-                )
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(colorResource(R.color.ic_launcher_background)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher_glyph),
+                        contentDescription = null,
+                        modifier = Modifier.size(52.dp),
+                    )
+                }
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = stringResource(R.string.app_name),
