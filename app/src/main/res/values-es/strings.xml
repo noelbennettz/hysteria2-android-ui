@@ -142,6 +142,23 @@
     <string name="block_preset_quic">Bloquear QUIC (UDP 443)</string>
     <string name="block_applies_hint">Los cambios se aplican la próxima vez que te conectes.</string>
 
+    <!-- About -->
+    <string name="settings_section_about">Acerca de</string>
+    <string name="about_title">Acerca de</string>
+    <string name="about_summary">Versión, código fuente y licencia</string>
+    <string name="about_tagline">Un cliente de Hysteria 2 para Android: pega un enlace y funciona.</string>
+    <string name="about_version">Versión %1$s (%2$d)</string>
+    <string name="about_core_version">Núcleo Hysteria %1$s</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_github_summary">Código fuente, versiones y seguimiento de problemas</string>
+    <string name="about_report_issue">Informar de un problema</string>
+    <string name="about_report_issue_summary">¿Un fallo, o un servidor que no conecta? Abre un issue con los registros</string>
+    <string name="about_license">Licencia</string>
+    <string name="about_license_summary">GNU AGPL-3.0: texto completo en el repositorio</string>
+    <string name="about_no_browser">Ninguna app de este dispositivo puede abrir enlaces.</string>
+    <string name="about_copyright">© 2026 los contribuyentes de Hy2droid</string>
+    <string name="about_third_party">Incluye el núcleo Hysteria 2 (MIT) y hev-socks5-tunnel (MIT); algunas partes derivan del trabajo de lry127 con licencia MIT.</string>
+
     <!-- Errors -->
     <string name="error_no_config">No se encontró ninguna configuración. Abre la app y vuelve a conectar.</string>
     <string name="error_tun2socks_config">No se pudo escribir la configuración de tun2socks: %1$s</string>

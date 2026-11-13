@@ -142,6 +142,23 @@
     <string name="block_preset_quic">屏蔽 QUIC（UDP 443）</string>
     <string name="block_applies_hint">更改将在下次连接时生效。</string>
 
+    <!-- About -->
+    <string name="settings_section_about">关于</string>
+    <string name="about_title">关于</string>
+    <string name="about_summary">版本、源代码与许可证</string>
+    <string name="about_tagline">Android 上的 Hysteria 2 客户端，粘贴一条链接就能用。</string>
+    <string name="about_version">版本 %1$s（%2$d）</string>
+    <string name="about_core_version">Hysteria 核心 %1$s</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_github_summary">源代码、发行版与问题追踪</string>
+    <string name="about_report_issue">报告问题</string>
+    <string name="about_report_issue_summary">遇到错误，或某台服务器连不上？附上日志开一个 issue</string>
+    <string name="about_license">许可证</string>
+    <string name="about_license_summary">GNU AGPL-3.0，完整条款在仓库中</string>
+    <string name="about_no_browser">此设备没有可以打开链接的应用。</string>
+    <string name="about_copyright">© 2026 Hy2droid 贡献者</string>
+    <string name="about_third_party">内含 Hysteria 2 核心（MIT）与 hev-socks5-tunnel（MIT）；部分源自 lry127 以 MIT 许可的作品。</string>
+
     <!-- Errors -->
     <string name="error_no_config">找不到配置。请打开应用后重新连接。</string>
     <string name="error_tun2socks_config">无法写入 tun2socks 配置：%1$s</string>

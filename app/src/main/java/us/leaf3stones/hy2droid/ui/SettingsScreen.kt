@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Palette
@@ -94,6 +95,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenSplitTunnel: () -> Unit,
     onOpenBlockRules: () -> Unit,
+    onOpenAbout: () -> Unit,
 ) {
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val showServerAddress by viewModel.showServerAddress.collectAsState()
@@ -382,6 +384,14 @@ fun SettingsScreen(
                         Toast.makeText(context, R.string.export_failed, Toast.LENGTH_LONG).show()
                     }
                 },
+            )
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.settings_section_about))
+            ClickRow(
+                icon = Icons.Filled.Info,
+                title = stringResource(R.string.about_title),
+                subtitle = stringResource(R.string.about_summary),
+                onClick = onOpenAbout,
             )
             HorizontalDivider()
         }

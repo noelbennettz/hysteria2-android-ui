@@ -145,6 +145,7 @@ private fun AppRoot(
         var splitTunnelOpen by rememberSaveable { mutableStateOf(false) }
         var blockRulesOpen by rememberSaveable { mutableStateOf(false) }
         var settingsOpen by rememberSaveable { mutableStateOf(false) }
+        var aboutOpen by rememberSaveable { mutableStateOf(false) }
         var scannerOpen by rememberSaveable { mutableStateOf(false) }
 
         // The editor works on the stored profile: the ViewModel survives a
@@ -172,13 +173,15 @@ private fun AppRoot(
             splitTunnelOpen = false
             blockRulesOpen = false
             settingsOpen = false
+            aboutOpen = false
             scannerOpen = false
         }
 
         // System back closes one level (innermost first) instead of finishing the
         // activity. Without this every sub-screen was a dead end: pressing back on
         // Settings left the app entirely.
-        val inSubScreen = scannerOpen || editorOpen || splitTunnelOpen || blockRulesOpen || settingsOpen
+        val inSubScreen = scannerOpen || editorOpen || splitTunnelOpen || blockRulesOpen ||
+            aboutOpen || settingsOpen
         BackHandler(enabled = inSubScreen) {
             when {
                 scannerOpen -> scannerOpen = false
@@ -188,6 +191,7 @@ private fun AppRoot(
                 }
                 splitTunnelOpen -> splitTunnelOpen = false
                 blockRulesOpen -> blockRulesOpen = false
+                aboutOpen -> aboutOpen = false
                 settingsOpen -> settingsOpen = false
             }
         }
@@ -246,11 +250,13 @@ private fun AppRoot(
                 viewModel = vm,
                 onBack = { blockRulesOpen = false },
             )
+            aboutOpen -> AboutScreen(onBack = { aboutOpen = false })
             settingsOpen -> SettingsScreen(
                 viewModel = vm,
                 onBack = { settingsOpen = false },
                 onOpenSplitTunnel = { splitTunnelOpen = true },
                 onOpenBlockRules = { blockRulesOpen = true },
+                onOpenAbout = { aboutOpen = true },
             )
             else -> HomeScreen(
                 viewModel = vm,

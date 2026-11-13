@@ -142,6 +142,23 @@
     <string name="block_preset_quic">حجب QUIC (UDP 443)</string>
     <string name="block_applies_hint">تُطبَّق التغييرات في المرة التالية التي تتصل فيها.</string>
 
+    <!-- About -->
+    <string name="settings_section_about">حول</string>
+    <string name="about_title">حول</string>
+    <string name="about_summary">الإصدار والشيفرة المصدرية والترخيص</string>
+    <string name="about_tagline">عميل Hysteria 2 لأندرويد: الصق رابطًا واحدًا ويعمل.</string>
+    <string name="about_version">الإصدار %1$s (%2$d)</string>
+    <string name="about_core_version">نواة Hysteria %1$s</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_github_summary">الشيفرة المصدرية والإصدارات ومتتبّع المشكلات</string>
+    <string name="about_report_issue">الإبلاغ عن مشكلة</string>
+    <string name="about_report_issue_summary">ثمة خطأ أو خادم لا يتصل؟ افتح بلاغًا مرفقًا بالسجلات</string>
+    <string name="about_license">الترخيص</string>
+    <string name="about_license_summary">GNU AGPL-3.0 — النص الكامل في المستودع</string>
+    <string name="about_no_browser">لا يوجد تطبيق على هذا الجهاز يمكنه فتح الروابط.</string>
+    <string name="about_copyright">© 2026 مساهمو Hy2droid</string>
+    <string name="about_third_party">يتضمن نواة Hysteria 2 (MIT) وhev-socks5-tunnel (MIT)؛ أجزاء مشتقة من عمل lry127 المرخَّص بموجب MIT.</string>
+
     <!-- Errors -->
     <string name="error_no_config">لم يتم العثور على أي إعداد. افتح التطبيق واتصل مرة أخرى.</string>
     <string name="error_tun2socks_config">تعذّر كتابة إعداد tun2socks: %1$s</string>
