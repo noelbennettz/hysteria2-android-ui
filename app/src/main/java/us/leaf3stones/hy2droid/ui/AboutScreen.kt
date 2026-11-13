@@ -35,6 +35,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import us.leaf3stones.hy2droid.BuildConfig
 import us.leaf3stones.hy2droid.R
+import us.leaf3stones.hy2droid.data.CoreVersion
 
 /**
  * The one place the project page is written down. The AGPL asks a modified
@@ -69,9 +75,10 @@ fun AboutScreen(onBack: () -> Unit) {
         BuildConfig.VERSION_NAME,
         BuildConfig.VERSION_CODE,
     )
-    val core = stringResource(R.string.about_core_version, BuildConfig.CORE_VERSION)
     val noBrowser = stringResource(R.string.about_no_browser)
-
+    // Read from the binary that would actually run, not from the build-time pin.
+    var coreVersion by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { coreVersion = CoreVersion.probe(context) }
     fun open(url: String) {
         try {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -141,11 +148,14 @@ fun AboutScreen(onBack: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    text = core,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                // No fallback: a version it could not read is better left unsaid.
+                coreVersion?.let { core ->
+                    Text(
+                        text = stringResource(R.string.about_core_version, core),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             HorizontalDivider()
             LinkRow(
