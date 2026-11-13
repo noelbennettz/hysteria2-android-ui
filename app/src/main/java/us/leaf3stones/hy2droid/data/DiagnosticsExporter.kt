@@ -56,7 +56,7 @@ class DiagnosticsExporter(private val context: Context) {
         val sb = StringBuilder()
         sb.append("Hy2droid ").append(BuildConfig.VERSION_NAME)
             .append(" (").append(BuildConfig.VERSION_CODE).append(")\n")
-        sb.append("Hysteria core: ").append(BuildConfig.CORE_VERSION).append('\n')
+        sb.append("Hysteria core: ").append(CoreVersion.probe(context) ?: "unknown").append('\n')
         sb.append("Tunnel state: ").append(TunnelStatus.state.value).append('\n')
         sb.append("Exported: ").append(timestamp()).append("\n\n")
 

@@ -42,10 +42,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import us.leaf3stones.hy2droid.BuildConfig
 import us.leaf3stones.hy2droid.R
 import us.leaf3stones.hy2droid.data.ConfigFile
 import us.leaf3stones.hy2droid.data.CoreDiagnosis
+import us.leaf3stones.hy2droid.data.CoreVersion
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
 import us.leaf3stones.hy2droid.data.LanRanges
 import us.leaf3stones.hy2droid.data.ProfileStore
@@ -273,7 +273,8 @@ class Hysteria2VpnService : VpnService() {
         shuttingDown = false
         coreStoppedByUs = false
         notificationDismissed = false
-        Log.i(TAG, "Starting tunnel · Hysteria core ${BuildConfig.CORE_VERSION}")
+        val coreVersion = CoreVersion.probe(applicationContext) ?: "unknown"
+        Log.i(TAG, "Starting tunnel · Hysteria core $coreVersion")
         updateState(TunnelState.Connecting)
 
         val settings = SettingsStore(applicationContext)

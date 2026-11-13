@@ -12,7 +12,8 @@
 # The binaries are downloaded from the upstream release
 # (`hysteria-android-<arch>`) and verified against that release's `hashes.txt`.
 # They are NOT committed to git; `core/core.properties` pins the version plus
-# the checksums and is exposed to the app as `BuildConfig.CORE_VERSION`.
+# the checksums. The app is not told the version at build time: it runs
+# `libhysteria.so version` so a swapped binary reports itself honestly.
 #
 # Env:
 #   HY2_CORE_TAG   override the pinned version (e.g. app/v2.12.3)

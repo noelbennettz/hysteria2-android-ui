@@ -101,6 +101,9 @@ Requires **Android 11 (API 30) or newer**. Ships `arm64-v8a`, `armeabi-v7a`,
 - **Export logs** (Settings → Diagnostics): one zip with the app logcat buffer,
   the persisted Hysteria core log, a build/device summary and the running config
   with `auth` / obfs passwords masked — no storage permission needed
+- **About** page (Settings → About): app version, the core version read from the
+  bundled binary itself, and links to the repository, the issue tracker and the
+  licence. No store listing required to find the source
 - Always-on VPN support: a system-initiated start connects normally instead of
   refusing (refusing only makes Android report "always-on VPN is not connected"
   and retry), and disconnecting while it is on explains that Android will start
@@ -247,8 +250,9 @@ The Hysteria core binaries are **not committed to git**. They are downloaded at
 build time from the upstream release (`hysteria-android-<arch>`), verified
 against that release's `hashes.txt`, and installed into
 `app/src/main/jniLibs/<abi>/libhysteria.so`. `core/core.properties` pins the
-version plus the per-ABI SHA-256 checksums and is surfaced to the app as
-`BuildConfig.CORE_VERSION` (logged by the service on every connect).
+version plus the per-ABI SHA-256 checksums; the app reads the version back from
+the binary itself (`libhysteria.so version`) on connect, so a swapped core is
+reported truthfully.
 
 `scripts/core.sh` manages it:
 

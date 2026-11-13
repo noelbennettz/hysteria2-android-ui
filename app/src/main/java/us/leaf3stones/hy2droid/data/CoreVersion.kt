@@ -7,12 +7,11 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
- * Reads the core version from the bundled binary instead of from a Gradle
- * constant. `BuildConfig.CORE_VERSION` records what `core.properties` said at
- * build time, which is only the truth until someone swaps `libhysteria.so`
- * (the whole point of shipping the core as a plain file). `hysteria version`
- * costs one short process, needs no network and answers for the binary that
- * would actually run.
+ * Reads the core version by running the bundled binary instead of trusting a
+ * build-time constant. A Gradle constant can only describe what was downloaded
+ * when the APK was built; `libhysteria.so` is a plain file here, so a swapped
+ * core would make that constant lie. `hysteria version` costs one short
+ * process, needs no network and answers for the binary that would actually run.
  */
 object CoreVersion {
 

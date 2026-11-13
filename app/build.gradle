@@ -3,15 +3,6 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
 }
 
-// Version of the bundled Hysteria core, recorded by scripts/core.sh in
-// core/core.properties. Regenerate that file with `scripts/core.sh upgrade`.
-def corePropsFile = rootProject.file('core/core.properties')
-def coreProps = new Properties()
-if (corePropsFile.exists()) {
-    corePropsFile.withInputStream { coreProps.load(it) }
-}
-def coreVersion = coreProps.getProperty('HYSTERIA_VERSION', 'unknown')
-
 // Release builds override these from CI (-P flags or env); defaults keep local
 // debug builds working.
 def appVersionName = (project.findProperty('versionName')
@@ -36,9 +27,6 @@ android {
         targetSdk 34
         versionCode appVersionCode
         versionName appVersionName
-
-        // Exposed at runtime as BuildConfig.CORE_VERSION (see scripts/core.sh).
-        buildConfigField "String", "CORE_VERSION", "\"${coreVersion}\""
 
         vectorDrawables {
             useSupportLibrary true
