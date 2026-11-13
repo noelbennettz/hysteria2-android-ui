@@ -564,7 +564,7 @@ private fun TunnelTestDialog(connected: Boolean, onDismiss: () -> Unit) {
 
 @StringRes
 private fun stepLabel(step: BenchStep): Int = when (step) {
-    BenchStep.Dns -> R.string.test_tunnel_dns
+    BenchStep.Name -> R.string.test_tunnel_name
     BenchStep.ConnectCold -> R.string.test_tunnel_cold
     BenchStep.ConnectWarm -> R.string.test_tunnel_warm
     BenchStep.Ttfb -> R.string.test_tunnel_ttfb

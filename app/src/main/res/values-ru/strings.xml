@@ -107,8 +107,8 @@
     <string name="settings_section_diagnostics">Диагностика</string>
     <string name="test_tunnel_direct">Загрузка напрямую (без туннеля)</string>
     <string name="settings_test_tunnel">Проверить туннель</string>
-    <string name="settings_test_tunnel_summary">Измеряет DNS, соединение и загрузку через работающий туннель</string>
-    <string name="test_tunnel_dns">DNS (кеш туннеля)</string>
+    <string name="settings_test_tunnel_summary">Измеряет резолв, подключение и загрузку через активный туннель</string>
+    <string name="test_tunnel_name">Резолв + подключение</string>
     <string name="test_tunnel_cold">Первое соединение (холодное)</string>
     <string name="test_tunnel_warm">Второе соединение (тёплое)</string>
     <string name="test_tunnel_ttfb">Первый байт (HTTPS)</string>

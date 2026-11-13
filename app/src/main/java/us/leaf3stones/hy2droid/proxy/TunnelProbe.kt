@@ -6,19 +6,15 @@ import javax.net.ssl.SSLSocketFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import us.leaf3stones.hy2droid.data.HysteriaConfigBuilder
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.net.DatagramPacket
-import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.Locale
-import java.util.Random
 
 /** One line of the tunnel report; the UI maps it to a label. */
-enum class BenchStep { Dns, ConnectCold, ConnectWarm, Ttfb, Throughput, Direct }
+enum class BenchStep { Name, ConnectCold, ConnectWarm, Ttfb, Throughput, Direct }
 
 /** One measured step: [value] is the number, [detail] the error when [ok] is false. */
 data class BenchResult(
@@ -31,20 +27,24 @@ data class BenchResult(
 /**
  * Measures the live tunnel from inside the app, the way a browser uses it.
  *
- * Every step goes through the running core's local listeners (the DNS answer,
- * SOCKS5, the HTTP proxy), because the app's own UID is excluded from the VPN:
- * a direct socket would measure the phone's connection, not the tunnel.
+ * Every step goes through the running core's local listeners (SOCKS5, the HTTP
+ * proxy), because the app's own UID is excluded from the VPN: a direct socket
+ * would measure the phone's connection, not the tunnel. That is also why the
+ * probe must not "just query the pushed resolver": the packet would leave over
+ * Wi-Fi and nothing would answer.
  *
- * The order is the diagnosis. A slow DNS answer blames the server's resolver; a
- * slow *cold* connect blames the QUIC session start (the
+ * The order is the diagnosis. The first step is a *name*: a SOCKS5 CONNECT with
+ * a domain, which is what a browser asks for here (the engine answers DNS
+ * locally and forwards the name, so the server resolves it). Comparing it with
+ * the connect-to-an-IP steps isolates the server's resolver from the tunnel: if
+ * name and IP cost the same, resolution is free; if only the name is slow, the
+ * server's resolver is. A slow *cold* connect blames the QUIC session start (the
  * "first page after idle takes seconds" case); a slow warm connect blames the
  * path; a fast connect with a slow first byte blames the server's egress.
  */
 class TunnelProbe(
     private val socksPort: Int = Tun.SOCKS_PORT,
     private val httpPort: Int = HysteriaConfigBuilder.DEFAULT_HTTP_PORT,
-    private val dnsServer: String = Tun.MAPPED_DNS,
-    private val dnsPort: Int = Tun.MAPPED_DNS_PORT,
 ) {
 
     suspend fun run(onStep: (BenchResult) -> Unit): List<BenchResult> =
@@ -54,9 +54,9 @@ class TunnelProbe(
                 results += result
                 onStep(result)
             }
-            step(timed(BenchStep.Dns) { dnsLookup(DNS_NAME) })
-            step(timed(BenchStep.ConnectCold) { socksConnect(TARGET_HOST, TARGET_PORT) })
-            step(timed(BenchStep.ConnectWarm) { socksConnect(TARGET_HOST, TARGET_PORT) })
+            step(timed(BenchStep.Name) { socksConnect(TARGET_HOST, TARGET_PORT) })
+            step(timed(BenchStep.ConnectCold) { socksConnect(IP_HOST, TARGET_PORT) })
+            step(timed(BenchStep.ConnectWarm) { socksConnect(IP_HOST, TARGET_PORT) })
             step(timed(BenchStep.Ttfb) { firstByte() })
             step(download(THROUGHPUT_BYTES))
             // The app's own UID is outside the VPN, so this one goes straight out
@@ -76,22 +76,6 @@ class TunnelProbe(
         BenchResult(step, "failed", ok = false, detail = e.message ?: e.javaClass.simpleName)
     }
 
-    /** One query straight at the in-tunnel resolver; throws when nothing answers. */
-    private fun dnsLookup(name: String) {
-        val query = dnsQuery(name)
-        DatagramSocket().use { socket ->
-            socket.soTimeout = TIMEOUT_MS
-            socket.send(
-                DatagramPacket(query, query.size, InetAddress.getByName(dnsServer), dnsPort),
-            )
-            val buffer = ByteArray(512)
-            val answer = DatagramPacket(buffer, buffer.size)
-            socket.receive(answer)
-            if (answer.length < 12) throw IOException("short DNS answer")
-            if (buffer[3].toInt() and 0x0F > 5) throw IOException("DNS rcode")
-        }
-    }
-
     /** SOCKS5 CONNECT by name, so the *server* resolves it. */
     private fun socksConnect(host: String, port: Int) {
         Socket().use { socket ->
@@ -106,8 +90,18 @@ class TunnelProbe(
             if (greeting[0] != 0x05.toByte() || greeting[1] != 0x00.toByte()) {
                 throw IOException("SOCKS5 method rejected")
             }
-            val name = host.toByteArray(Charsets.US_ASCII)
-            val request = ByteArray(7 + name.size)
+            out.write(if (isIpv4(host)) ipv4Request(host, port) else domainRequest(host, port))
+            out.flush()
+            val reply = ByteArray(4)
+            readFully(input, reply)
+            if (reply[1] != 0x00.toByte()) throw IOException("SOCKS5 CONNECT failed: ${reply[1]}")
+        }
+    }
+
+    /** A CONNECT that carries the name, i.e. the server resolves it. */
+    private fun domainRequest(host: String, port: Int): ByteArray {
+        val name = host.toByteArray(Charsets.US_ASCII)
+        return ByteArray(7 + name.size).also { request ->
             request[0] = 0x05
             request[1] = 0x01                        // CONNECT
             request[2] = 0x00
@@ -116,13 +110,27 @@ class TunnelProbe(
             System.arraycopy(name, 0, request, 5, name.size)
             request[5 + name.size] = (port ushr 8).toByte()
             request[6 + name.size] = port.toByte()
-            out.write(request)
-            out.flush()
-            val reply = ByteArray(4)
-            readFully(input, reply)
-            if (reply[1] != 0x00.toByte()) throw IOException("SOCKS5 CONNECT failed: ${reply[1]}")
         }
     }
+
+    /** A CONNECT for a literal address: no resolver is involved anywhere. */
+    private fun ipv4Request(host: String, port: Int): ByteArray {
+        val octets = host.split('.').map { it.toInt() }
+        return ByteArray(10).also { request ->
+            request[0] = 0x05
+            request[1] = 0x01                        // CONNECT
+            request[2] = 0x00
+            request[3] = 0x01                        // IPv4 address
+            for (i in 0..3) request[4 + i] = octets[i].toByte()
+            request[8] = (port ushr 8).toByte()
+            request[9] = port.toByte()
+        }
+    }
+
+    private fun isIpv4(host: String): Boolean =
+        host.split('.').let { parts ->
+            parts.size == 4 && parts.all { it.toIntOrNull()?.let { n -> n in 0..255 } == true }
+        }
 
     /** Time to the first body byte of a real HTTPS request through the tunnel. */
     private fun firstByte() {
@@ -131,30 +139,6 @@ class TunnelProbe(
             if (tls.inputStream.read() < 0) throw IOException("no response body")
         }
     }
-
-    /** A minimal A query with recursion desired. */
-    private fun dnsQuery(name: String): ByteArray {
-        val out = ByteArrayOutputStream()
-        val id = Random().nextInt(0x10000)
-        out.write(id shr 8)
-        out.write(id and 0xFF)
-        out.write(0x01)
-        out.write(0x00)                 // flags: RD
-        out.write(0x00)
-        out.write(0x01)                 // QDCOUNT
-        repeat(6) { out.write(0x00) }   // AN/NS/AR counts
-        for (label in name.split('.')) {
-            out.write(label.length)
-            out.write(label.toByteArray(Charsets.US_ASCII))
-        }
-        out.write(0x00)
-        out.write(0x00)
-        out.write(0x01)                 // QTYPE A
-        out.write(0x00)
-        out.write(0x01)                 // QCLASS IN
-        return out.toByteArray()
-    }
-
 
     private fun download(bytes: Int): BenchResult = try {
         var total = 0L
@@ -294,8 +278,10 @@ class TunnelProbe(
 
         /** The core listens on IPv4 loopback only; `getLoopbackAddress()` can be ::1. */
         const val LOOPBACK = "127.0.0.1"
-        const val DNS_NAME = "www.gstatic.com"
         const val TARGET_HOST = "speed.cloudflare.com"
+
+        /** A literal for the connect steps: Cloudflare, never resolved. */
+        const val IP_HOST = "1.1.1.1"
         const val TARGET_PORT = 443
         const val DOWNLOAD_PATH = "/__down?bytes=5242880"
         const val THROUGHPUT_BYTES = 5 * 1024 * 1024

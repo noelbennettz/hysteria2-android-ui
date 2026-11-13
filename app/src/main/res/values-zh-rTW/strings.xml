@@ -107,8 +107,8 @@
     <string name="settings_section_diagnostics">診斷</string>
     <string name="test_tunnel_direct">下載（直連，不經隧道）</string>
     <string name="settings_test_tunnel">測試隧道</string>
-    <string name="settings_test_tunnel_summary">透過正在運作的隧道量測 DNS、連線與下載</string>
-    <string name="test_tunnel_dns">DNS（隧道內快取）</string>
+    <string name="settings_test_tunnel_summary">實測執行中隧道的網域解析、連線與下載速度</string>
+    <string name="test_tunnel_name">網域解析＋連線</string>
     <string name="test_tunnel_cold">首次連線（冷啟動）</string>
     <string name="test_tunnel_warm">再次連線（熱）</string>
     <string name="test_tunnel_ttfb">首位元組（HTTPS）</string>

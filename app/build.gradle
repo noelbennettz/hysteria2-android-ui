@@ -55,6 +55,15 @@ android {
     }
 
     signingConfigs {
+        // A committed debug key, so CI artefacts and local builds share one
+        // signature and install over each other. Android's stock debug key is
+        // just as public; the point is that it does not change from run to run.
+        debug {
+            storeFile rootProject.file('app/debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
         release {
             // SECURITY: keystore + passwords are NEVER committed to version control.
             // Provide them locally via gradle properties (e.g. ~/.gradle/gradle.properties
